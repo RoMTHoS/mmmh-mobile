@@ -1,2 +1,18 @@
 // Define __DEV__ before any modules load
 global.__DEV__ = true;
+
+// Suppress react-test-renderer deprecation warning
+// @testing-library/react-native v13.x still uses react-test-renderer internally.
+// This warning can be removed when upgrading to @testing-library/react-native v14+
+// which will use a new renderer that doesn't depend on react-test-renderer.
+// See: https://github.com/callstack/react-native-testing-library/issues/1618
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  if (
+    typeof args[0] === 'string' &&
+    args[0].includes('react-test-renderer is deprecated')
+  ) {
+    return;
+  }
+  originalConsoleError.apply(console, args);
+};

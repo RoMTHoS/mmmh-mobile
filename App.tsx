@@ -1,8 +1,13 @@
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import { ErrorBoundary } from './src/components';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ErrorBoundary, DatabaseTestScreen } from './src/components';
+import { useDatabase } from './src/hooks';
 import { logger } from './src/utils';
+
+// Create a QueryClient instance
+const queryClient = new QueryClient();
 
 // Setup global error handlers
 function setupErrorHandlers(): void {
@@ -26,23 +31,42 @@ function setupErrorHandlers(): void {
 setupErrorHandlers();
 
 function AppContent(): React.JSX.Element {
+  const { isReady, error } = useDatabase();
+
   useEffect(() => {
     logger.info('App initialized');
   }, []);
 
-  return (
-    <View style={styles.container}>
-      <Text>Hello World</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Database Error: {error.message}</Text>
+        <StatusBar style="auto" />
+      </View>
+    );
+  }
+
+  if (!isReady) {
+    return (
+      <View style={styles.container}>
+        <Text>Initializing database...</Text>
+        <StatusBar style="auto" />
+      </View>
+    );
+  }
+
+  // TODO: Remove DatabaseTestScreen after Story 1.5 testing is complete
+  // and replace with actual app content
+  return <DatabaseTestScreen />;
 }
 
 export default function App(): React.JSX.Element {
   return (
-    <ErrorBoundary>
-      <AppContent />
-    </ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
+    </QueryClientProvider>
   );
 }
 
@@ -52,5 +76,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    padding: 20,
   },
 });
