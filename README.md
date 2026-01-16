@@ -1,5 +1,7 @@
 # mmmh-mobile
 
+![Mobile CI](https://github.com/RoMTHoS/mmmh-mobile/actions/workflows/mobile-ci.yml/badge.svg)
+
 React Native + Expo mobile application for MyMealMateHelper.
 
 ## Prerequisites
