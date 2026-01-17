@@ -20,8 +20,12 @@ export default function EditRecipeScreen() {
   useEffect(() => {
     if (recipe) {
       setTitle(recipe.title);
-      setIngredients(recipe.ingredients.join('\n'));
-      setSteps(recipe.steps.join('\n'));
+      setIngredients(
+        recipe.ingredients
+          .map((i) => [i.quantity, i.unit, i.name].filter(Boolean).join(' '))
+          .join('\n')
+      );
+      setSteps(recipe.steps.map((s) => s.instruction).join('\n'));
       setCookingTime(recipe.cookingTime?.toString() ?? '');
       setServings(recipe.servings?.toString() ?? '');
       setNotes(recipe.notes ?? '');
@@ -59,8 +63,14 @@ export default function EditRecipeScreen() {
         id,
         input: {
           title: title.trim(),
-          ingredients: ingredients.split('\n').filter((i) => i.trim()),
-          steps: steps.split('\n').filter((s) => s.trim()),
+          ingredients: ingredients
+            .split('\n')
+            .filter((i) => i.trim())
+            .map((line) => ({ name: line.trim(), quantity: null, unit: null })),
+          steps: steps
+            .split('\n')
+            .filter((s) => s.trim())
+            .map((instruction, index) => ({ order: index + 1, instruction: instruction.trim() })),
           cookingTime: cookingTime ? parseInt(cookingTime, 10) : null,
           servings: servings ? parseInt(servings, 10) : null,
           notes: notes.trim() || null,

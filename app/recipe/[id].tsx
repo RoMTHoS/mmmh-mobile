@@ -96,7 +96,11 @@ export default function RecipeDetailScreen() {
           {recipe.ingredients.map((ingredient, index) => (
             <View key={index} style={styles.listItem}>
               <View style={styles.bullet} />
-              <Text style={styles.listText}>{ingredient}</Text>
+              <Text style={styles.listText}>
+                {ingredient.quantity && `${ingredient.quantity} `}
+                {ingredient.unit && `${ingredient.unit} `}
+                {ingredient.name}
+              </Text>
             </View>
           ))}
         </View>
@@ -108,7 +112,7 @@ export default function RecipeDetailScreen() {
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>{index + 1}</Text>
               </View>
-              <Text style={styles.stepText}>{step}</Text>
+              <Text style={styles.stepText}>{step.instruction}</Text>
             </View>
           ))}
         </View>
