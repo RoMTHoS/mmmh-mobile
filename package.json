@@ -86,7 +86,8 @@
       "^expo-router$": "<rootDir>/__mocks__/expo-router.js",
       "^@react-native-async-storage/async-storage$": "<rootDir>/__mocks__/@react-native-async-storage/async-storage.js",
       "^react-native-toast-message$": "<rootDir>/__mocks__/react-native-toast-message.js",
-      "^expo-image-picker$": "<rootDir>/__mocks__/expo-image-picker.js"
+      "^expo-image-picker$": "<rootDir>/__mocks__/expo-image-picker.js",
+      "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js"
     },
     "moduleFileExtensions": [
       "ts",
