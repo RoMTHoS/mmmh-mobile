@@ -1,18 +1,37 @@
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Image,
+  StyleSheet,
+  Alert,
+  ImageSourcePropType,
+} from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
+import { useKeepAwake } from 'expo-keep-awake';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import { useRecipe, useDeleteRecipe } from '../../src/hooks';
 import { LoadingScreen, IconButton } from '../../src/components/ui';
+import { IngredientList, StepList } from '../../src/components/recipes';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const PLACEHOLDER_IMAGE: ImageSourcePropType = require('../../assets/placeholder-food.png');
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: recipe, isLoading, error } = useRecipe(id);
   const deleteRecipe = useDeleteRecipe();
 
+  // Keep screen awake while viewing recipe (for cooking)
+  useKeepAwake();
+
   const handleDelete = () => {
+    if (!recipe) return;
+
     Alert.alert(
       'Delete Recipe',
-      'Are you sure you want to delete this recipe? This action cannot be undone.',
+      `Are you sure you want to delete "${recipe.title}"? This cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -21,9 +40,17 @@ export default function RecipeDetailScreen() {
           onPress: async () => {
             try {
               await deleteRecipe.mutateAsync(id);
-              router.back();
+              Toast.show({
+                type: 'success',
+                text1: 'Recipe deleted',
+                visibilityTime: 2000,
+              });
+              router.replace('/');
             } catch {
-              Alert.alert('Error', 'Failed to delete recipe');
+              Toast.show({
+                type: 'error',
+                text1: 'Failed to delete recipe',
+              });
             }
           },
         },
@@ -32,7 +59,12 @@ export default function RecipeDetailScreen() {
   };
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Loading...' }} />
+        <LoadingScreen />
+      </>
+    );
   }
 
   if (error || !recipe) {
@@ -72,57 +104,55 @@ export default function RecipeDetailScreen() {
           ),
         }}
       />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
+      <ScrollView style={styles.container}>
+        {/* Hero Image */}
+        <Image
+          source={recipe.photoUri ? { uri: recipe.photoUri } : PLACEHOLDER_IMAGE}
+          style={styles.heroImage}
+          resizeMode="cover"
+          testID="recipe-hero-image"
+        />
+
+        <View style={styles.content}>
+          {/* Title */}
           <Text style={styles.title}>{recipe.title}</Text>
-          <View style={styles.meta}>
+
+          {/* Metadata Badges */}
+          <View style={styles.metadata}>
             {recipe.cookingTime && (
-              <View style={styles.metaItem}>
+              <View style={styles.metaBadge}>
                 <Ionicons name="time-outline" size={16} color="#6B7280" />
                 <Text style={styles.metaText}>{recipe.cookingTime} min</Text>
               </View>
             )}
             {recipe.servings && (
-              <View style={styles.metaItem}>
+              <View style={styles.metaBadge}>
                 <Ionicons name="people-outline" size={16} color="#6B7280" />
                 <Text style={styles.metaText}>{recipe.servings} servings</Text>
               </View>
             )}
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ingredients</Text>
-          {recipe.ingredients.map((ingredient, index) => (
-            <View key={index} style={styles.listItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.listText}>
-                {ingredient.quantity && `${ingredient.quantity} `}
-                {ingredient.unit && `${ingredient.unit} `}
-                {ingredient.name}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Instructions</Text>
-          {recipe.steps.map((step, index) => (
-            <View key={index} style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>{index + 1}</Text>
-              </View>
-              <Text style={styles.stepText}>{step.instruction}</Text>
-            </View>
-          ))}
-        </View>
-
-        {recipe.notes && (
+          {/* Ingredients Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notes</Text>
-            <Text style={styles.notes}>{recipe.notes}</Text>
+            <Text style={styles.sectionTitle}>Ingredients</Text>
+            <IngredientList ingredients={recipe.ingredients} />
           </View>
-        )}
+
+          {/* Instructions Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Instructions</Text>
+            <StepList steps={recipe.steps} />
+          </View>
+
+          {/* Notes Section */}
+          {recipe.notes && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Notes</Text>
+              <Text style={styles.notes}>{recipe.notes}</Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </>
   );
@@ -131,92 +161,52 @@ export default function RecipeDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  content: {
-    padding: 16,
+    backgroundColor: '#FFF',
   },
   headerActions: {
     flexDirection: 'row',
     gap: 8,
   },
-  header: {
-    marginBottom: 24,
+  heroImage: {
+    width: '100%',
+    height: 250,
+    backgroundColor: '#F3F4F6',
+  },
+  content: {
+    padding: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 12,
   },
-  meta: {
+  metadata: {
     flexDirection: 'row',
     gap: 16,
+    marginBottom: 24,
   },
-  metaItem: {
+  metaBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   metaText: {
     fontSize: 14,
     color: '#6B7280',
   },
   section: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#1F2937',
     marginBottom: 12,
-  },
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#D97706',
-    marginTop: 6,
-    marginRight: 12,
-  },
-  listText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#374151',
-    lineHeight: 22,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#FEF3C7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  stepNumberText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#D97706',
-  },
-  stepText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#374151',
-    lineHeight: 22,
   },
   notes: {
     fontSize: 15,

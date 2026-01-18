@@ -3,6 +3,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import { Stack, usePathname } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 import { ErrorBoundary } from '../src/components';
 import { useDatabase } from '../src/hooks';
 import { LoadingScreen } from '../src/components/ui';
@@ -90,6 +91,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <RootLayoutNav />
       </ErrorBoundary>
+      <Toast />
     </QueryClientProvider>
   );
 }
