@@ -1,12 +1,58 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
+import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useRecipes } from '../../src/hooks';
 import { LoadingScreen } from '../../src/components/ui';
-import { RecipeGrid, EmptyState } from '../../src/components/recipes';
+import { CollectionSection } from '../../src/components/collections';
+import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
-export default function CatalogScreen() {
-  const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
+export default function HomeScreen() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const { data: recipes, isLoading, error } = useRecipes();
+
+  // Group recipes into collections based on tags/categories
+  // For now, we'll create mock collections using recipe images
+  const collections = useMemo(() => {
+    if (!recipes || recipes.length === 0) return { recipeBooks: [], menus: [] };
+
+    const recipeImages = recipes.filter((r) => r.photoUri).map((r) => r.photoUri as string);
+
+    // Mock collections - in full implementation, these would come from DB
+    const recipeBooks = [
+      {
+        id: 'all',
+        name: 'Toute les recettes',
+        images: recipeImages.slice(0, 4),
+      },
+      {
+        id: 'favorites',
+        name: 'Favoris',
+        images: recipeImages.slice(0, 4),
+      },
+    ];
+
+    const menus = [
+      {
+        id: 'menu-1',
+        name: 'Menu semaine',
+        images: recipeImages.slice(0, 4),
+      },
+    ];
+
+    return { recipeBooks, menus };
+  }, [recipes]);
+
+  const handleCollectionPress = (id: string) => {
+    if (id === 'all') {
+      router.push('/(tabs)/search');
+    }
+    // TODO: Navigate to collection detail
+  };
+
+  const handleNewCollection = () => {
+    // TODO: Open create collection modal
+  };
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -15,38 +61,48 @@ export default function CatalogScreen() {
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
-        <Text style={styles.errorText}>Failed to load recipes</Text>
+        <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+        <Text style={styles.errorText}>Erreur de chargement</Text>
         <Text style={styles.errorSubtext}>{error.message}</Text>
-      </View>
-    );
-  }
-
-  if (!recipes || recipes.length === 0) {
-    return (
-      <View style={styles.container}>
-        <EmptyState />
-        <Pressable
-          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-          onPress={() => router.push('/recipe/create')}
-          testID="create-recipe-fab"
-        >
-          <Ionicons name="add" size={28} color="#FFF" />
-        </Pressable>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <RecipeGrid recipes={recipes} refreshing={isRefetching} onRefresh={refetch} />
-      <Pressable
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-        onPress={() => router.push('/recipe/create')}
-        testID="create-recipe-fab"
+      <View style={styles.searchContainer}>
+        <Ionicons name="search-outline" size={20} color={colors.textMuted} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Rechercher"
+          placeholderTextColor={colors.textMuted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          onFocus={() => router.push('/(tabs)/search')}
+        />
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <Ionicons name="add" size={28} color="#FFF" />
-      </Pressable>
+        <CollectionSection
+          title="Livre de recette"
+          collections={collections.recipeBooks}
+          onCollectionPress={handleCollectionPress}
+          onNewPress={handleNewCollection}
+          showNewButton
+        />
+
+        <CollectionSection
+          title="Regime & Menu"
+          collections={collections.menus}
+          onCollectionPress={handleCollectionPress}
+          onNewPress={handleNewCollection}
+          showNewButton
+        />
+      </ScrollView>
     </View>
   );
 }
@@ -54,44 +110,46 @@ export default function CatalogScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.background,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    margin: spacing.base,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    height: 44,
+  },
+  searchInput: {
+    flex: 1,
+    ...typography.body,
+    color: colors.text,
+    marginLeft: spacing.sm,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.base,
+    paddingTop: 0,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: spacing['2xl'],
+    backgroundColor: colors.background,
   },
   errorText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#EF4444',
-    marginTop: 16,
+    ...typography.h3,
+    color: colors.error,
+    marginTop: spacing.base,
   },
   errorSubtext: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 8,
+    ...typography.body,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
     textAlign: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#D97706',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  fabPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.95 }],
   },
 });

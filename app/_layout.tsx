@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, View } from 'react-native';
 import { Stack, usePathname } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,6 +7,7 @@ import Toast from 'react-native-toast-message';
 import { ErrorBoundary } from '../src/components';
 import { useDatabase } from '../src/hooks';
 import { LoadingScreen } from '../src/components/ui';
+import { colors } from '../src/theme';
 
 const NAVIGATION_PATH_KEY = 'NAVIGATION_PATH';
 
@@ -65,11 +66,12 @@ function RootLayoutNav() {
       <NavigationStatePersistence />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: '#FFF' },
-          headerTintColor: '#D97706',
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(modals)" options={{ headerShown: false }} />
         <Stack.Screen name="recipe/[id]" options={{ title: 'Recipe' }} />
         <Stack.Screen
           name="recipe/[id]/edit"
@@ -87,11 +89,13 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
-        <RootLayoutNav />
-      </ErrorBoundary>
-      <Toast />
-    </QueryClientProvider>
+    <View style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <RootLayoutNav />
+        </ErrorBoundary>
+        <Toast />
+      </QueryClientProvider>
+    </View>
   );
 }
