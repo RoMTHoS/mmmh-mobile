@@ -1,6 +1,7 @@
 import { View, Text, Image, Pressable, StyleSheet, ImageSourcePropType } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Recipe } from '../../types';
+import { colors, typography, spacing, borderRadius } from '../../theme';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PLACEHOLDER_IMAGE: ImageSourcePropType = require('../../../assets/placeholder-food.png');
@@ -29,7 +30,7 @@ export function RecipeCard({ recipe, onPress }: RecipeCardProps) {
         </Text>
         {recipe.cookingTime && (
           <View style={styles.badge}>
-            <Ionicons name="time-outline" size={12} color="#92400E" />
+            <Ionicons name="time-outline" size={12} color={colors.accent} />
             <Text style={styles.badgeText}>{recipe.cookingTime} min</Text>
           </View>
         )}
@@ -41,9 +42,9 @@ export function RecipeCard({ recipe, onPress }: RecipeCardProps) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    margin: 8,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
+    margin: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -58,31 +59,30 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     aspectRatio: 4 / 3,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.border,
   },
   content: {
-    padding: 12,
+    padding: spacing.md,
   },
   title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4,
+    ...typography.label,
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 4,
-    gap: 4,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    marginTop: spacing.xs,
+    gap: spacing.xs,
   },
   badgeText: {
-    fontSize: 12,
-    color: '#92400E',
+    ...typography.caption,
+    color: colors.accent,
     fontWeight: '500',
   },
 });

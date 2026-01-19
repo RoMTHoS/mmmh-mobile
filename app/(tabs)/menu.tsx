@@ -1,16 +1,17 @@
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-interface SettingsItemProps {
+interface MenuItemProps {
   icon: IconName;
   title: string;
   subtitle?: string;
   onPress?: () => void;
 }
 
-function SettingsItem({ icon, title, subtitle, onPress }: SettingsItemProps) {
+function MenuItem({ icon, title, subtitle, onPress }: MenuItemProps) {
   return (
     <Pressable
       style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
@@ -18,18 +19,18 @@ function SettingsItem({ icon, title, subtitle, onPress }: SettingsItemProps) {
       disabled={!onPress}
     >
       <View style={styles.itemIcon}>
-        <Ionicons name={icon} size={22} color="#D97706" />
+        <Ionicons name={icon} size={22} color={colors.accent} />
       </View>
       <View style={styles.itemContent}>
         <Text style={styles.itemTitle}>{title}</Text>
         {subtitle && <Text style={styles.itemSubtitle}>{subtitle}</Text>}
       </View>
-      {onPress && <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />}
+      {onPress && <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />}
     </Pressable>
   );
 }
 
-function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {
+function MenuSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -38,63 +39,63 @@ function SettingsSection({ title, children }: { title: string; children: React.R
   );
 }
 
-export default function SettingsScreen() {
+export default function MenuScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <SettingsSection title="General">
-        <SettingsItem
+      <MenuSection title="Général">
+        <MenuItem
           icon="notifications-outline"
           title="Notifications"
-          subtitle="Manage notification preferences"
+          subtitle="Gérer les préférences"
           onPress={() => {
-            // TODO: Story 4.7 - Implement notifications settings
+            // TODO: Implement notifications settings
           }}
         />
-        <SettingsItem
+        <MenuItem
           icon="color-palette-outline"
-          title="Appearance"
-          subtitle="Light mode"
+          title="Apparence"
+          subtitle="Mode clair"
           onPress={() => {
-            // TODO: Story 4.7 - Implement appearance settings
+            // TODO: Implement appearance settings
           }}
         />
-      </SettingsSection>
+      </MenuSection>
 
-      <SettingsSection title="Data">
-        <SettingsItem
+      <MenuSection title="Données">
+        <MenuItem
           icon="cloud-upload-outline"
-          title="Backup & Sync"
-          subtitle="Backup your recipes"
+          title="Sauvegarde & Sync"
+          subtitle="Sauvegarder vos recettes"
           onPress={() => {
             // TODO: V1.0+ - Implement backup
           }}
         />
-        <SettingsItem
+        <MenuItem
           icon="trash-outline"
-          title="Clear Cache"
+          title="Vider le cache"
           onPress={() => {
-            // TODO: Story 4.7 - Implement cache clearing
+            // TODO: Implement cache clearing
           }}
         />
-      </SettingsSection>
+      </MenuSection>
 
-      <SettingsSection title="About">
-        <SettingsItem icon="information-circle-outline" title="Version" subtitle="1.0.0" />
-        <SettingsItem
+      <MenuSection title="À propos">
+        <MenuItem icon="information-circle-outline" title="Version" subtitle="1.0.0" />
+        <MenuItem
           icon="document-text-outline"
-          title="Privacy Policy"
+          title="Politique de confidentialité"
           onPress={() => {
             // TODO: Open privacy policy
           }}
         />
-        <SettingsItem
+        <MenuItem
           icon="help-circle-outline"
-          title="Help & Support"
+          title="Aide & Support"
           onPress={() => {
             // TODO: Open help
           }}
         />
-      </SettingsSection>
+      </MenuSection>
     </ScrollView>
   );
 }
@@ -102,56 +103,56 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
+    padding: spacing.base,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 13,
+    ...typography.caption,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textMuted,
     textTransform: 'uppercase',
-    marginBottom: 8,
-    marginLeft: 4,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
   },
   sectionContent: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
     overflow: 'hidden',
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.borderLight,
   },
   itemPressed: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.background,
   },
   itemIcon: {
     width: 36,
     height: 36,
-    borderRadius: 8,
-    backgroundColor: '#FEF3C7',
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   itemContent: {
     flex: 1,
   },
   itemTitle: {
-    fontSize: 16,
-    color: '#1F2937',
+    ...typography.body,
+    color: colors.text,
   },
   itemSubtitle: {
-    fontSize: 13,
-    color: '#6B7280',
+    ...typography.caption,
+    color: colors.textMuted,
     marginTop: 2,
   },
 });

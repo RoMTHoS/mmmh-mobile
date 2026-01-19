@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../ui';
+import { colors, typography, spacing } from '../../theme';
 
 export function EmptyState() {
   const handleCreatePress = () => {
@@ -10,10 +11,10 @@ export function EmptyState() {
 
   return (
     <View style={styles.container} testID="empty-state">
-      <Ionicons name="book-outline" size={64} color="#D1D5DB" />
-      <Text style={styles.title}>No recipes yet</Text>
-      <Text style={styles.subtitle}>Tap + to create your first recipe</Text>
-      <Button title="Create Recipe" onPress={handleCreatePress} style={styles.button} />
+      <Ionicons name="book-outline" size={64} color={colors.textLight} />
+      <Text style={styles.title}>Aucune recette</Text>
+      <Text style={styles.subtitle}>Appuyez sur + pour créer votre première recette</Text>
+      <Button title="Créer une recette" onPress={handleCreatePress} style={styles.button} />
     </View>
   );
 }
@@ -23,20 +24,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: spacing['2xl'],
+    backgroundColor: colors.background,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginTop: 16,
-    marginBottom: 8,
+    ...typography.h2,
+    color: colors.text,
+    marginTop: spacing.base,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
+    ...typography.body,
+    color: colors.textMuted,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   button: {
     minWidth: 160,

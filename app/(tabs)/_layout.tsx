@@ -1,47 +1,80 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
+import { Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../../src/theme';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#D97706',
-        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarActiveTintColor: colors.tabBarActive,
+        tabBarInactiveTintColor: colors.tabBarInactive,
         tabBarStyle: {
-          backgroundColor: '#FFF',
-          borderTopColor: '#E5E7EB',
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
         },
-        headerStyle: { backgroundColor: '#FFF' },
-        headerTintColor: '#D97706',
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.text,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Recipes',
+          title: 'Accueil',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
+            <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="import"
+        name="search"
         options={{
-          title: 'Import',
+          title: 'Rechercher',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add-circle-outline" size={size} color={color} />
+            <Ionicons name="search-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="add-placeholder"
         options={{
-          title: 'Settings',
+          title: '',
+          tabBarButton: () => (
+            <Pressable onPress={() => router.push('/(modals)/import')} style={styles.addButton}>
+              <Ionicons name="add-circle" size={48} color={colors.accent} />
+            </Pressable>
+          ),
+        }}
+        listeners={{ tabPress: (e) => e.preventDefault() }}
+      />
+      <Tabs.Screen
+        name="shopping"
+        options={{
+          title: 'Courses',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
+            <Ionicons name="cart-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="menu"
+        options={{
+          title: 'Menu',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="menu-outline" size={size} color={color} />
           ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  addButton: {
+    top: -10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 60,
+    height: 60,
+  },
+});
