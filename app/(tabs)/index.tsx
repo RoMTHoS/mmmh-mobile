@@ -1,11 +1,10 @@
-import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useRecipes } from '../../src/hooks';
-import { LoadingScreen } from '../../src/components/ui';
+import { LoadingScreen, SearchBar, Icon } from '../../src/components/ui';
 import { CollectionSection } from '../../src/components/collections';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { colors, typography, spacing } from '../../src/theme';
 
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,7 +21,7 @@ export default function HomeScreen() {
     const recipeBooks = [
       {
         id: 'all',
-        name: 'Toute les recettes',
+        name: 'Toutes les recettes',
         images: recipeImages.slice(0, 4),
       },
       {
@@ -61,7 +60,7 @@ export default function HomeScreen() {
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+        <Icon name="calories" size="lg" color={colors.error} />
         <Text style={styles.errorText}>Erreur de chargement</Text>
         <Text style={styles.errorSubtext}>{error.message}</Text>
       </View>
@@ -70,17 +69,13 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={20} color={colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Rechercher"
-          placeholderTextColor={colors.textMuted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onFocus={() => router.push('/(tabs)/search')}
-        />
-      </View>
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder="Rechercher"
+        onFocus={() => router.push('/(tabs)/search')}
+        style={styles.searchBar}
+      />
 
       <ScrollView
         style={styles.scrollView}
@@ -112,39 +107,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    margin: spacing.base,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.full,
-    height: 44,
-  },
-  searchInput: {
-    flex: 1,
-    ...typography.body,
-    color: colors.text,
-    marginLeft: spacing.sm,
+  searchBar: {
+    margin: spacing.md,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: spacing.base,
-    paddingTop: 0,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing['2xl'],
+    padding: spacing.xl,
     backgroundColor: colors.background,
   },
   errorText: {
-    ...typography.h3,
+    ...typography.titleScript,
     color: colors.error,
-    marginTop: spacing.base,
+    marginTop: spacing.md,
   },
   errorSubtext: {
     ...typography.body,

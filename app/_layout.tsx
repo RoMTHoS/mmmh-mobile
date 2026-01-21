@@ -4,10 +4,16 @@ import { Stack, usePathname } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../src/components';
 import { useDatabase } from '../src/hooks';
 import { LoadingScreen } from '../src/components/ui';
 import { colors } from '../src/theme';
+
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Ignore errors - splash screen may already be hidden
+});
 
 const NAVIGATION_PATH_KEY = 'NAVIGATION_PATH';
 
@@ -55,9 +61,37 @@ function NavigationStatePersistence() {
 }
 
 function RootLayoutNav() {
-  const { isReady: isDbReady } = useDatabase();
+  const { isReady: isDbReady, error: dbError } = useDatabase();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const [fontsLoaded, fontError] = useFonts({
+    Pacifico: require('../assets/fonts/Pacifico-Regular.ttf'),
+  });
 
-  if (!isDbReady) {
+  useEffect(() => {
+    if (fontError) {
+      console.error('Font loading error:', fontError);
+    }
+    if (dbError) {
+      console.error('Database error:', dbError);
+    }
+  }, [fontError, dbError]);
+
+  useEffect(() => {
+    async function hideSplash() {
+      // Hide splash when ready OR when there's an error (to show error state)
+      const fontsReady = fontsLoaded || fontError;
+      const dbReady = isDbReady || dbError;
+      if (fontsReady && dbReady) {
+        await SplashScreen.hideAsync();
+      }
+    }
+    hideSplash();
+  }, [fontsLoaded, fontError, isDbReady, dbError]);
+
+  // Still loading - only if no errors
+  const fontsReady = fontsLoaded || fontError;
+  const dbReady = isDbReady || dbError;
+  if (!fontsReady || !dbReady) {
     return <LoadingScreen />;
   }
 

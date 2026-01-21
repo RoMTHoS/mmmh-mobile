@@ -4,16 +4,15 @@ import {
   ScrollView,
   Image,
   StyleSheet,
-  Alert,
   ImageSourcePropType,
+  Pressable,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
-import { useRecipe, useDeleteRecipe } from '../../src/hooks';
-import { LoadingScreen, IconButton } from '../../src/components/ui';
+import { useRecipe } from '../../src/hooks';
+import { LoadingScreen, IconButton, Badge, Icon } from '../../src/components/ui';
 import { IngredientList, StepList } from '../../src/components/recipes';
+import { colors, typography, spacing, fonts } from '../../src/theme';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PLACEHOLDER_IMAGE: ImageSourcePropType = require('../../assets/placeholder-food.png');
@@ -21,42 +20,9 @@ const PLACEHOLDER_IMAGE: ImageSourcePropType = require('../../assets/placeholder
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: recipe, isLoading, error } = useRecipe(id);
-  const deleteRecipe = useDeleteRecipe();
 
   // Keep screen awake while viewing recipe (for cooking)
   useKeepAwake();
-
-  const handleDelete = () => {
-    if (!recipe) return;
-
-    Alert.alert(
-      'Delete Recipe',
-      `Are you sure you want to delete "${recipe.title}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteRecipe.mutateAsync(id);
-              Toast.show({
-                type: 'success',
-                text1: 'Recipe deleted',
-                visibilityTime: 2000,
-              });
-              router.replace('/');
-            } catch {
-              Toast.show({
-                type: 'error',
-                text1: 'Failed to delete recipe',
-              });
-            }
-          },
-        },
-      ]
-    );
-  };
 
   if (isLoading) {
     return (
@@ -70,13 +36,11 @@ export default function RecipeDetailScreen() {
   if (error || !recipe) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Recipe Not Found' }} />
+        <Stack.Screen options={{ title: 'Recette introuvable' }} />
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
-          <Text style={styles.errorTitle}>Recipe not found</Text>
-          <Text style={styles.errorSubtitle}>
-            This recipe may have been deleted or doesn't exist.
-          </Text>
+          <Icon name="calories" size="lg" color={colors.error} />
+          <Text style={styles.errorTitle}>Recette introuvable</Text>
+          <Text style={styles.errorSubtitle}>Cette recette a peut-être été supprimée.</Text>
         </View>
       </>
     );
@@ -86,25 +50,20 @@ export default function RecipeDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          title: recipe.title,
+          title: '',
+          headerBackTitle: 'Retour',
           headerRight: () => (
             <View style={styles.headerActions}>
               <IconButton
                 icon="pencil"
                 onPress={() => router.push(`/recipe/${id}/edit`)}
-                accessibilityLabel="Edit recipe"
-              />
-              <IconButton
-                icon="trash-outline"
-                onPress={handleDelete}
-                color="#EF4444"
-                accessibilityLabel="Delete recipe"
+                accessibilityLabel="Modifier la recette"
               />
             </View>
           ),
         }}
       />
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Hero Image */}
         <Image
           source={recipe.photoUri ? { uri: recipe.photoUri } : PLACEHOLDER_IMAGE}
@@ -119,23 +78,13 @@ export default function RecipeDetailScreen() {
 
           {/* Metadata Badges */}
           <View style={styles.metadata}>
-            {recipe.cookingTime && (
-              <View style={styles.metaBadge}>
-                <Ionicons name="time-outline" size={16} color="#6B7280" />
-                <Text style={styles.metaText}>{recipe.cookingTime} min</Text>
-              </View>
-            )}
-            {recipe.servings && (
-              <View style={styles.metaBadge}>
-                <Ionicons name="people-outline" size={16} color="#6B7280" />
-                <Text style={styles.metaText}>{recipe.servings} servings</Text>
-              </View>
-            )}
+            {recipe.cookingTime && <Badge icon="time" value={`${recipe.cookingTime} min`} />}
+            {recipe.servings && <Badge icon="servings" value={`${recipe.servings} portions`} />}
           </View>
 
           {/* Ingredients Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ingredients</Text>
+            <Text style={styles.sectionTitle}>Ingrédients</Text>
             <IngredientList ingredients={recipe.ingredients} />
           </View>
 
@@ -154,6 +103,34 @@ export default function RecipeDetailScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Bottom Action Bar */}
+      <View style={styles.actionBar}>
+        <Pressable
+          style={styles.actionButton}
+          onPress={() => {}}
+          accessibilityLabel="Enregistrer la recette"
+        >
+          <Icon name="bookmark" size="md" color={colors.text} />
+          <Text style={styles.actionText}>Enregistrer</Text>
+        </Pressable>
+        <Pressable
+          style={styles.actionButton}
+          onPress={() => {}}
+          accessibilityLabel="Ajouter aux courses"
+        >
+          <Icon name="cart" size="md" color={colors.text} />
+          <Text style={styles.actionText}>Courses</Text>
+        </Pressable>
+        <Pressable
+          style={styles.actionButton}
+          onPress={() => {}}
+          accessibilityLabel="Partager la recette"
+        >
+          <Icon name="share" size="md" color={colors.text} />
+          <Text style={styles.actionText}>Partager</Text>
+        </Pressable>
+      </View>
     </>
   );
 }
@@ -161,76 +138,82 @@ export default function RecipeDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.background,
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
   heroImage: {
     width: '100%',
-    height: 250,
-    backgroundColor: '#F3F4F6',
+    height: 280,
+    backgroundColor: colors.surfaceAlt,
   },
   content: {
-    padding: 20,
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 12,
+    ...typography.headerScript,
+    color: colors.text,
+    marginBottom: spacing.md,
   },
   metadata: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 24,
-  },
-  metaBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  metaText: {
-    fontSize: 14,
-    color: '#6B7280',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
+    ...typography.titleScript,
+    color: colors.text,
+    marginBottom: spacing.md,
   },
   notes: {
-    fontSize: 15,
-    color: '#6B7280',
-    lineHeight: 22,
+    ...typography.body,
+    color: colors.textMuted,
     fontStyle: 'italic',
+  },
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  actionButton: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    minWidth: 80,
+    paddingVertical: spacing.sm,
+  },
+  actionText: {
+    fontFamily: fonts.script,
+    fontSize: 14,
+    color: colors.text,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
-    backgroundColor: '#F9FAFB',
+    padding: spacing.xl,
+    backgroundColor: colors.background,
   },
   errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginTop: 16,
+    ...typography.titleScript,
+    color: colors.text,
+    marginTop: spacing.md,
   },
   errorSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 8,
+    ...typography.body,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
     textAlign: 'center',
   },
 });

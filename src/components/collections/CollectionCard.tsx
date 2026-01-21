@@ -1,6 +1,6 @@
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing, radius } from '../../theme';
+import { Icon } from '../ui';
 
 interface CollectionCardProps {
   id: string;
@@ -17,6 +17,8 @@ export function CollectionCard({ id, name, images, onPress }: CollectionCardProp
     <Pressable
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
       onPress={() => onPress(id)}
+      accessibilityRole="button"
+      accessibilityLabel={`Collection ${name}`}
     >
       <View style={styles.imageGrid}>
         {displayImages.map((uri, index) => (
@@ -24,7 +26,7 @@ export function CollectionCard({ id, name, images, onPress }: CollectionCardProp
         ))}
         {Array.from({ length: emptySlots }).map((_, index) => (
           <View key={`empty-${index}`} style={[styles.image, styles.emptySlot]}>
-            <Ionicons name="image-outline" size={20} color={colors.textLight} />
+            <Icon name="camera" size="sm" color={colors.textLight} />
           </View>
         ))}
       </View>
@@ -44,9 +46,11 @@ export function NewCollectionCard({ onPress }: NewCollectionCardProps) {
     <Pressable
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Créer une nouvelle collection"
     >
       <View style={[styles.imageGrid, styles.newCard]}>
-        <Ionicons name="add" size={32} color={colors.textMuted} />
+        <Icon name="plus" size="lg" color={colors.textMuted} />
       </View>
       <Text style={styles.name}>Nouveau</Text>
     </Pressable>
@@ -56,16 +60,17 @@ export function NewCollectionCard({ onPress }: NewCollectionCardProps) {
 const styles = StyleSheet.create({
   container: {
     width: '48%',
-    marginBottom: spacing.base,
+    marginBottom: spacing.md,
   },
   pressed: {
-    opacity: 0.8,
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
   imageGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     aspectRatio: 1,
-    borderRadius: borderRadius.lg,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.surface,
   },
@@ -74,7 +79,7 @@ const styles = StyleSheet.create({
     height: '50%',
   },
   emptySlot: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -86,7 +91,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   name: {
-    ...typography.label,
+    ...typography.sectionTitle,
     color: colors.text,
     marginTop: spacing.sm,
   },

@@ -35,7 +35,7 @@ describe('ImportModal', () => {
 
   describe('Theme Integration', () => {
     it('uses modal background color', () => {
-      expect(colors.modalBackground).toBe('#F5F0E1');
+      expect(colors.modalBackground).toBe('#FFEEBC');
     });
 
     it('uses overlay color for backdrop', () => {
@@ -43,7 +43,7 @@ describe('ImportModal', () => {
     });
 
     it('uses accent color for text', () => {
-      expect(colors.accent).toBe('#1E2A4A');
+      expect(colors.accent).toBe('#233662');
     });
   });
 

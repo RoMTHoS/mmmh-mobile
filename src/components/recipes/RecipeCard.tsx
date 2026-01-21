@@ -1,7 +1,7 @@
 import { View, Text, Image, Pressable, StyleSheet, ImageSourcePropType } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import type { Recipe } from '../../types';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing, radius } from '../../theme';
+import { Badge } from '../ui';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PLACEHOLDER_IMAGE: ImageSourcePropType = require('../../../assets/placeholder-food.png');
@@ -17,6 +17,8 @@ export function RecipeCard({ recipe, onPress }: RecipeCardProps) {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={onPress}
       testID="recipe-card"
+      accessibilityRole="button"
+      accessibilityLabel={recipe.title}
     >
       <Image
         source={recipe.photoUri ? { uri: recipe.photoUri } : PLACEHOLDER_IMAGE}
@@ -29,10 +31,7 @@ export function RecipeCard({ recipe, onPress }: RecipeCardProps) {
           {recipe.title}
         </Text>
         {recipe.cookingTime && (
-          <View style={styles.badge}>
-            <Ionicons name="time-outline" size={12} color={colors.accent} />
-            <Text style={styles.badgeText}>{recipe.cookingTime} min</Text>
-          </View>
+          <Badge icon="time" value={`${recipe.cookingTime} min`} style={styles.badge} />
         )}
       </View>
     </Pressable>
@@ -44,12 +43,12 @@ const styles = StyleSheet.create({
     flex: 1,
     margin: spacing.sm,
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     elevation: 3,
   },
   cardPressed: {
@@ -59,30 +58,18 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     aspectRatio: 4 / 3,
-    backgroundColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
   },
   content: {
     padding: spacing.md,
   },
   title: {
-    ...typography.label,
+    ...typography.sectionTitle,
     color: colors.text,
     marginBottom: spacing.xs,
   },
   badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
     marginTop: spacing.xs,
-    gap: spacing.xs,
-  },
-  badgeText: {
-    ...typography.caption,
-    color: colors.accent,
-    fontWeight: '500',
   },
 });

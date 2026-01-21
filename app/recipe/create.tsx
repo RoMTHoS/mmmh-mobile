@@ -7,9 +7,10 @@ import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 
 import { useCreateRecipe } from '../../src/hooks';
-import { TextInput, Button, Text } from '../../src/components/ui';
+import { TextInput, Button, Text, Icon, Card } from '../../src/components/ui';
 import { createRecipeSchema, type CreateRecipeFormData } from '../../src/schemas/recipe.schema';
 import type { Ingredient, Step } from '../../src/types';
+import { colors, spacing, radius, fonts } from '../../src/theme';
 
 export default function CreateRecipeScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -47,7 +48,10 @@ export default function CreateRecipeScreen() {
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Camera permission is required to take photos');
+      Alert.alert(
+        'Permission requise',
+        "L'accès à la caméra est nécessaire pour prendre des photos"
+      );
       return;
     }
 
@@ -63,10 +67,10 @@ export default function CreateRecipeScreen() {
   };
 
   const showPhotoOptions = () => {
-    Alert.alert('Add Photo', 'Choose an option', [
-      { text: 'Take Photo', onPress: takePhoto },
-      { text: 'Choose from Gallery', onPress: pickImage },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert('Ajouter une photo', 'Choisir une option', [
+      { text: 'Prendre une photo', onPress: takePhoto },
+      { text: 'Choisir dans la galerie', onPress: pickImage },
+      { text: 'Annuler', style: 'cancel' },
     ]);
   };
 
@@ -105,8 +109,8 @@ export default function CreateRecipeScreen() {
 
       Toast.show({
         type: 'success',
-        text1: 'Recipe saved!',
-        text2: 'Your recipe has been created successfully',
+        text1: 'Recette enregistrée',
+        text2: 'Votre recette a été créée avec succès',
         visibilityTime: 2000,
       });
 
@@ -114,8 +118,8 @@ export default function CreateRecipeScreen() {
     } catch {
       Toast.show({
         type: 'error',
-        text1: 'Failed to save recipe',
-        text2: 'Please try again',
+        text1: 'Erreur de sauvegarde',
+        text2: 'Veuillez réessayer',
       });
     }
   };
@@ -123,11 +127,11 @@ export default function CreateRecipeScreen() {
   const handleCancel = () => {
     if (isDirty || photoUri) {
       Alert.alert(
-        'Discard changes?',
-        'You have unsaved changes. Are you sure you want to discard them?',
+        'Abandonner les modifications ?',
+        'Vous avez des modifications non enregistrées. Voulez-vous vraiment les abandonner ?',
         [
-          { text: 'Keep Editing', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+          { text: 'Continuer', style: 'cancel' },
+          { text: 'Abandonner', style: 'destructive', onPress: () => router.back() },
         ]
       );
     } else {
@@ -139,19 +143,26 @@ export default function CreateRecipeScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'New Recipe',
+          title: '',
+          headerStyle: { backgroundColor: colors.background },
+          headerShadowVisible: false,
           headerLeft: () => (
             <Pressable onPress={handleCancel} hitSlop={8}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.headerButton}>Annuler</Text>
             </Pressable>
           ),
           headerRight: () => (
-            <Button
-              title="Save"
+            <Pressable
               onPress={handleSubmit(onSubmit)}
-              loading={createRecipe.isPending}
-              style={styles.saveButton}
-            />
+              disabled={createRecipe.isPending}
+              hitSlop={8}
+            >
+              <Text
+                style={[styles.headerButton, createRecipe.isPending && styles.headerButtonDisabled]}
+              >
+                Valider
+              </Text>
+            </Pressable>
           ),
         }}
       />
@@ -159,136 +170,154 @@ export default function CreateRecipeScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {/* Title */}
-        <Controller
-          control={control}
-          name="title"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              label="Title"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Recipe name"
-              error={errors.title?.message}
-              autoFocus
-            />
-          )}
-        />
+        <Card style={styles.formCard}>
+          {/* Title */}
+          <Controller
+            control={control}
+            name="title"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                label="Titre"
+                useScriptLabel
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="Nom de la recette"
+                error={errors.title?.message}
+                autoFocus
+              />
+            )}
+          />
 
-        {/* Photo */}
-        <View style={styles.photoSection}>
-          <Text style={styles.label}>Photo</Text>
-          {photoUri ? (
-            <View>
-              <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-              <View style={styles.photoActions}>
-                <Button
-                  title="Replace"
-                  onPress={showPhotoOptions}
-                  variant="secondary"
-                  style={styles.photoButton}
-                />
-                <Button
-                  title="Remove"
-                  onPress={() => setPhotoUri(null)}
-                  variant="destructive"
-                  style={styles.photoButton}
-                />
+          {/* Photo */}
+          <View style={styles.photoSection}>
+            <Text style={styles.sectionLabel}>Image</Text>
+            {photoUri ? (
+              <View>
+                <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+                <View style={styles.photoActions}>
+                  <Button
+                    title="Remplacer"
+                    onPress={showPhotoOptions}
+                    variant="secondary"
+                    size="sm"
+                    style={styles.photoButton}
+                  />
+                  <Button
+                    title="Supprimer"
+                    onPress={() => setPhotoUri(null)}
+                    variant="destructive"
+                    size="sm"
+                    style={styles.photoButton}
+                  />
+                </View>
               </View>
+            ) : (
+              <Pressable style={styles.addPhotoButton} onPress={showPhotoOptions}>
+                <Icon name="camera" size="lg" color={colors.textMuted} />
+                <Text style={styles.addPhotoText}>Ajouter une photo</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Cooking Time & Servings */}
+          <View style={styles.row}>
+            <View style={styles.halfInput}>
+              <Controller
+                control={control}
+                name="cookingTime"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    label="Temps (min)"
+                    useScriptLabel
+                    value={value?.toString() || ''}
+                    onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
+                    placeholder="30"
+                    keyboardType="numeric"
+                  />
+                )}
+              />
             </View>
-          ) : (
-            <Pressable style={styles.addPhotoButton} onPress={showPhotoOptions}>
-              <Text style={styles.addPhotoText}>+ Add Photo</Text>
-            </Pressable>
-          )}
-        </View>
+            <View style={styles.halfInput}>
+              <Controller
+                control={control}
+                name="servings"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    label="Portions"
+                    useScriptLabel
+                    value={value?.toString() || ''}
+                    onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
+                    placeholder="4"
+                    keyboardType="numeric"
+                  />
+                )}
+              />
+            </View>
+          </View>
+        </Card>
 
         {/* Ingredients */}
-        <Controller
-          control={control}
-          name="ingredientsText"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              label="Ingredients"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Enter each ingredient on a new line"
-              multiline
-              style={styles.multiline}
-            />
-          )}
-        />
+        <Card style={styles.formCard}>
+          <Controller
+            control={control}
+            name="ingredientsText"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                label="Ingrédients"
+                useScriptLabel
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="Un ingrédient par ligne"
+                multiline
+                style={styles.multiline}
+              />
+            )}
+          />
+        </Card>
 
         {/* Steps */}
-        <Controller
-          control={control}
-          name="stepsText"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              label="Steps"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Enter each step on a new line"
-              multiline
-              style={styles.multiline}
-            />
-          )}
-        />
-
-        {/* Cooking Time & Servings */}
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
-            <Controller
-              control={control}
-              name="cookingTime"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  label="Time (min)"
-                  value={value?.toString() || ''}
-                  onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
-                  placeholder="30"
-                  keyboardType="numeric"
-                />
-              )}
-            />
-          </View>
-          <View style={styles.halfInput}>
-            <Controller
-              control={control}
-              name="servings"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  label="Servings"
-                  value={value?.toString() || ''}
-                  onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
-                  placeholder="4"
-                  keyboardType="numeric"
-                />
-              )}
-            />
-          </View>
-        </View>
+        <Card style={styles.formCard}>
+          <Controller
+            control={control}
+            name="stepsText"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                label="Instructions"
+                useScriptLabel
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="Une étape par ligne"
+                multiline
+                style={styles.multiline}
+              />
+            )}
+          />
+        </Card>
 
         {/* Notes */}
-        <Controller
-          control={control}
-          name="notes"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              label="Notes"
-              value={value || ''}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Any additional notes..."
-              multiline
-              style={styles.notesInput}
-            />
-          )}
-        />
+        <Card style={styles.formCard}>
+          <Controller
+            control={control}
+            name="notes"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                label="Notes"
+                useScriptLabel
+                value={value || ''}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="Astuces et conseils..."
+                multiline
+                style={styles.notesInput}
+              />
+            )}
+          />
+        </Card>
 
         {/* Bottom padding for scroll */}
         <View style={styles.bottomPadding} />
@@ -300,57 +329,61 @@ export default function CreateRecipeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
-    gap: 16,
+    padding: spacing.md,
+    gap: spacing.md,
   },
-  cancelText: {
-    color: '#D97706',
+  headerButton: {
+    fontFamily: fonts.script,
+    fontSize: 18,
+    color: colors.text,
+  },
+  headerButtonDisabled: {
+    opacity: 0.5,
+  },
+  formCard: {
+    padding: spacing.md,
+  },
+  sectionLabel: {
+    fontFamily: fonts.script,
     fontSize: 16,
-  },
-  saveButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    minHeight: 36,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 4,
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
   photoSection: {
-    marginBottom: 0,
+    marginTop: spacing.md,
   },
   photoPreview: {
     width: '100%',
-    height: 200,
-    borderRadius: 8,
-    backgroundColor: '#E5E7EB',
+    height: 180,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
   },
   photoActions: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   photoButton: {
     flex: 1,
   },
   addPhotoButton: {
     height: 120,
-    borderRadius: 8,
+    borderRadius: radius.md,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.surface,
+    gap: spacing.sm,
   },
   addPhotoText: {
-    color: '#6B7280',
+    fontFamily: fonts.script,
     fontSize: 16,
+    color: colors.textMuted,
   },
   multiline: {
     minHeight: 120,
@@ -360,12 +393,13 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    gap: 16,
+    gap: spacing.md,
+    marginTop: spacing.md,
   },
   halfInput: {
     flex: 1,
   },
   bottomPadding: {
-    height: 40,
+    height: spacing.xl,
   },
 });
