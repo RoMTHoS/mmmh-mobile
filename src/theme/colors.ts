@@ -3,30 +3,38 @@
  * Based on design mockups - cream/navy theme
  */
 export const colors = {
-  // Primary palette
-  background: '#F5F0E1', // Cream
-  surface: '#FFFFFF', // White cards
-  text: '#1E2A4A', // Navy
-  accent: '#1E2A4A', // Navy (buttons, icons, active states)
+  // Backgrounds
+  background: '#fff3d0ff', // Cream - main app background
+  surface: '#F4F4F4', // Light gray - cards, inputs
+  surfaceAlt: '#FFFFFF', // White - badges, secondary surfaces
 
-  // Secondary
-  textMuted: '#6B7280', // Gray for secondary text
-  textLight: '#9CA3AF', // Light gray for placeholders
-  border: '#E5E0D5', // Subtle borders on cream
-  borderLight: '#E5E7EB', // Light gray borders on white
+  // Text
+  text: '#233662', // Navy - primary text
+  textMuted: '#6B7280', // Gray - secondary text
+  textLight: '#9CA3AF', // Light gray - placeholders
+
+  // Interactive
+  accent: '#233662', // Navy - buttons, active states
+  accentLight: '#212842', // Darker navy - hover/pressed states
+
+  // Borders
+  border: '#233662', // Navy border
+  borderMedium: '#233662', // Navy borders for modals
+  borderLight: '#233662', // Navy subtle border
 
   // Tab bar
-  tabBarActive: '#1E2A4A', // Navy
+  tabBarActive: '#233662', // Navy
   tabBarInactive: '#9CA3AF', // Gray
 
   // Semantic colors
   success: '#22C55E',
   warning: '#F59E0B',
   error: '#EF4444',
+  info: '#3B82F6',
 
   // Overlay
   overlay: 'rgba(0, 0, 0, 0.5)',
-  modalBackground: '#F5F0E1',
+  modalBackground: '#FFF2CC',
 } as const;
 
 export type ColorKey = keyof typeof colors;

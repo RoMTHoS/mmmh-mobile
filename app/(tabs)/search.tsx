@@ -1,25 +1,16 @@
-import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  Image,
-  Pressable,
-  StyleSheet,
-  Dimensions,
-} from 'react-native';
+import { View, Text, FlatList, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
-import { LoadingScreen } from '../../src/components/ui';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { LoadingScreen, SearchBar, Icon } from '../../src/components/ui';
+import { colors, typography, spacing, radius } from '../../src/theme';
 import type { Recipe } from '../../src/types';
 
 const NUM_COLUMNS = 3;
 const GRID_GAP = spacing.sm;
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const ITEM_WIDTH = (SCREEN_WIDTH - spacing.base * 2 - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
+const ITEM_WIDTH = (SCREEN_WIDTH - spacing.md * 2 - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 
 interface RecipeGridItemProps {
   recipe: Recipe;
@@ -34,6 +25,8 @@ function RecipeGridItem({ recipe, onPress }: RecipeGridItemProps) {
     <Pressable
       style={({ pressed }) => [styles.gridItem, pressed && styles.gridItemPressed]}
       onPress={() => onPress(recipe)}
+      accessibilityRole="button"
+      accessibilityLabel={recipe.title}
     >
       {recipe.photoUri ? (
         <Image
@@ -43,14 +36,18 @@ function RecipeGridItem({ recipe, onPress }: RecipeGridItemProps) {
         />
       ) : (
         <View style={[styles.gridImage, styles.gridImagePlaceholder, { aspectRatio }]}>
-          <Ionicons name="image-outline" size={24} color={colors.textLight} />
+          <Icon name="camera" size="lg" color={colors.textLight} />
         </View>
       )}
+      <Text style={styles.gridItemTitle} numberOfLines={1}>
+        {recipe.title}
+      </Text>
     </Pressable>
   );
 }
 
 export default function SearchScreen() {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
 
@@ -67,16 +64,7 @@ export default function SearchScreen() {
   }, [recipes, searchQuery]);
 
   const handleRecipePress = (recipe: Recipe) => {
-    router.push({
-      pathname: '/(modals)/quick-preview',
-      params: {
-        id: recipe.id,
-        title: recipe.title,
-        imageUri: recipe.photoUri || '',
-        prepTime: recipe.cookingTime?.toString() || '',
-        difficulty: '',
-      },
-    });
+    router.push(`/recipe/${recipe.id}`);
   };
 
   if (isLoading) {
@@ -86,34 +74,25 @@ export default function SearchScreen() {
   if (error) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+        <Icon name="calories" size="lg" color={colors.error} />
         <Text style={styles.errorText}>Erreur de chargement</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={20} color={colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Rechercher"
-          placeholderTextColor={colors.textMuted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoFocus={false}
-        />
-        {searchQuery.length > 0 && (
-          <Pressable onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-          </Pressable>
-        )}
-      </View>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Text style={styles.pageTitle}>Toutes les recettes</Text>
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder="Rechercher"
+        style={styles.searchBar}
+      />
 
       {filteredRecipes.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="search-outline" size={48} color={colors.textMuted} />
+          <Icon name="search" size="lg" color={colors.textMuted} />
           <Text style={styles.emptyText}>
             {searchQuery ? 'Aucune recette trouvée' : 'Aucune recette'}
           </Text>
@@ -145,24 +124,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    margin: spacing.base,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.full,
-    height: 44,
-  },
-  searchInput: {
-    flex: 1,
-    ...typography.body,
+  pageTitle: {
+    ...typography.headerScript,
     color: colors.text,
-    marginLeft: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+  },
+  searchBar: {
+    margin: spacing.md,
   },
   gridContent: {
-    padding: spacing.base,
-    paddingTop: 0,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
   },
   gridRow: {
     gap: GRID_GAP,
@@ -170,31 +143,36 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     width: ITEM_WIDTH,
-    borderRadius: borderRadius.md,
-    overflow: 'hidden',
   },
   gridItemPressed: {
-    opacity: 0.8,
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
   gridImage: {
     width: '100%',
-    borderRadius: borderRadius.md,
+    borderRadius: radius.md,
   },
   gridImagePlaceholder: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  gridItemTitle: {
+    ...typography.sectionTitle,
+    color: colors.text,
+    marginTop: spacing.xs,
+    fontSize: 14,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing['2xl'],
+    padding: spacing.xl,
   },
   emptyText: {
-    ...typography.h3,
+    ...typography.titleScript,
     color: colors.text,
-    marginTop: spacing.base,
+    marginTop: spacing.md,
   },
   emptySubtext: {
     ...typography.body,
@@ -206,12 +184,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing['2xl'],
+    padding: spacing.xl,
     backgroundColor: colors.background,
   },
   errorText: {
-    ...typography.h3,
+    ...typography.titleScript,
     color: colors.error,
-    marginTop: spacing.base,
+    marginTop: spacing.md,
   },
 });

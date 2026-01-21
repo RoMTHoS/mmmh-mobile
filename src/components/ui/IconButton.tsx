@@ -1,13 +1,12 @@
 import { Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-type IconName = React.ComponentProps<typeof Ionicons>['name'];
+import { Icon, IconName, IconSize } from './Icon';
+import { colors, spacing, radius } from '../../theme';
 
 interface Props {
   icon: IconName;
   onPress: () => void;
   color?: string;
-  size?: number;
+  size?: IconSize | number;
   disabled?: boolean;
   accessibilityLabel?: string;
 }
@@ -15,8 +14,8 @@ interface Props {
 export function IconButton({
   icon,
   onPress,
-  color = '#D97706',
-  size = 24,
+  color = colors.accent,
+  size = 'lg',
   disabled = false,
   accessibilityLabel,
 }: Props) {
@@ -31,20 +30,25 @@ export function IconButton({
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
-      <Ionicons name={icon} size={size} color={color} />
+      <Icon name={icon} size={size} color={color} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    padding: 8,
-    borderRadius: 8,
+    padding: spacing.sm,
+    borderRadius: radius.sm,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pressed: {
-    opacity: 0.6,
-    backgroundColor: '#F3F4F6',
+    opacity: 0.7,
+    backgroundColor: colors.surfaceAlt,
   },
   disabled: {
     opacity: 0.4,

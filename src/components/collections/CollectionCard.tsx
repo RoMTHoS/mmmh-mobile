@@ -1,6 +1,6 @@
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { colors, typography, spacing, radius } from '../../theme';
+import { Icon } from '../ui';
 
 interface CollectionCardProps {
   id: string;
@@ -11,22 +11,38 @@ interface CollectionCardProps {
 
 export function CollectionCard({ id, name, images, onPress }: CollectionCardProps) {
   const displayImages = images.slice(0, 4);
-  const emptySlots = 4 - displayImages.length;
+
+  const renderSlot = (index: number) => {
+    const uri = displayImages[index];
+    if (uri) {
+      return <Image key={index} source={{ uri }} style={styles.image} resizeMode="cover" />;
+    }
+    return (
+      <View key={index} style={[styles.image, styles.emptySlot]}>
+        <Icon name="camera" size="sm" color={colors.textLight} />
+      </View>
+    );
+  };
 
   return (
     <Pressable
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
       onPress={() => onPress(id)}
+      accessibilityRole="button"
+      accessibilityLabel={`Collection ${name}`}
     >
       <View style={styles.imageGrid}>
-        {displayImages.map((uri, index) => (
-          <Image key={index} source={{ uri }} style={styles.image} resizeMode="cover" />
-        ))}
-        {Array.from({ length: emptySlots }).map((_, index) => (
-          <View key={`empty-${index}`} style={[styles.image, styles.emptySlot]}>
-            <Ionicons name="image-outline" size={20} color={colors.textLight} />
-          </View>
-        ))}
+        <View style={styles.imageRow}>
+          {renderSlot(0)}
+          <View style={styles.verticalSeparator} />
+          {renderSlot(1)}
+        </View>
+        <View style={styles.horizontalSeparator} />
+        <View style={styles.imageRow}>
+          {renderSlot(2)}
+          <View style={styles.verticalSeparator} />
+          {renderSlot(3)}
+        </View>
       </View>
       <Text style={styles.name} numberOfLines={1}>
         {name}
@@ -44,9 +60,11 @@ export function NewCollectionCard({ onPress }: NewCollectionCardProps) {
     <Pressable
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Créer une nouvelle collection"
     >
       <View style={[styles.imageGrid, styles.newCard]}>
-        <Ionicons name="add" size={32} color={colors.textMuted} />
+        <Icon name="plus" size={48} color={colors.text} />
       </View>
       <Text style={styles.name}>Nouveau</Text>
     </Pressable>
@@ -56,29 +74,42 @@ export function NewCollectionCard({ onPress }: NewCollectionCardProps) {
 const styles = StyleSheet.create({
   container: {
     width: '48%',
-    marginBottom: spacing.base,
+    marginBottom: spacing.md,
   },
   pressed: {
-    opacity: 0.8,
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
   imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     aspectRatio: 1,
-    borderRadius: borderRadius.lg,
+    borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  imageRow: {
+    flexDirection: 'row',
+    flex: 1,
   },
   image: {
-    width: '50%',
-    height: '50%',
+    flex: 1,
+  },
+  verticalSeparator: {
+    width: 2,
+    backgroundColor: colors.background,
+  },
+  horizontalSeparator: {
+    height: 2,
+    backgroundColor: colors.background,
   },
   emptySlot: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   newCard: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -86,7 +117,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   name: {
-    ...typography.label,
+    ...typography.sectionTitle,
     color: colors.text,
     marginTop: spacing.sm,
   },

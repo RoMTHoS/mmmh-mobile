@@ -3,6 +3,11 @@
  */
 import { TextStyle } from 'react-native';
 
+export const fonts = {
+  script: 'Pacifico',
+  sans: 'System',
+} as const;
+
 export const fontSizes = {
   xs: 12,
   sm: 14,
@@ -21,7 +26,32 @@ export const fontWeights = {
 };
 
 export const typography = {
-  // Headers
+  // Script styles - for headers, titles, buttons (Pacifico font)
+  headerScript: {
+    fontFamily: fonts.script,
+    fontSize: fontSizes['2xl'],
+    lineHeight: 32,
+  } as TextStyle,
+
+  titleScript: {
+    fontFamily: fonts.script,
+    fontSize: fontSizes.xl,
+    lineHeight: 28,
+  } as TextStyle,
+
+  sectionTitle: {
+    fontFamily: fonts.script,
+    fontSize: fontSizes.lg,
+    lineHeight: 24,
+  } as TextStyle,
+
+  buttonScript: {
+    fontFamily: fonts.script,
+    fontSize: fontSizes.base,
+    lineHeight: 24,
+  } as TextStyle,
+
+  // Sans-serif headers (legacy, for compatibility)
   h1: {
     fontSize: fontSizes['3xl'],
     fontWeight: fontWeights.bold,
@@ -40,7 +70,7 @@ export const typography = {
     lineHeight: 28,
   } as TextStyle,
 
-  // Body text
+  // Body text (sans-serif)
   body: {
     fontSize: fontSizes.base,
     fontWeight: fontWeights.normal,
@@ -66,7 +96,7 @@ export const typography = {
     lineHeight: 16,
   } as TextStyle,
 
-  // Button text
+  // Button text (sans-serif)
   button: {
     fontSize: fontSizes.base,
     fontWeight: fontWeights.semibold,

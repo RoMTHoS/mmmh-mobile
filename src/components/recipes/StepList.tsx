@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import type { Step } from '../../types';
+import { colors, spacing } from '../../theme';
 
 interface StepListProps {
   steps: Step[];
@@ -26,34 +27,34 @@ export function StepList({ steps }: StepListProps) {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 16,
+    gap: spacing.md,
   },
   step: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.sm,
   },
   numberContainer: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#D97706',
+    backgroundColor: colors.text,
     justifyContent: 'center',
     alignItems: 'center',
   },
   number: {
-    color: '#FFF',
+    color: colors.background,
     fontSize: 14,
     fontWeight: '600',
   },
   instruction: {
     flex: 1,
     fontSize: 15,
-    color: '#374151',
+    color: colors.text,
     lineHeight: 22,
   },
   emptyText: {
     fontSize: 15,
-    color: '#9CA3AF',
+    color: colors.textMuted,
     fontStyle: 'italic',
   },
 });

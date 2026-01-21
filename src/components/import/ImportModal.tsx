@@ -1,9 +1,8 @@
-import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { View, Text, Pressable, Modal, StyleSheet, Animated } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../theme';
-
-type IconName = React.ComponentProps<typeof Ionicons>['name'];
+import { colors, typography, spacing, radius, fonts } from '../../theme';
+import { Icon, IconName } from '../ui';
 
 interface ImportOptionProps {
   icon: IconName;
@@ -14,12 +13,12 @@ interface ImportOptionProps {
 function ImportOption({ icon, label, onPress }: ImportOptionProps) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
+      style={({ pressed }) => [styles.optionButton, pressed && styles.optionPressed]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
     >
-      <View style={styles.optionIcon}>
-        <Ionicons name={icon} size={32} color={colors.text} />
-      </View>
+      <Icon name={icon} size="lg" color={colors.text} />
       <Text style={styles.optionLabel}>{label}</Text>
     </Pressable>
   );
@@ -31,6 +30,46 @@ interface ImportModalProps {
 }
 
 export function ImportModal({ visible, onClose }: ImportModalProps) {
+  const slideAnim = useRef(new Animated.Value(300)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      // Reset to initial positions
+      slideAnim.setValue(300);
+      backdropAnim.setValue(0);
+
+      // Animate both together: backdrop fades in while sheet slides up
+      Animated.parallel([
+        Animated.timing(backdropAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+      ]).start();
+    } else {
+      // Animate both out together
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 300,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible, slideAnim, backdropAnim]);
+
   const handleBrowserImport = () => {
     // TODO: Epic 2 - Navigate to URL input
     onClose();
@@ -52,30 +91,38 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <Text style={styles.title}>Importer une recette</Text>
+        {/* Backdrop overlay - separate from pressable for proper touch handling */}
+        <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]} pointerEvents="none" />
+        {/* Pressable area to close modal */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Animated.View
+          style={[styles.sheetContainer, { transform: [{ translateY: slideAnim }] }]}
+          pointerEvents="box-none"
+        >
+          <Pressable style={styles.sheet} onPress={() => {}} /* Capture touches on sheet */>
+            <Text style={styles.title}>Importer une recette</Text>
 
-          <View style={styles.options}>
-            <ImportOption icon="globe-outline" label="Navigateur" onPress={handleBrowserImport} />
-            <ImportOption
-              icon="camera-outline"
-              label="Appareil photo"
-              onPress={handleCameraImport}
-            />
-            <ImportOption icon="document-text-outline" label="Texte" onPress={handleTextImport} />
-          </View>
+            <View style={styles.options}>
+              <ImportOption icon="globe" label="Web" onPress={handleBrowserImport} />
+              <ImportOption icon="camera" label="Photo" onPress={handleCameraImport} />
+              <ImportOption icon="text" label="Texte" onPress={handleTextImport} />
+            </View>
 
-          <Text style={styles.divider}>ou</Text>
+            <Text style={styles.divider}>ou</Text>
 
-          <Pressable onPress={handleCreateRecipe} style={styles.createLink}>
-            <Ionicons name="pencil-outline" size={18} color={colors.accent} />
-            <Text style={styles.createLinkText}>Créer une nouvelle recette</Text>
+            <Pressable
+              onPress={handleCreateRecipe}
+              style={({ pressed }) => [styles.createButton, pressed && styles.createButtonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Créer une nouvelle recette"
+            >
+              <Icon name="pencil" size="md" color={colors.accent} />
+              <Text style={styles.createButtonText}>Créer une nouvelle recette</Text>
+            </Pressable>
           </Pressable>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -90,68 +137,74 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay,
   },
-  sheet: {
-    backgroundColor: colors.modalBackground,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
-    padding: spacing.xl,
-    paddingBottom: spacing['3xl'],
-    alignItems: 'center',
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: colors.border,
-    borderRadius: 2,
+  sheetContainer: {
+    margin: spacing.md,
     marginBottom: spacing.lg,
   },
+  sheet: {
+    backgroundColor: colors.modalBackground,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+    alignItems: 'center',
+  },
   title: {
-    ...typography.h3,
+    ...typography.titleScript,
     color: colors.text,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   options: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     width: '100%',
-    marginBottom: spacing.lg,
+    gap: spacing.md,
   },
-  option: {
+  optionButton: {
     alignItems: 'center',
-    padding: spacing.base,
-    borderRadius: borderRadius.lg,
-  },
-  optionPressed: {
-    backgroundColor: colors.surface,
-  },
-  optionIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: borderRadius.lg,
+    justifyContent: 'center',
+    padding: spacing.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+    width: 100,
+    height: 90,
+    gap: spacing.sm,
+  },
+  optionPressed: {
+    backgroundColor: colors.surfaceAlt,
   },
   optionLabel: {
-    ...typography.label,
+    fontFamily: fonts.script,
+    fontSize: 14,
     color: colors.text,
   },
   divider: {
     ...typography.body,
-    color: colors.textMuted,
-    marginVertical: spacing.base,
+    color: colors.text,
+    marginVertical: spacing.sm,
   },
-  createLink: {
+  createButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    width: 332,
   },
-  createLinkText: {
-    ...typography.body,
+  createButtonPressed: {
+    backgroundColor: colors.surfaceAlt,
+  },
+  createButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 16,
     color: colors.accent,
-    textDecorationLine: 'underline',
   },
 });

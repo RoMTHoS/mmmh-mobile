@@ -44,13 +44,12 @@ export function CollectionSection({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   title: {
-    ...typography.h3,
+    ...typography.headerScript,
     color: colors.text,
     marginBottom: spacing.md,
-    fontStyle: 'italic',
   },
   grid: {
     flexDirection: 'row',

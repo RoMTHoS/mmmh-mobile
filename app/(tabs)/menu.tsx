@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -9,12 +10,13 @@ interface MenuItemProps {
   title: string;
   subtitle?: string;
   onPress?: () => void;
+  isLast?: boolean;
 }
 
-function MenuItem({ icon, title, subtitle, onPress }: MenuItemProps) {
+function MenuItem({ icon, title, subtitle, onPress, isLast }: MenuItemProps) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+      style={({ pressed }) => [styles.item, isLast && styles.itemLast, pressed && styles.itemPressed]}
       onPress={onPress}
       disabled={!onPress}
     >
@@ -40,8 +42,10 @@ function MenuSection({ title, children }: { title: string; children: React.React
 }
 
 export default function MenuScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { paddingTop: insets.top }]} contentContainerStyle={styles.content}>
       <MenuSection title="Général">
         <MenuItem
           icon="notifications-outline"
@@ -58,6 +62,7 @@ export default function MenuScreen() {
           onPress={() => {
             // TODO: Implement appearance settings
           }}
+          isLast
         />
       </MenuSection>
 
@@ -76,6 +81,7 @@ export default function MenuScreen() {
           onPress={() => {
             // TODO: Implement cache clearing
           }}
+          isLast
         />
       </MenuSection>
 
@@ -94,6 +100,7 @@ export default function MenuScreen() {
           onPress={() => {
             // TODO: Open help
           }}
+          isLast
         />
       </MenuSection>
     </ScrollView>
@@ -130,6 +137,9 @@ const styles = StyleSheet.create({
     padding: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.borderLight,
+  },
+  itemLast: {
+    borderBottomWidth: 0,
   },
   itemPressed: {
     backgroundColor: colors.background,
