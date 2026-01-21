@@ -14,7 +14,7 @@ jest.mock('@expo/vector-icons', () => ({
 
 describe('Navigation Refactor - Theme', () => {
   it('defines cream background color', () => {
-    expect(colors.background).toBe('#FFF2CC');
+    expect(colors.background).toBe('#fff3d0ff');
   });
 
   it('defines navy text color', () => {
