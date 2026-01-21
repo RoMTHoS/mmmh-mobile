@@ -4,12 +4,12 @@
  */
 export const colors = {
   // Backgrounds
-  background: '#FFEEBC', // Cream - main app background
+  background: '#FFF2CC', // Cream - main app background
   surface: '#F4F4F4', // Light gray - cards, inputs
   surfaceAlt: '#FFFFFF', // White - badges, secondary surfaces
 
   // Text
-  text: '#1E2A4A', // Navy - primary text
+  text: '#233662', // Navy - primary text
   textMuted: '#6B7280', // Gray - secondary text
   textLight: '#9CA3AF', // Light gray - placeholders
 
@@ -30,10 +30,11 @@ export const colors = {
   success: '#22C55E',
   warning: '#F59E0B',
   error: '#EF4444',
+  info: '#3B82F6',
 
   // Overlay
   overlay: 'rgba(0, 0, 0, 0.5)',
-  modalBackground: '#FFEEBC',
+  modalBackground: '#FFF2CC',
 } as const;
 
 export type ColorKey = keyof typeof colors;
