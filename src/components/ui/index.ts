@@ -8,3 +8,4 @@ export type { IconName, IconSize } from './Icon';
 export { Card } from './Card';
 export { Badge } from './Badge';
 export { SearchBar } from './SearchBar';
+export { CustomHeader } from './CustomHeader';

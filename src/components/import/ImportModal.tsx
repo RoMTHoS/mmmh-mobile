@@ -13,14 +13,12 @@ interface ImportOptionProps {
 function ImportOption({ icon, label, onPress }: ImportOptionProps) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
+      style={({ pressed }) => [styles.optionButton, pressed && styles.optionPressed]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <View style={styles.optionIcon}>
-        <Icon name={icon} size="lg" color={colors.text} />
-      </View>
+      <Icon name={icon} size="lg" color={colors.text} />
       <Text style={styles.optionLabel}>{label}</Text>
     </Pressable>
   );
@@ -104,12 +102,11 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
           pointerEvents="box-none"
         >
           <Pressable style={styles.sheet} onPress={() => {}} /* Capture touches on sheet */>
-            <View style={styles.handle} />
             <Text style={styles.title}>Importer une recette</Text>
 
             <View style={styles.options}>
-              <ImportOption icon="globe" label="Navigateur" onPress={handleBrowserImport} />
-              <ImportOption icon="camera" label="Appareil photo" onPress={handleCameraImport} />
+              <ImportOption icon="globe" label="Web" onPress={handleBrowserImport} />
+              <ImportOption icon="camera" label="Photo" onPress={handleCameraImport} />
               <ImportOption icon="text" label="Texte" onPress={handleTextImport} />
             </View>
 
@@ -117,12 +114,12 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
 
             <Pressable
               onPress={handleCreateRecipe}
-              style={styles.createLink}
+              style={({ pressed }) => [styles.createButton, pressed && styles.createButtonPressed]}
               accessibilityRole="button"
               accessibilityLabel="Créer une nouvelle recette"
             >
-              <Icon name="pencil" size="sm" color={colors.accent} />
-              <Text style={styles.createLinkText}>Créer une nouvelle recette</Text>
+              <Icon name="pencil" size="md" color={colors.accent} />
+              <Text style={styles.createButtonText}>Créer une nouvelle recette</Text>
             </Pressable>
           </Pressable>
         </Animated.View>
@@ -153,13 +150,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     alignItems: 'center',
   },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: colors.border,
-    borderRadius: 2,
-    marginBottom: spacing.lg,
-  },
   title: {
     ...typography.titleScript,
     color: colors.text,
@@ -167,29 +157,24 @@ const styles = StyleSheet.create({
   },
   options: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     width: '100%',
-    marginBottom: spacing.md,
+    gap: spacing.md,
   },
-  option: {
+  optionButton: {
     alignItems: 'center',
-    padding: spacing.sm,
-    borderRadius: radius.lg,
-    minWidth: 80,
-  },
-  optionPressed: {
-    backgroundColor: colors.surfaceAlt,
-  },
-  optionIcon: {
-    width: 56,
-    height: 56,
+    justifyContent: 'center',
+    padding: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+    width: 100,
+    height: 90,
+    gap: spacing.sm,
+  },
+  optionPressed: {
+    backgroundColor: colors.surfaceAlt,
   },
   optionLabel: {
     fontFamily: fonts.script,
@@ -198,19 +183,28 @@ const styles = StyleSheet.create({
   },
   divider: {
     ...typography.body,
-    color: colors.textMuted,
-    marginVertical: spacing.md,
+    color: colors.text,
+    marginVertical: spacing.sm,
   },
-  createLink: {
+  createButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    width: 332,
   },
-  createLinkText: {
+  createButtonPressed: {
+    backgroundColor: colors.surfaceAlt,
+  },
+  createButtonText: {
     fontFamily: fonts.script,
     fontSize: 16,
     color: colors.accent,
-    textDecorationLine: 'underline',
   },
 });

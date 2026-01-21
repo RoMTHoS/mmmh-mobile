@@ -11,7 +11,18 @@ interface CollectionCardProps {
 
 export function CollectionCard({ id, name, images, onPress }: CollectionCardProps) {
   const displayImages = images.slice(0, 4);
-  const emptySlots = 4 - displayImages.length;
+
+  const renderSlot = (index: number) => {
+    const uri = displayImages[index];
+    if (uri) {
+      return <Image key={index} source={{ uri }} style={styles.image} resizeMode="cover" />;
+    }
+    return (
+      <View key={index} style={[styles.image, styles.emptySlot]}>
+        <Icon name="camera" size="sm" color={colors.textLight} />
+      </View>
+    );
+  };
 
   return (
     <Pressable
@@ -21,14 +32,17 @@ export function CollectionCard({ id, name, images, onPress }: CollectionCardProp
       accessibilityLabel={`Collection ${name}`}
     >
       <View style={styles.imageGrid}>
-        {displayImages.map((uri, index) => (
-          <Image key={index} source={{ uri }} style={styles.image} resizeMode="cover" />
-        ))}
-        {Array.from({ length: emptySlots }).map((_, index) => (
-          <View key={`empty-${index}`} style={[styles.image, styles.emptySlot]}>
-            <Icon name="camera" size="sm" color={colors.textLight} />
-          </View>
-        ))}
+        <View style={styles.imageRow}>
+          {renderSlot(0)}
+          <View style={styles.verticalSeparator} />
+          {renderSlot(1)}
+        </View>
+        <View style={styles.horizontalSeparator} />
+        <View style={styles.imageRow}>
+          {renderSlot(2)}
+          <View style={styles.verticalSeparator} />
+          {renderSlot(3)}
+        </View>
       </View>
       <Text style={styles.name} numberOfLines={1}>
         {name}
@@ -50,7 +64,7 @@ export function NewCollectionCard({ onPress }: NewCollectionCardProps) {
       accessibilityLabel="Créer une nouvelle collection"
     >
       <View style={[styles.imageGrid, styles.newCard]}>
-        <Icon name="plus" size="lg" color={colors.textMuted} />
+        <Icon name="plus" size={48} color={colors.text} />
       </View>
       <Text style={styles.name}>Nouveau</Text>
     </Pressable>
@@ -67,16 +81,26 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     aspectRatio: 1,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  imageRow: {
+    flexDirection: 'row',
+    flex: 1,
   },
   image: {
-    width: '50%',
-    height: '50%',
+    flex: 1,
+  },
+  verticalSeparator: {
+    width: 2,
+    backgroundColor: colors.background,
+  },
+  horizontalSeparator: {
+    height: 2,
+    backgroundColor: colors.background,
   },
   emptySlot: {
     backgroundColor: colors.surfaceAlt,
@@ -84,6 +108,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   newCard: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,

@@ -106,16 +106,16 @@ function RootLayoutNav() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(modals)" options={{ headerShown: false }} />
-        <Stack.Screen name="recipe/[id]" options={{ title: 'Recipe' }} />
+        <Stack.Screen name="recipe/[id]" options={{ title: '' }} />
         <Stack.Screen
           name="recipe/[id]/edit"
-          options={{ title: 'Edit Recipe', presentation: 'modal' }}
+          options={{ title: '', presentation: 'modal' }}
         />
         <Stack.Screen
           name="recipe/create"
-          options={{ title: 'New Recipe', presentation: 'modal' }}
+          options={{ title: '', presentation: 'modal' }}
         />
-        <Stack.Screen name="+not-found" options={{ title: 'Not Found' }} />
+        <Stack.Screen name="+not-found" options={{ title: '' }} />
       </Stack>
     </>
   );

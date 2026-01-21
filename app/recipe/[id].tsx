@@ -10,7 +10,7 @@ import {
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useRecipe } from '../../src/hooks';
-import { LoadingScreen, IconButton, Badge, Icon } from '../../src/components/ui';
+import { LoadingScreen, Badge, Icon } from '../../src/components/ui';
 import { IngredientList, StepList } from '../../src/components/recipes';
 import { colors, typography, spacing, fonts } from '../../src/theme';
 
@@ -51,15 +51,26 @@ export default function RecipeDetailScreen() {
       <Stack.Screen
         options={{
           title: '',
-          headerBackTitle: 'Retour',
+          headerBackVisible: false,
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={8}
+              style={styles.headerButton}
+              accessibilityLabel="Retour"
+            >
+              <Icon name="arrow-left" size="lg" color={colors.text} />
+            </Pressable>
+          ),
           headerRight: () => (
-            <View style={styles.headerActions}>
-              <IconButton
-                icon="pencil"
-                onPress={() => router.push(`/recipe/${id}/edit`)}
-                accessibilityLabel="Modifier la recette"
-              />
-            </View>
+            <Pressable
+              onPress={() => router.push(`/recipe/${id}/edit`)}
+              hitSlop={8}
+              style={styles.headerButton}
+              accessibilityLabel="Modifier la recette"
+            >
+              <Icon name="pencil" size="lg" color={colors.text} />
+            </Pressable>
           ),
         }}
       />
@@ -111,7 +122,7 @@ export default function RecipeDetailScreen() {
           onPress={() => {}}
           accessibilityLabel="Enregistrer la recette"
         >
-          <Icon name="bookmark" size="md" color={colors.text} />
+          <Icon name="bookmark" size="lg" color={colors.text} />
           <Text style={styles.actionText}>Enregistrer</Text>
         </Pressable>
         <Pressable
@@ -119,7 +130,7 @@ export default function RecipeDetailScreen() {
           onPress={() => {}}
           accessibilityLabel="Ajouter aux courses"
         >
-          <Icon name="cart" size="md" color={colors.text} />
+          <Icon name="cart" size="lg" color={colors.text} />
           <Text style={styles.actionText}>Courses</Text>
         </Pressable>
         <Pressable
@@ -127,7 +138,7 @@ export default function RecipeDetailScreen() {
           onPress={() => {}}
           accessibilityLabel="Partager la recette"
         >
-          <Icon name="share" size="md" color={colors.text} />
+          <Icon name="share" size="lg" color={colors.text} />
           <Text style={styles.actionText}>Partager</Text>
         </Pressable>
       </View>
@@ -140,9 +151,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
+  headerButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   heroImage: {
     width: '100%',
@@ -183,9 +196,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    backgroundColor: colors.background,
   },
   actionButton: {
     alignItems: 'center',

@@ -4,7 +4,7 @@
  */
 export const colors = {
   // Backgrounds
-  background: '#FFF2CC', // Cream - main app background
+  background: '#fff3d0ff', // Cream - main app background
   surface: '#F4F4F4', // Light gray - cards, inputs
   surfaceAlt: '#FFFFFF', // White - badges, secondary surfaces
 

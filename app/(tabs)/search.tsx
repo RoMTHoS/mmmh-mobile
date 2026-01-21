@@ -1,6 +1,7 @@
 import { View, Text, FlatList, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
 import { LoadingScreen, SearchBar, Icon } from '../../src/components/ui';
 import { colors, typography, spacing, radius } from '../../src/theme';
@@ -46,6 +47,7 @@ function RecipeGridItem({ recipe, onPress }: RecipeGridItemProps) {
 }
 
 export default function SearchScreen() {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
 
@@ -62,16 +64,7 @@ export default function SearchScreen() {
   }, [recipes, searchQuery]);
 
   const handleRecipePress = (recipe: Recipe) => {
-    router.push({
-      pathname: '/(modals)/quick-preview',
-      params: {
-        id: recipe.id,
-        title: recipe.title,
-        imageUri: recipe.photoUri || '',
-        prepTime: recipe.cookingTime?.toString() || '',
-        difficulty: '',
-      },
-    });
+    router.push(`/recipe/${recipe.id}`);
   };
 
   if (isLoading) {
@@ -88,7 +81,7 @@ export default function SearchScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Text style={styles.pageTitle}>Toutes les recettes</Text>
       <SearchBar
         value={searchQuery}

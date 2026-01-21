@@ -1,12 +1,14 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
 import { LoadingScreen, SearchBar, Icon } from '../../src/components/ui';
 import { CollectionSection } from '../../src/components/collections';
 import { colors, typography, spacing } from '../../src/theme';
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const { data: recipes, isLoading, error } = useRecipes();
 
@@ -68,7 +70,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}

@@ -1,10 +1,13 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../src/theme';
 
 export default function ShoppingScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Ionicons name="cart-outline" size={64} color={colors.textMuted} />
       <Text style={styles.title}>Liste de courses</Text>
       <Text style={styles.subtitle}>Cette fonctionnalité arrive bientôt !</Text>
