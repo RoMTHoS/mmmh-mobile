@@ -62,8 +62,8 @@ function NavigationStatePersistence() {
 
 function RootLayoutNav() {
   const { isReady: isDbReady, error: dbError } = useDatabase();
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const [fontsLoaded, fontError] = useFonts({
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     Pacifico: require('../assets/fonts/Pacifico-Regular.ttf'),
   });
 
