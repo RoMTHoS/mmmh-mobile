@@ -3,3 +3,8 @@ export { Button } from './Button';
 export { LoadingScreen } from './LoadingScreen';
 export { IconButton } from './IconButton';
 export { Text } from './Text';
+export { Icon, iconNames, iconSizes } from './Icon';
+export type { IconName, IconSize } from './Icon';
+export { Card } from './Card';
+export { Badge } from './Badge';
+export { SearchBar } from './SearchBar';

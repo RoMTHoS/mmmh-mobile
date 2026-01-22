@@ -1,47 +1,87 @@
+import { useState } from 'react';
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Pressable, StyleSheet } from 'react-native';
+import { colors, spacing } from '../../src/theme';
+import { ImportModal } from '../../src/components/import/ImportModal';
+import { Icon } from '../../src/components/ui';
 
 export default function TabLayout() {
+  const [importModalVisible, setImportModalVisible] = useState(false);
+
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: '#D97706',
-        tabBarInactiveTintColor: '#9CA3AF',
-        tabBarStyle: {
-          backgroundColor: '#FFF',
-          borderTopColor: '#E5E7EB',
-        },
-        headerStyle: { backgroundColor: '#FFF' },
-        headerTintColor: '#D97706',
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Recipes',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
-          ),
+    <>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: colors.tabBarActive,
+          tabBarInactiveTintColor: colors.tabBarInactive,
+          tabBarShowLabel: false,
+          tabBarStyle: {
+            backgroundColor: colors.background,
+            borderTopWidth: 0,
+            elevation: 0,
+            height: 70,
+            paddingTop: spacing.sm,
+            paddingHorizontal: spacing.md,
+          },
+          headerShown: false,
         }}
-      />
-      <Tabs.Screen
-        name="import"
-        options={{
-          title: 'Import',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add-circle-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Accueil',
+            tabBarIcon: ({ color }) => <Icon name="home" size={32} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="search"
+          options={{
+            title: 'Rechercher',
+            tabBarIcon: ({ color }) => <Icon name="search" size={32} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="add-placeholder"
+          options={{
+            title: '',
+            tabBarButton: () => (
+              <Pressable
+                onPress={() => setImportModalVisible(true)}
+                style={styles.addButton}
+                accessibilityLabel="Ajouter une recette"
+                accessibilityRole="button"
+              >
+                <Icon name="plus-circle" size={36} color={colors.tabBarActive} />
+              </Pressable>
+            ),
+          }}
+          listeners={{ tabPress: (e) => e.preventDefault() }}
+        />
+        <Tabs.Screen
+          name="shopping"
+          options={{
+            title: 'Courses',
+            tabBarIcon: ({ color }) => <Icon name="cart" size={32} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="menu"
+          options={{
+            title: 'Menu',
+            tabBarIcon: ({ color }) => <Icon name="menu" size={32} color={color} />,
+          }}
+        />
+      </Tabs>
+      <ImportModal visible={importModalVisible} onClose={() => setImportModalVisible(false)} />
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  addButton: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    marginTop: -4,
+  },
+});

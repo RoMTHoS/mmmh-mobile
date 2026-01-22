@@ -42,7 +42,7 @@ describe('IconButton', () => {
 
   it('renders with custom color', () => {
     const onPress = jest.fn();
-    const element = IconButton({ icon: 'trash-outline', onPress, color: '#EF4444' });
+    const element = IconButton({ icon: 'pencil', onPress, color: '#EF4444' });
 
     expect(element).toBeDefined();
   });
