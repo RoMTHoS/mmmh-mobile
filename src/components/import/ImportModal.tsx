@@ -71,8 +71,8 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
   }, [visible, slideAnim, backdropAnim]);
 
   const handleBrowserImport = () => {
-    // TODO: Epic 2 - Navigate to URL input
     onClose();
+    router.push('/import/url?type=video');
   };
 
   const handleCameraImport = () => {

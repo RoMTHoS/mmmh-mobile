@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
 import { LoadingScreen, SearchBar, Icon } from '../../src/components/ui';
 import { CollectionSection } from '../../src/components/collections';
+import { ImportStatusList } from '../../src/components/import';
 import { colors, typography, spacing } from '../../src/theme';
 
 export default function HomeScreen() {
@@ -84,6 +85,8 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <ImportStatusList />
+
         <CollectionSection
           title="Livre de recette"
           collections={collections.recipeBooks}
