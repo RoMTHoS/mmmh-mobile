@@ -35,7 +35,7 @@ describe('ImportModal', () => {
 
   describe('Theme Integration', () => {
     it('uses modal background color', () => {
-      expect(colors.modalBackground).toBe('#FFF2CC');
+      expect(colors.modalBackground).toBe('#FFF7E7');
     });
 
     it('uses overlay color for backdrop', () => {

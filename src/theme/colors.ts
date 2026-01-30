@@ -4,7 +4,7 @@
  */
 export const colors = {
   // Backgrounds
-  background: '#fff3d0ff', // Cream - main app background
+  background: '#FFF7E7', // Cream - main app background
   surface: '#F4F4F4', // Light gray - cards, inputs
   surfaceAlt: '#FFFFFF', // White - badges, secondary surfaces
 
@@ -34,7 +34,7 @@ export const colors = {
 
   // Overlay
   overlay: 'rgba(0, 0, 0, 0.5)',
-  modalBackground: '#FFF2CC',
+  modalBackground: '#FFF7E7',
 } as const;
 
 export type ColorKey = keyof typeof colors;
