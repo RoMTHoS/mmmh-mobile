@@ -7,14 +7,13 @@ import { logger } from '../utils';
 const POLL_INTERVAL = 5000; // 5 seconds
 
 export function useImportPolling() {
-  const jobs = useImportStore((state) => state.jobs);
   const updateJob = useImportStore((state) => state.updateJob);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef(AppState.currentState);
+  const prevActiveCountRef = useRef(0);
 
-  // Use a stable reference to poll - gets jobs from store directly to avoid dependency issues
+  // Stable polling function - gets jobs from store directly
   const pollActiveJobs = useCallback(async () => {
-    // Get jobs from store directly to avoid stale closure
     const currentJobs = useImportStore.getState().jobs;
     const activeJobs = currentJobs.filter(
       (j) => j.status === 'pending' || j.status === 'processing'
@@ -45,23 +44,6 @@ export function useImportPolling() {
     }
   }, [updateJob]);
 
-  const startPolling = useCallback(() => {
-    if (intervalRef.current) {
-      return;
-    }
-
-    // Get jobs from store directly
-    const currentJobs = useImportStore.getState().jobs;
-    const activeJobs = currentJobs.filter(
-      (j) => j.status === 'pending' || j.status === 'processing'
-    );
-
-    if (activeJobs.length > 0) {
-      pollActiveJobs();
-      intervalRef.current = setInterval(pollActiveJobs, POLL_INTERVAL);
-    }
-  }, [pollActiveJobs]);
-
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -69,40 +51,75 @@ export function useImportPolling() {
     }
   }, []);
 
+  const startPolling = useCallback(() => {
+    if (intervalRef.current) {
+      return; // Already polling
+    }
+
+    const currentJobs = useImportStore.getState().jobs;
+    const activeJobs = currentJobs.filter(
+      (j) => j.status === 'pending' || j.status === 'processing'
+    );
+
+    if (activeJobs.length > 0) {
+      // Poll immediately once, then start interval
+      pollActiveJobs();
+      intervalRef.current = setInterval(pollActiveJobs, POLL_INTERVAL);
+    }
+  }, [pollActiveJobs]);
+
   // Handle app state changes - pause polling when app is backgrounded
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
-        // App came to foreground - resume polling
         startPolling();
       } else if (nextAppState.match(/inactive|background/)) {
-        // App went to background - stop polling
         stopPolling();
       }
       appStateRef.current = nextAppState;
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, [startPolling, stopPolling]);
 
-  // Start/stop polling based on active jobs
+  // Subscribe to store changes to start/stop polling
+  // Only react to transitions: 0 -> N (start) or N -> 0 (stop)
   useEffect(() => {
-    const activeJobs = jobs.filter((j) => j.status === 'pending' || j.status === 'processing');
+    const unsubscribe = useImportStore.subscribe((state) => {
+      const activeCount = state.jobs.filter(
+        (j) => j.status === 'pending' || j.status === 'processing'
+      ).length;
 
-    if (activeJobs.length > 0 && !intervalRef.current) {
+      const prevCount = prevActiveCountRef.current;
+      prevActiveCountRef.current = activeCount;
+
+      // Only start if we went from 0 to >0 active jobs
+      if (activeCount > 0 && prevCount === 0) {
+        startPolling();
+      }
+      // Only stop if we went from >0 to 0 active jobs
+      else if (activeCount === 0 && prevCount > 0) {
+        stopPolling();
+      }
+    });
+
+    // Check initial state
+    const initialJobs = useImportStore.getState().jobs;
+    const initialActiveCount = initialJobs.filter(
+      (j) => j.status === 'pending' || j.status === 'processing'
+    ).length;
+    prevActiveCountRef.current = initialActiveCount;
+
+    if (initialActiveCount > 0) {
       startPolling();
-    } else if (activeJobs.length === 0 && intervalRef.current) {
-      stopPolling();
     }
 
     return () => {
+      unsubscribe();
       stopPolling();
     };
-  }, [jobs, startPolling, stopPolling]);
+  }, [startPolling, stopPolling]);
 
   return {
     isPolling: intervalRef.current !== null,
