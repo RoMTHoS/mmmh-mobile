@@ -36,9 +36,8 @@ export function useImportPolling() {
           result: status.result,
         });
       } catch (error) {
-        logger.error('Failed to poll job status', {
+        logger.error('Failed to poll job status', error instanceof Error ? error : undefined, {
           jobId: job.jobId,
-          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
