@@ -6,7 +6,7 @@
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
 export interface SubmitImportRequest {
-  importType: 'video' | 'website';
+  importType: 'video' | 'website' | 'photo';
   sourceUrl: string;
   html?: string;
 }

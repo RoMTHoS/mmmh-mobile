@@ -24,6 +24,14 @@ export default function ImportLayout() {
           presentation: 'card',
         }}
       />
+      <Stack.Screen
+        name="photo"
+        options={{
+          title: 'Importer une photo',
+          presentation: 'fullScreenModal',
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

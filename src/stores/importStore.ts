@@ -13,7 +13,7 @@ export interface ImportJobError {
 
 export interface ImportJob {
   jobId: string;
-  importType: 'video' | 'website';
+  importType: 'video' | 'website' | 'photo';
   sourceUrl: string;
   platform?: Platform | string;
   status: ImportStatus;
