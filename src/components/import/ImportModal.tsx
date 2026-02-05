@@ -72,7 +72,7 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
 
   const handleBrowserImport = () => {
     onClose();
-    router.push('/import/url?type=video');
+    router.push('/import/url?type=website');
   };
 
   const handleCameraImport = () => {
