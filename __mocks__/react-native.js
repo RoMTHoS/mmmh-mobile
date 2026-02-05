@@ -78,6 +78,63 @@ const Alert = {
 
 const StyleSheet = {
   create: (styles) => styles,
+  absoluteFill: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  absoluteFillObject: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  flatten: (style) => {
+    if (!style) return {};
+    if (Array.isArray(style)) {
+      return style.reduce((acc, s) => ({ ...acc, ...StyleSheet.flatten(s) }), {});
+    }
+    return style;
+  },
+};
+
+const Modal = ({ children, visible, transparent, animationType, onRequestClose }) =>
+  visible
+    ? React.createElement(
+        'Modal',
+        { transparent, animationType, onRequestClose },
+        children
+      )
+    : null;
+
+const Platform = {
+  OS: 'ios',
+  select: (obj) => obj.ios || obj.default,
+};
+
+const Linking = {
+  openURL: jest.fn(() => Promise.resolve()),
+  openSettings: jest.fn(() => Promise.resolve()),
+};
+
+const KeyboardAvoidingView = ({ children, style, behavior }) =>
+  React.createElement('KeyboardAvoidingView', { style, behavior }, children);
+
+// Animated mock
+const AnimatedValue = jest.fn().mockImplementation((value) => ({
+  _value: value,
+  setValue: jest.fn(),
+  interpolate: jest.fn(() => value),
+}));
+
+const Animated = {
+  Value: AnimatedValue,
+  View: View,
+  Text: Text,
+  Image: Image,
+  timing: jest.fn(() => ({
+    start: jest.fn((callback) => callback && callback()),
+  })),
+  spring: jest.fn(() => ({
+    start: jest.fn((callback) => callback && callback()),
+  })),
+  parallel: jest.fn((animations) => ({
+    start: jest.fn((callback) => callback && callback()),
+  })),
+  sequence: jest.fn((animations) => ({
+    start: jest.fn((callback) => callback && callback()),
+  })),
 };
 
 module.exports = {
@@ -91,4 +148,9 @@ module.exports = {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  Modal,
+  Platform,
+  Linking,
+  KeyboardAvoidingView,
+  Animated,
 };

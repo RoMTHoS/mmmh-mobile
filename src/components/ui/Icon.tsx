@@ -17,9 +17,11 @@ export const iconNames = [
   'close',
   'clipboard',
   'cost',
+  'crop',
   'error',
   'globe',
   'home',
+  'image',
   'info',
   'instagram',
   'menu',
@@ -27,6 +29,7 @@ export const iconNames = [
   'plus',
   'plus-circle',
   'refresh',
+  'rotate',
   'search',
   'servings',
   'share',
@@ -131,6 +134,13 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
           </G>
         );
 
+      case 'crop':
+        return (
+          <G {...commonStrokeProps}>
+            <Path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h4m4 12v4m0-18h10a2 2 0 0 1 2 2v10" />
+          </G>
+        );
+
       case 'error':
         return (
           <G {...commonStrokeProps}>
@@ -154,6 +164,15 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
             d="M20 19v-8.5a1 1 0 0 0-.4-.8l-7-5.25a1 1 0 0 0-1.2 0l-7 5.25a1 1 0 0 0-.4.8V19a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1"
             {...commonStrokeProps}
           />
+        );
+
+      case 'image':
+        return (
+          <G {...commonStrokeProps}>
+            <Path d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6" />
+            <Circle cx={8.5} cy={8.5} r={1.5} />
+            <Path d="m21 15l-5-5L5 21" />
+          </G>
         );
 
       case 'info':
@@ -200,6 +219,15 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
           <G {...commonStrokeProps}>
             <Path d="M4 12a8 8 0 0 1 14.93-4M20 12a8 8 0 0 1-14.93 4" />
             <Path d="M4 4v4h4m12 12v-4h-4" />
+          </G>
+        );
+
+      case 'rotate':
+        return (
+          <G {...commonStrokeProps}>
+            <Path d="M20.49 15A9 9 0 1 1 9 3.51" />
+            <Path d="M22 12a10 10 0 0 0-10-10v10z" fill="none" />
+            <Path d="m16 3l5 2l-2-5" />
           </G>
         );
 

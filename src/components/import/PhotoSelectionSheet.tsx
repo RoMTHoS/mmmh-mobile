@@ -1,16 +1,15 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, Pressable, Modal, StyleSheet, Animated, Alert } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, Pressable, Modal, StyleSheet, Animated } from 'react-native';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
 import { Icon, IconName } from '../ui';
 
-interface ImportOptionProps {
+interface PhotoOptionProps {
   icon: IconName;
   label: string;
   onPress: () => void;
 }
 
-function ImportOption({ icon, label, onPress }: ImportOptionProps) {
+function PhotoOption({ icon, label, onPress }: PhotoOptionProps) {
   return (
     <Pressable
       style={({ pressed }) => [styles.optionButton, pressed && styles.optionPressed]}
@@ -24,22 +23,21 @@ function ImportOption({ icon, label, onPress }: ImportOptionProps) {
   );
 }
 
-interface ImportModalProps {
+interface PhotoSelectionSheetProps {
   visible: boolean;
+  onSelect: (source: 'camera' | 'gallery') => void;
   onClose: () => void;
 }
 
-export function ImportModal({ visible, onClose }: ImportModalProps) {
+export function PhotoSelectionSheet({ visible, onSelect, onClose }: PhotoSelectionSheetProps) {
   const slideAnim = useRef(new Animated.Value(300)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      // Reset to initial positions
       slideAnim.setValue(300);
       backdropAnim.setValue(0);
 
-      // Animate both together: backdrop fades in while sheet slides up
       Animated.parallel([
         Animated.timing(backdropAnim, {
           toValue: 1,
@@ -54,7 +52,6 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
         }),
       ]).start();
     } else {
-      // Animate both out together
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 300,
@@ -70,78 +67,43 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
     }
   }, [visible, slideAnim, backdropAnim]);
 
-  const handleBrowserImport = () => {
-    onClose();
-    router.push('/import/url?type=website');
+  const handleCameraPress = () => {
+    onSelect('camera');
   };
 
-  const handleCameraImport = () => {
-    Alert.alert('Importer une photo', 'Choisir une option', [
-      {
-        text: 'Prendre une photo',
-        onPress: () => {
-          onClose();
-          router.push('/import/photo?source=camera');
-        },
-      },
-      {
-        text: 'Choisir dans la galerie',
-        onPress: () => {
-          onClose();
-          router.push('/import/photo?source=gallery');
-        },
-      },
-      { text: 'Annuler', style: 'cancel' },
-    ]);
+  const handleGalleryPress = () => {
+    onSelect('gallery');
   };
-
-  const handleTextImport = () => {
-    // TODO: Epic 2 - Navigate to text input
-    onClose();
-  };
-
-  const handleCreateRecipe = () => {
-    onClose();
-    router.push('/recipe/create');
-  };
-
-  const renderMainView = () => (
-    <>
-      <Text style={styles.title}>Importer une recette</Text>
-
-      <View style={styles.options}>
-        <ImportOption icon="globe" label="Web" onPress={handleBrowserImport} />
-        <ImportOption icon="camera" label="Photo" onPress={handleCameraImport} />
-        <ImportOption icon="text" label="Texte" onPress={handleTextImport} />
-      </View>
-
-      <Text style={styles.divider}>ou</Text>
-
-      <Pressable
-        onPress={handleCreateRecipe}
-        style={({ pressed }) => [styles.createButton, pressed && styles.createButtonPressed]}
-        accessibilityRole="button"
-        accessibilityLabel="Créer une nouvelle recette"
-      >
-        <Icon name="pencil" size="md" color={colors.accent} />
-        <Text style={styles.createButtonText}>Créer une nouvelle recette</Text>
-      </Pressable>
-    </>
-  );
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        {/* Backdrop overlay - separate from pressable for proper touch handling */}
         <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]} pointerEvents="none" />
-        {/* Pressable area to close modal */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <Animated.View
           style={[styles.sheetContainer, { transform: [{ translateY: slideAnim }] }]}
           pointerEvents="box-none"
         >
-          <Pressable style={styles.sheet} onPress={() => {}} /* Capture touches on sheet */>
-            {renderMainView()}
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <Text style={styles.title}>Importer une photo</Text>
+
+            <View style={styles.options}>
+              <PhotoOption icon="camera" label="Prendre une photo" onPress={handleCameraPress} />
+              <PhotoOption
+                icon="image"
+                label="Choisir depuis la galerie"
+                onPress={handleGalleryPress}
+              />
+            </View>
+
+            <Pressable
+              onPress={onClose}
+              style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelButtonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Annuler"
+            >
+              <Text style={styles.cancelButtonText}>Annuler</Text>
+            </Pressable>
           </Pressable>
         </Animated.View>
       </View>
@@ -181,6 +143,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   optionButton: {
     alignItems: 'center',
@@ -190,8 +153,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    width: 100,
-    height: 90,
+    flex: 1,
+    maxWidth: 160,
+    height: 100,
     gap: spacing.sm,
   },
   optionPressed: {
@@ -201,31 +165,19 @@ const styles = StyleSheet.create({
     fontFamily: fonts.script,
     fontSize: 14,
     color: colors.text,
+    textAlign: 'center',
   },
-  divider: {
-    ...typography.body,
-    color: colors.text,
-    marginVertical: spacing.sm,
-  },
-  createButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
+  cancelButton: {
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+  },
+  cancelButtonPressed: {
     backgroundColor: colors.surface,
-    width: 332,
   },
-  createButtonPressed: {
-    backgroundColor: colors.surfaceAlt,
-  },
-  createButtonText: {
+  cancelButtonText: {
     fontFamily: fonts.script,
     fontSize: 16,
-    color: colors.accent,
+    color: colors.textMuted,
   },
 });

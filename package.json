@@ -30,9 +30,12 @@
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@tanstack/react-query": "^5.90.18",
     "expo": "54.0.33",
+    "expo-camera": "~17.0.10",
     "expo-clipboard": "^8.0.8",
     "expo-constants": "~18.0.13",
+    "expo-file-system": "~19.0.21",
     "expo-font": "~14.0.11",
+    "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "^17.0.10",
     "expo-keep-awake": "^15.0.8",
     "expo-linking": "^8.0.11",
@@ -94,6 +97,10 @@
       "^react-native-toast-message$": "<rootDir>/__mocks__/react-native-toast-message.js",
       "^expo-image-picker$": "<rootDir>/__mocks__/expo-image-picker.js",
       "^expo-keep-awake$": "<rootDir>/__mocks__/expo-keep-awake.js",
+      "^expo-camera$": "<rootDir>/__mocks__/expo-camera.js",
+      "^expo-file-system$": "<rootDir>/__mocks__/expo-file-system.js",
+      "^expo-file-system/legacy$": "<rootDir>/__mocks__/expo-file-system.js",
+      "^expo-image-manipulator$": "<rootDir>/__mocks__/expo-image-manipulator.js",
       "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js"
     },
     "moduleFileExtensions": [

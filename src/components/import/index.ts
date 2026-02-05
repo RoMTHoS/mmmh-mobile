@@ -5,3 +5,8 @@ export { PlatformBadge } from './PlatformBadge';
 export { ImportStatusCard } from './ImportStatusCard';
 export { ImportStatusList } from './ImportStatusList';
 export { RecipeWebView } from './RecipeWebView';
+export { PhotoSelectionSheet } from './PhotoSelectionSheet';
+export { CameraCapture } from './CameraCapture';
+export { PhotoPreview } from './PhotoPreview';
+export { PhotoEditor } from './PhotoEditor';
+export { PhotoUploadProgress } from './PhotoUploadProgress';
