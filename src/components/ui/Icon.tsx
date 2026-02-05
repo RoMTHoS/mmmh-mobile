@@ -7,6 +7,7 @@ import Svg, { Path, Circle, G } from 'react-native-svg';
 import { colors } from '../../theme';
 
 export const iconNames = [
+  'alert',
   'arrow-left',
   'bookmark',
   'calories',
@@ -19,6 +20,7 @@ export const iconNames = [
   'error',
   'globe',
   'home',
+  'info',
   'instagram',
   'menu',
   'pencil',
@@ -65,6 +67,13 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
 
   const renderIcon = () => {
     switch (name) {
+      case 'alert':
+        return (
+          <G {...commonStrokeProps}>
+            <Path d="M12 9v4m0 4h.01M10.615 3.892 2.39 18.098a1.6 1.6 0 0 0 1.384 2.402h16.452a1.6 1.6 0 0 0 1.384-2.402L13.385 3.892a1.6 1.6 0 0 0-2.77 0" />
+          </G>
+        );
+
       case 'arrow-left':
         return <Path d="m5 12l6-6m-6 6l6 6m-6-6h14" {...commonStrokeProps} />;
 
@@ -145,6 +154,14 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
             d="M20 19v-8.5a1 1 0 0 0-.4-.8l-7-5.25a1 1 0 0 0-1.2 0l-7 5.25a1 1 0 0 0-.4.8V19a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1"
             {...commonStrokeProps}
           />
+        );
+
+      case 'info':
+        return (
+          <G {...commonStrokeProps}>
+            <Circle cx={12} cy={12} r={9} />
+            <Path d="M12 8h.01M12 11v5" />
+          </G>
         );
 
       case 'instagram':
