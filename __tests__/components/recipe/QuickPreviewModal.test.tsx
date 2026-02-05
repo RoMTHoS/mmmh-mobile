@@ -50,7 +50,7 @@ describe('QuickPreviewModal', () => {
 
   describe('Theme Integration', () => {
     it('uses modal background color', () => {
-      expect(colors.modalBackground).toBe('#FFF7E7');
+      expect(colors.modalBackground).toBe('#FBFBFB');
     });
 
     it('uses h2 typography for title', () => {
