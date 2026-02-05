@@ -96,7 +96,7 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
       <View style={styles.content}>
         <View style={styles.statusRow}>
           <Text style={[styles.statusText, { color: getStatusColor() }]}>{getStatusText()}</Text>
-          {job.estimatedTimeRemaining && job.status === 'processing' && (
+          {!!job.estimatedTimeRemaining && job.status === 'processing' && (
             <Text style={styles.timeRemaining}>
               {formatTimeRemaining(job.estimatedTimeRemaining)}
             </Text>
