@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, ActivityIndicator, Text } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import * as ImagePicker from 'expo-image-picker';
@@ -20,13 +20,12 @@ export default function PhotoImportScreen() {
   const params = useLocalSearchParams<{ source?: string }>();
   const source: PhotoSource = (params.source as PhotoSource) || 'camera';
 
-  const [screenState, setScreenState] = useState<ScreenState>(
-    source === 'gallery' ? 'camera' : 'camera'
-  );
+  const [screenState, setScreenState] = useState<ScreenState>('camera');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [editedUri, setEditedUri] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isLoadingGallery, setIsLoadingGallery] = useState(source === 'gallery');
 
   const addJob = useImportStore((state) => state.addJob);
   const jobs = useImportStore((state) => state.jobs);
@@ -34,27 +33,34 @@ export default function PhotoImportScreen() {
   // Launch gallery picker if source is gallery
   useEffect(() => {
     if (source === 'gallery') {
-      handleGalleryPick();
+      // Small delay to ensure screen is mounted before launching picker
+      const timer = setTimeout(() => {
+        handleGalleryPick();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [source]);
 
   const handleGalleryPick = async () => {
-    const hasPermission = await requestMediaLibraryPermission();
-    if (!hasPermission) {
-      Alert.alert(
-        'Permission requise',
-        'Acces aux photos refuse. Activez-le dans les parametres.',
-        [
-          { text: 'Annuler', onPress: () => router.back() },
-          { text: 'Parametres', onPress: () => router.back() },
-        ]
-      );
-      return;
-    }
+    setIsLoadingGallery(true);
 
     try {
+      const hasPermission = await requestMediaLibraryPermission();
+      if (!hasPermission) {
+        Alert.alert(
+          'Permission requise',
+          'Acces aux photos refuse. Activez-le dans les parametres.',
+          [
+            { text: 'Annuler', onPress: () => router.back() },
+            { text: 'Parametres', onPress: () => router.back() },
+          ]
+        );
+        setIsLoadingGallery(false);
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
         quality: 1,
       });
@@ -66,13 +72,16 @@ export default function PhotoImportScreen() {
 
       const asset = result.assets[0];
       setPhotoUri(asset.uri);
+      setIsLoadingGallery(false);
       setScreenState('preview');
-    } catch {
+    } catch (error) {
+      console.error('Gallery pick error:', error);
       Toast.show({
         type: 'error',
         text1: 'Erreur',
         text2: 'Impossible de charger la photo',
       });
+      setIsLoadingGallery(false);
       router.back();
     }
   };
@@ -205,12 +214,31 @@ export default function PhotoImportScreen() {
   }
 
   // Gallery source - loading state while picker opens
-  return <View style={styles.container} />;
+  return (
+    <View style={styles.container}>
+      {isLoadingGallery && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={styles.loadingText}>Ouverture de la galerie...</Text>
+        </View>
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    color: colors.text,
+    fontSize: 16,
   },
 });
