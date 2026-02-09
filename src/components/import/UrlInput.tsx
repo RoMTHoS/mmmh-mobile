@@ -6,7 +6,7 @@ import { PlatformBadge } from './PlatformBadge';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
 import { validateVideoUrl, isValidUrl, type Platform } from '../../utils/validation';
 
-export type ImportType = 'video' | 'website';
+export type ImportType = 'video' | 'website' | 'link';
 
 interface UrlInputProps {
   importType: ImportType;
@@ -24,7 +24,8 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
       setUrl(text);
       setError(null);
 
-      if (importType === 'video' && text.length > 10) {
+      // Detect video platform for video or link import types
+      if ((importType === 'video' || importType === 'link') && text.length > 10) {
         const validation = validateVideoUrl(text);
         setDetectedPlatform(validation.platform || null);
       } else {
@@ -59,7 +60,14 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
         setError(validation.error || 'URL de video invalide');
         return;
       }
+    } else if (importType === 'link') {
+      // Accept both video platform URLs and any valid HTTP URL
+      if (!isValidUrl(url)) {
+        setError('Veuillez entrer une URL valide');
+        return;
+      }
     } else {
+      // Website import - any valid URL
       if (!isValidUrl(url)) {
         setError('Veuillez entrer une URL valide');
         return;
@@ -69,10 +77,18 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
     onSubmit(url.trim());
   }, [url, importType, onSubmit]);
 
-  const placeholderText =
-    importType === 'video'
-      ? 'Coller le lien Instagram, TikTok ou YouTube'
-      : 'Coller le lien du site de recette';
+  const getPlaceholderText = () => {
+    switch (importType) {
+      case 'video':
+        return 'Coller le lien Instagram, TikTok ou YouTube';
+      case 'link':
+        return 'Coller le lien de la recette';
+      default:
+        return 'Coller le lien du site de recette';
+    }
+  };
+
+  const placeholderText = getPlaceholderText();
 
   return (
     <View style={styles.container}>
@@ -109,16 +125,25 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
         </View>
       )}
 
-      {importType === 'video' && !detectedPlatform && url.length === 0 && (
-        <View style={styles.platformHints}>
-          <Text style={styles.hintsLabel}>Plateformes supportees:</Text>
-          <View style={styles.platformList}>
-            <PlatformBadge platform="instagram" size="sm" showLabel />
-            <PlatformBadge platform="tiktok" size="sm" showLabel />
-            <PlatformBadge platform="youtube" size="sm" showLabel />
+      {(importType === 'video' || importType === 'link') &&
+        !detectedPlatform &&
+        url.length === 0 && (
+          <View style={styles.platformHints}>
+            <Text style={styles.hintsLabel}>
+              {importType === 'link' ? 'Videos supportees:' : 'Plateformes supportees:'}
+            </Text>
+            <View style={styles.platformList}>
+              <PlatformBadge platform="instagram" size="sm" showLabel />
+              <PlatformBadge platform="tiktok" size="sm" showLabel />
+              <PlatformBadge platform="youtube" size="sm" showLabel />
+            </View>
+            {importType === 'link' && (
+              <Text style={[styles.hintsLabel, { marginTop: spacing.sm }]}>
+                + tout site de recette
+              </Text>
+            )}
           </View>
-        </View>
-      )}
+        )}
 
       <Button
         title="Importer la recette"

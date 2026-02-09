@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { UrlInput } from '../../src/components/import/UrlInput';
@@ -13,8 +13,6 @@ type ImportType = 'video' | 'website';
 
 export default function UrlInputScreen() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ type?: string }>();
-  const importType: ImportType = (params.type as ImportType) || 'video';
 
   const [isLoading, setIsLoading] = useState(false);
   const addJob = useImportStore((state) => state.addJob);
@@ -35,8 +33,11 @@ export default function UrlInputScreen() {
 
       setIsLoading(true);
 
+      // Auto-detect import type based on URL
+      const platform = detectPlatform(url);
+      const importType: ImportType = platform ? 'video' : 'website';
+
       try {
-        const platform = detectPlatform(url);
         const response = await submitImport({
           importType,
           sourceUrl: url,
@@ -91,7 +92,7 @@ export default function UrlInputScreen() {
         setIsLoading(false);
       }
     },
-    [importType, addJob, jobs]
+    [addJob, jobs]
   );
 
   return (
@@ -105,17 +106,13 @@ export default function UrlInputScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.title}>
-            {importType === 'video' ? 'Importer une video' : 'Importer un site'}
-          </Text>
+          <Text style={styles.title}>Importer depuis un lien</Text>
           <Text style={styles.subtitle}>
-            {importType === 'video'
-              ? 'Collez le lien de la video contenant la recette'
-              : 'Collez le lien de la page de recette'}
+            Collez le lien d'une video (Instagram, TikTok, YouTube) ou d'un site de recette
           </Text>
         </View>
 
-        <UrlInput importType={importType} onSubmit={handleSubmit} isLoading={isLoading} />
+        <UrlInput importType="link" onSubmit={handleSubmit} isLoading={isLoading} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
