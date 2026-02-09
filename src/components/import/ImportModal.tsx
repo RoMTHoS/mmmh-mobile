@@ -70,9 +70,9 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
     }
   }, [visible, slideAnim, backdropAnim]);
 
-  const handleBrowserImport = () => {
+  const handleLinkImport = () => {
     onClose();
-    router.push('/import/url?type=website');
+    router.push('/import/url');
   };
 
   const handleCameraImport = () => {
@@ -110,7 +110,7 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
       <Text style={styles.title}>Importer une recette</Text>
 
       <View style={styles.options}>
-        <ImportOption icon="globe" label="Web" onPress={handleBrowserImport} />
+        <ImportOption icon="globe" label="Lien" onPress={handleLinkImport} />
         <ImportOption icon="camera" label="Photo" onPress={handleCameraImport} />
         <ImportOption icon="text" label="Texte" onPress={handleTextImport} />
       </View>

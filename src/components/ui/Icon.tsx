@@ -36,6 +36,7 @@ export const iconNames = [
   'text',
   'tiktok',
   'time',
+  'video',
   'youtube',
 ] as const;
 
@@ -277,6 +278,15 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
             d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74a2.89 2.89 0 0 1 2.31-4.64a2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1"
             fill={iconColor}
           />
+        );
+
+      case 'video':
+        return (
+          <G {...commonStrokeProps}>
+            <Path d="M3 6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6" />
+            <Path d="m17 9l4-2v10l-4-2" />
+            <Circle cx={9} cy={10} r={1} fill={iconColor} />
+          </G>
         );
 
       case 'youtube':
