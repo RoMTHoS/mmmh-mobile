@@ -72,6 +72,18 @@ const TextInput = ({
 const ActivityIndicator = ({ size, color, testID }) =>
   React.createElement('ActivityIndicator', { size, color, testID, 'data-testid': testID });
 
+const FlatList = ({ data, renderItem, keyExtractor, horizontal, showsHorizontalScrollIndicator, contentContainerStyle, ItemSeparatorComponent, testID }) =>
+  React.createElement(
+    'FlatList',
+    { testID, 'data-testid': testID, horizontal },
+    data?.map((item, index) =>
+      React.createElement(React.Fragment, { key: keyExtractor ? keyExtractor(item, index) : index },
+        renderItem({ item, index }),
+        ItemSeparatorComponent && index < data.length - 1 ? React.createElement(ItemSeparatorComponent) : null
+      )
+    )
+  );
+
 const Alert = {
   alert: jest.fn(),
 };
@@ -146,6 +158,7 @@ module.exports = {
   Image,
   TextInput,
   ActivityIndicator,
+  FlatList,
   Alert,
   StyleSheet,
   Modal,

@@ -275,6 +275,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.script,
     fontSize: 28,
+    lineHeight: 44,
     color: colors.text,
     marginBottom: spacing.md,
   },
