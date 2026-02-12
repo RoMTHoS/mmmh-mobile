@@ -5,8 +5,9 @@ const FileSystemUploadType = {
 
 const uploadAsync = jest.fn((url, uri, options) =>
   Promise.resolve({
-    status: 202,
+    status: 200,
     body: JSON.stringify({
+      path: '/tmp/uploads/mock-file.jpg',
       data: {
         jobId: 'mock-job-id-123',
         estimatedTime: 30,

@@ -29,7 +29,7 @@ describe('uploadPhotos (batch)', () => {
     expect(result.queuePosition).toBe(2);
   });
 
-  it('calls fetch with correct endpoint and FormData', async () => {
+  it('calls fetch with correct endpoint and JSON body', async () => {
     const uris = ['file:///p1.jpg', 'file:///p2.jpg'];
     await uploadPhotos(uris);
 
@@ -37,7 +37,9 @@ describe('uploadPhotos (batch)', () => {
     const [url, options] = mockFetch.mock.calls[0];
     expect(url).toContain('/api/import/photos');
     expect(options.method).toBe('POST');
-    expect(options.body).toBeInstanceOf(FormData);
+    expect(options.headers['Content-Type']).toBe('application/json');
+    const body = JSON.parse(options.body);
+    expect(body.paths).toHaveLength(2);
   });
 
   it('calls progress callback at start and completion', async () => {
