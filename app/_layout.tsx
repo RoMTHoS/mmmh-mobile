@@ -104,17 +104,12 @@ function RootLayoutNav() {
           headerTintColor: colors.text,
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ title: '', headerShown: false }} />
         <Stack.Screen name="(modals)" options={{ headerShown: false }} />
+        <Stack.Screen name="import" options={{ title: 'Importer recette', headerBackTitle: ' ' }} />
         <Stack.Screen name="recipe/[id]" options={{ title: '' }} />
-        <Stack.Screen
-          name="recipe/[id]/edit"
-          options={{ title: '', presentation: 'modal' }}
-        />
-        <Stack.Screen
-          name="recipe/create"
-          options={{ title: '', presentation: 'modal' }}
-        />
+        <Stack.Screen name="recipe/[id]/edit" options={{ title: '', presentation: 'modal' }} />
+        <Stack.Screen name="recipe/create" options={{ title: '', presentation: 'modal' }} />
         <Stack.Screen name="+not-found" options={{ title: '' }} />
       </Stack>
     </>

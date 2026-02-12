@@ -9,4 +9,5 @@ export { PhotoSelectionSheet } from './PhotoSelectionSheet';
 export { CameraCapture } from './CameraCapture';
 export { PhotoPreview } from './PhotoPreview';
 export { PhotoEditor } from './PhotoEditor';
+export { PhotoBatchStrip } from './PhotoBatchStrip';
 export { PhotoUploadProgress } from './PhotoUploadProgress';

@@ -98,4 +98,103 @@ export async function uploadPhoto(
   }
 }
 
+/**
+ * Uploads multiple photos for batch processing.
+ *
+ * Two-step approach because React Native's fetch/XHR can't reliably
+ * send multi-file FormData with native file URIs:
+ * 1. Upload each file individually via uploadAsync (native, reliable)
+ * 2. Send the server file paths to the batch endpoint via JSON
+ */
+export async function uploadPhotos(
+  uris: string[],
+  onProgress?: (progress: UploadProgress) => void
+): Promise<PhotoUploadResponse> {
+  onProgress?.({ loaded: 0, total: 100, percentage: 0 });
+
+  try {
+    // Step 1: Upload each file individually using native uploadAsync
+    const paths: string[] = [];
+
+    for (let i = 0; i < uris.length; i++) {
+      const uploadResult = await uploadAsync(`${API_BASE_URL}/api/import/upload`, uris[i], {
+        uploadType: UPLOAD_TYPE_MULTIPART,
+        fieldName: 'image',
+        mimeType: 'image/jpeg',
+        httpMethod: 'POST',
+        headers: { Accept: 'application/json' },
+      });
+
+      if (uploadResult.status !== 200) {
+        let errorData;
+        try {
+          errorData = JSON.parse(uploadResult.body);
+        } catch {
+          errorData = {};
+        }
+        throw new PhotoUploadError(
+          errorData.code || 'UPLOAD_FAILED',
+          errorData.message || `Echec de l'envoi de la photo ${i + 1}`,
+          uploadResult.status >= 500
+        );
+      }
+
+      const data = JSON.parse(uploadResult.body);
+      paths.push(data.path);
+
+      // Progress: uploading phase is 0-80%
+      const percentage = Math.round(((i + 1) / uris.length) * 80);
+      onProgress?.({ loaded: i + 1, total: uris.length, percentage });
+    }
+
+    // Step 2: Trigger batch processing with the uploaded file paths
+    const response = await fetch(`${API_BASE_URL}/api/import/photos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ paths }),
+    });
+
+    onProgress?.({ loaded: 100, total: 100, percentage: 100 });
+
+    if (response.status !== 202 && response.status !== 200) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = {};
+      }
+      throw new PhotoUploadError(
+        errorData.code || 'UPLOAD_FAILED',
+        errorData.message || `Echec du traitement (${response.status})`,
+        response.status >= 500
+      );
+    }
+
+    const responseData = await response.json();
+    const data = responseData.data || responseData;
+
+    return {
+      jobId: data.jobId,
+      estimatedTime: data.estimatedTime,
+      queuePosition: data.queuePosition,
+    };
+  } catch (error) {
+    if (error instanceof PhotoUploadError) {
+      throw error;
+    }
+
+    const err = error instanceof Error ? error : new Error(String(error ?? 'Unknown error'));
+    logger.error('Batch photo upload error', err);
+
+    throw new PhotoUploadError(
+      'NETWORK_ERROR',
+      "Echec de l'envoi. Verifiez votre connexion.",
+      true
+    );
+  }
+}
+
 export { PhotoUploadError };

@@ -8,6 +8,7 @@ export default function ImportLayout() {
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
         headerShadowVisible: false,
+        headerBackTitle: ' ',
       }}
     >
       <Stack.Screen
@@ -27,9 +28,8 @@ export default function ImportLayout() {
       <Stack.Screen
         name="photo"
         options={{
-          title: 'Importer une photo',
+          title: 'Importer une recette',
           presentation: 'fullScreenModal',
-          headerShown: false,
         }}
       />
     </Stack>
