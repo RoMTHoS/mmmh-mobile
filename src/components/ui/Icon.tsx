@@ -13,6 +13,7 @@ export const iconNames = [
   'calories',
   'camera',
   'cart',
+  'cart-outline',
   'check',
   'close',
   'clipboard',
@@ -25,6 +26,7 @@ export const iconNames = [
   'info',
   'instagram',
   'menu',
+  'minus',
   'pencil',
   'plus',
   'plus-circle',
@@ -105,6 +107,13 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
         );
 
       case 'cart':
+        return (
+          <G fill={iconColor}>
+            <Path d="M3 3a1 1 0 0 1 1-1h1.22a2 2 0 0 1 1.95 1.55L7.52 5H21a1 1 0 0 1 .96 1.27l-2.5 9A2 2 0 0 1 17.53 17H8.97a2 2 0 0 1-1.93-1.47L4.28 4H4a1 1 0 0 1-1-1zm6 17a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0zm9 0a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0z" />
+          </G>
+        );
+
+      case 'cart-outline':
         return (
           <G {...commonStrokeProps}>
             <Path d="M3 3h2l.5 3m0 0L7 15h11l3-9z" />
@@ -194,6 +203,9 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
 
       case 'menu':
         return <Path d="M5 6h14M5 10h14M5 14h14M5 18h14" {...commonStrokeProps} />;
+
+      case 'minus':
+        return <Path d="M5 12h14" {...commonStrokeProps} />;
 
       case 'pencil':
         return (

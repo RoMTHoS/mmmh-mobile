@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,9 +10,10 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import { useRecipe } from '../../src/hooks';
+import { useRecipe, useActiveShoppingList, useShoppingListRecipes } from '../../src/hooks';
 import { LoadingScreen, Badge, Icon } from '../../src/components/ui';
 import { IngredientList, StepList } from '../../src/components/recipes';
+import { ServingsSelector } from '../../src/components/shopping';
 import { colors, typography, spacing, fonts } from '../../src/theme';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -20,6 +22,17 @@ const PLACEHOLDER_IMAGE: ImageSourcePropType = require('../../assets/placeholder
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: recipe, isLoading, error } = useRecipe(id);
+  const [servingsSelectorVisible, setServingsSelectorVisible] = useState(false);
+
+  const listQuery = useActiveShoppingList();
+  const listId = listQuery.data?.id ?? '';
+  const recipesQuery = useShoppingListRecipes(listId);
+
+  const existingEntry = useMemo(
+    () => recipesQuery.data?.find((r) => r.recipeId === id) ?? null,
+    [recipesQuery.data, id]
+  );
+  const isInList = existingEntry !== null;
 
   // Keep screen awake while viewing recipe (for cooking)
   useKeepAwake();
@@ -115,6 +128,16 @@ export default function RecipeDetailScreen() {
         </View>
       </ScrollView>
 
+      {recipe && (
+        <ServingsSelector
+          visible={servingsSelectorVisible}
+          onClose={() => setServingsSelectorVisible(false)}
+          recipe={recipe}
+          listId={listId}
+          existingEntry={existingEntry}
+        />
+      )}
+
       {/* Bottom Action Bar */}
       <View style={styles.actionBar}>
         <Pressable
@@ -127,11 +150,16 @@ export default function RecipeDetailScreen() {
         </Pressable>
         <Pressable
           style={styles.actionButton}
-          onPress={() => {}}
+          onPress={() => setServingsSelectorVisible(true)}
           accessibilityLabel="Ajouter aux courses"
+          testID="courses-button"
         >
-          <Icon name="cart" size="lg" color={colors.text} />
-          <Text style={styles.actionText}>Courses</Text>
+          <Icon
+            name={isInList ? 'cart' : 'cart-outline'}
+            size="lg"
+            color={isInList ? colors.accent : colors.text}
+          />
+          <Text style={[styles.actionText, isInList && styles.actionTextActive]}>Courses</Text>
         </Pressable>
         <Pressable
           style={styles.actionButton}
@@ -208,6 +236,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.script,
     fontSize: 14,
     color: colors.text,
+  },
+  actionTextActive: {
+    color: colors.accent,
+    fontWeight: '600',
   },
   errorContainer: {
     flex: 1,
