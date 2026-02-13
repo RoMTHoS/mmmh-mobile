@@ -77,4 +77,18 @@ describe('RecipeCarousel', () => {
     const element = RecipeCarousel({ recipes, highlightRecipeId: 'non-existent' });
     expect(element).toBeDefined();
   });
+
+  it('accepts onRemoveRecipe callback', () => {
+    const onRemove = jest.fn();
+    const recipes = [mockRecipe({ recipeId: 'r1' })];
+    const element = RecipeCarousel({ recipes, onRemoveRecipe: onRemove });
+    expect(element).toBeDefined();
+    expect(element.props.testID).toBe('recipe-carousel');
+  });
+
+  it('renders without onRemoveRecipe', () => {
+    const recipes = [mockRecipe({ recipeId: 'r1' })];
+    const element = RecipeCarousel({ recipes });
+    expect(element).toBeDefined();
+  });
 });

@@ -10,6 +10,8 @@ import {
   useToggleItem,
   useAddManualItem,
   useClearCheckedItems,
+  useDeleteItem,
+  useUpdateItem,
 } from '../../src/hooks/useShoppingList';
 import * as shoppingDb from '../../src/services/shoppingDatabase';
 import * as aggregation from '../../src/utils/ingredientAggregation';
@@ -258,6 +260,92 @@ describe('Shopping List Hooks', () => {
       });
 
       expect(mockShoppingDb.clearCheckedItems).toHaveBeenCalledWith('list-1');
+    });
+  });
+
+  describe('useDeleteItem', () => {
+    it('should delete item by ID', async () => {
+      mockShoppingDb.deleteItem.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useDeleteItem(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({ itemId: 'item-1', listId: 'list-1' });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(mockShoppingDb.deleteItem).toHaveBeenCalledWith('item-1');
+    });
+  });
+
+  describe('useUpdateItem', () => {
+    it('should update item fields', async () => {
+      mockShoppingDb.updateItem.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useUpdateItem(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({
+        itemId: 'item-1',
+        listId: 'list-1',
+        updates: { name: 'Tomates cerises', quantity: 3 },
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(mockShoppingDb.updateItem).toHaveBeenCalledWith('item-1', {
+        name: 'Tomates cerises',
+        quantity: 3,
+      });
+    });
+
+    it('should convert recipe-sourced item to manual when requested', async () => {
+      mockShoppingDb.convertItemToManual.mockResolvedValue(undefined);
+      mockShoppingDb.updateItem.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useUpdateItem(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({
+        itemId: 'item-1',
+        listId: 'list-1',
+        updates: { name: 'Custom' },
+        convertToManual: true,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(mockShoppingDb.convertItemToManual).toHaveBeenCalledWith('item-1');
+      expect(mockShoppingDb.updateItem).toHaveBeenCalledWith('item-1', { name: 'Custom' });
+    });
+
+    it('should not convert to manual when not requested', async () => {
+      mockShoppingDb.updateItem.mockResolvedValue(undefined);
+
+      const { result } = renderHook(() => useUpdateItem(), {
+        wrapper: createWrapper(),
+      });
+
+      result.current.mutate({
+        itemId: 'item-1',
+        listId: 'list-1',
+        updates: { name: 'Updated' },
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(mockShoppingDb.convertItemToManual).not.toHaveBeenCalled();
     });
   });
 });

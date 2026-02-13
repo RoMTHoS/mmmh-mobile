@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Alert, Share, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../src/theme';
 import { LoadingScreen } from '../../src/components/ui/LoadingScreen';
 import {
@@ -13,6 +14,7 @@ import {
   UnsortedView,
   ShoppingEmptyState,
   AddIngredientButton,
+  EditIngredientModal,
 } from '../../src/components/shopping';
 import type { ListViewTab } from '../../src/components/shopping';
 import {
@@ -21,12 +23,19 @@ import {
   useShoppingListItems,
   useToggleItem,
   useAddManualItem,
+  useClearCheckedItems,
+  useDeleteItem,
+  useUpdateItem,
+  useRemoveRecipeFromList,
 } from '../../src/hooks/useShoppingList';
+import { exportShoppingListAsText } from '../../src/utils/shoppingListExport';
+import type { ShoppingListItem, ShoppingListRecipe } from '../../src/types';
 
 export default function ShoppingScreen() {
   const insets = useSafeAreaInsets();
   const { highlightRecipe } = useLocalSearchParams<{ highlightRecipe?: string }>();
   const [activeTab, setActiveTab] = useState<ListViewTab>('categories');
+  const [editingItem, setEditingItem] = useState<ShoppingListItem | null>(null);
 
   const listQuery = useActiveShoppingList();
   const list = listQuery.data;
@@ -36,6 +45,10 @@ export default function ShoppingScreen() {
 
   const toggleItem = useToggleItem();
   const addManualItem = useAddManualItem();
+  const clearChecked = useClearCheckedItems();
+  const deleteItem = useDeleteItem();
+  const updateItem = useUpdateItem();
+  const removeRecipe = useRemoveRecipeFromList();
 
   const handleToggle = useCallback(
     (itemId: string) => {
@@ -43,6 +56,89 @@ export default function ShoppingScreen() {
     },
     [toggleItem]
   );
+
+  const handleDeleteItem = useCallback(
+    (itemId: string) => {
+      if (!list) return;
+      deleteItem.mutate({ itemId, listId: list.id });
+    },
+    [list, deleteItem]
+  );
+
+  const handleEditItem = useCallback((item: ShoppingListItem) => {
+    setEditingItem(item);
+  }, []);
+
+  const handleSaveEdit = useCallback(
+    (
+      itemId: string,
+      updates: Partial<Pick<ShoppingListItem, 'name' | 'quantity' | 'unit' | 'category'>>,
+      convertToManual: boolean
+    ) => {
+      if (!list) return;
+      updateItem.mutate({
+        itemId,
+        listId: list.id,
+        updates,
+        convertToManual,
+      });
+    },
+    [list, updateItem]
+  );
+
+  const handleClearChecked = useCallback(() => {
+    if (!list) return;
+    const checkedCount = (itemsQuery.data ?? []).filter((i) => i.isChecked).length;
+    if (checkedCount === 0) return;
+
+    Alert.alert(
+      'Effacer les cochés',
+      `Supprimer ${checkedCount} élément${checkedCount > 1 ? 's' : ''} coché${checkedCount > 1 ? 's' : ''} ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: () => clearChecked.mutate(list.id),
+        },
+      ]
+    );
+  }, [list, itemsQuery.data, clearChecked]);
+
+  const handleRemoveRecipe = useCallback(
+    (recipe: ShoppingListRecipe) => {
+      if (!list) return;
+
+      Alert.alert(
+        'Retirer la recette',
+        `Retirer ${recipe.recipeTitle ?? 'cette recette'} ? Tous les ingrédients associés seront supprimés.`,
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Retirer',
+            style: 'destructive',
+            onPress: async () => {
+              removeRecipe.mutate({ listId: list.id, recipeId: recipe.recipeId });
+            },
+          },
+        ]
+      );
+    },
+    [list, removeRecipe]
+  );
+
+  const handleShare = useCallback(async () => {
+    const items = itemsQuery.data ?? [];
+    const recipes = recipesQuery.data ?? [];
+    if (items.length === 0) return;
+
+    const text = exportShoppingListAsText(items, recipes.length);
+    try {
+      await Share.share({ message: text });
+    } catch {
+      // User cancelled share
+    }
+  }, [itemsQuery.data, recipesQuery.data]);
 
   const handleAddManual = useCallback(
     (params: {
@@ -93,6 +189,7 @@ export default function ShoppingScreen() {
 
   const recipes = recipesQuery.data ?? [];
   const items = itemsQuery.data ?? [];
+  const checkedCount = items.filter((i) => i.isChecked).length;
 
   // Empty state
   if (recipes.length === 0) {
@@ -106,8 +203,28 @@ export default function ShoppingScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]} testID="shopping-screen">
-      <Text style={styles.headerTitle}>Liste de course</Text>
-      <RecipeCarousel recipes={recipes} highlightRecipeId={highlightRecipe} />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Liste de course</Text>
+        <View style={styles.headerActions}>
+          {checkedCount > 0 && (
+            <Pressable
+              onPress={handleClearChecked}
+              style={styles.headerButton}
+              testID="clear-checked-button"
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
+            </Pressable>
+          )}
+          <Pressable onPress={handleShare} style={styles.headerButton} testID="share-button">
+            <Ionicons name="share-outline" size={20} color={colors.text} />
+          </Pressable>
+        </View>
+      </View>
+      <RecipeCarousel
+        recipes={recipes}
+        highlightRecipeId={highlightRecipe}
+        onRemoveRecipe={handleRemoveRecipe}
+      />
       <SummaryBadges list={list!} />
       <Text style={styles.listTitle}>Liste de course</Text>
       <ListViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
@@ -116,6 +233,8 @@ export default function ShoppingScreen() {
           <CategoryView
             items={items}
             onToggleItem={handleToggle}
+            onDeleteItem={handleDeleteItem}
+            onEditItem={handleEditItem}
             onRefresh={handleRefresh}
             refreshing={isRefreshing}
           />
@@ -125,6 +244,8 @@ export default function ShoppingScreen() {
             items={items}
             recipes={recipes}
             onToggleItem={handleToggle}
+            onDeleteItem={handleDeleteItem}
+            onEditItem={handleEditItem}
             onRefresh={handleRefresh}
             refreshing={isRefreshing}
           />
@@ -133,12 +254,20 @@ export default function ShoppingScreen() {
           <UnsortedView
             items={items}
             onToggleItem={handleToggle}
+            onDeleteItem={handleDeleteItem}
+            onEditItem={handleEditItem}
             onRefresh={handleRefresh}
             refreshing={isRefreshing}
           />
         )}
       </View>
       <AddIngredientButton onAdd={handleAddManual} />
+      <EditIngredientModal
+        item={editingItem}
+        visible={editingItem !== null}
+        onClose={() => setEditingItem(null)}
+        onSave={handleSaveEdit}
+      />
     </View>
   );
 }
@@ -148,12 +277,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerTitle: {
-    ...typography.sectionTitle,
-    color: colors.text,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
+  },
+  headerTitle: {
+    ...typography.sectionTitle,
+    color: colors.text,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  headerButton: {
+    padding: spacing.xs,
   },
   listTitle: {
     ...typography.label,

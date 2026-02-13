@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, View, Text, Image, StyleSheet, Animated } from 'react-native';
+import { FlatList, View, Text, Image, Pressable, StyleSheet, Animated } from 'react-native';
 import { colors, typography, spacing, radius } from '../../theme';
 import type { ShoppingListRecipe } from '../../types';
 
 interface RecipeCarouselProps {
   recipes: ShoppingListRecipe[];
   highlightRecipeId?: string;
+  onRemoveRecipe?: (recipe: ShoppingListRecipe) => void;
 }
 
 const CARD_SIZE = 72;
@@ -13,9 +14,11 @@ const CARD_SIZE = 72;
 function RecipeCard({
   recipe,
   isHighlighted,
+  onLongPress,
 }: {
   recipe: ShoppingListRecipe;
   isHighlighted: boolean;
+  onLongPress?: () => void;
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -29,36 +32,39 @@ function RecipeCard({
   }, [isHighlighted, scaleAnim]);
 
   return (
-    <Animated.View
-      style={[styles.card, { transform: [{ scale: scaleAnim }] }]}
-      testID={`carousel-card-${recipe.recipeId}`}
-    >
-      {recipe.recipePhotoUri ? (
-        <Image
-          source={{ uri: recipe.recipePhotoUri }}
-          style={[styles.thumbnail, isHighlighted && styles.thumbnailHighlighted]}
-        />
-      ) : (
-        <View
-          style={[
-            styles.thumbnail,
-            styles.placeholderThumbnail,
-            isHighlighted && styles.thumbnailHighlighted,
-          ]}
-        >
-          <Text style={styles.placeholderText}>
-            {recipe.recipeTitle?.charAt(0)?.toUpperCase() ?? '?'}
-          </Text>
-        </View>
-      )}
-      <Text style={styles.cardTitle} numberOfLines={1}>
-        {recipe.recipeTitle ?? 'Sans titre'}
-      </Text>
-    </Animated.View>
+    <Pressable onLongPress={onLongPress} testID={`carousel-card-${recipe.recipeId}`}>
+      <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
+        {recipe.recipePhotoUri ? (
+          <Image
+            source={{ uri: recipe.recipePhotoUri }}
+            style={[styles.thumbnail, isHighlighted && styles.thumbnailHighlighted]}
+          />
+        ) : (
+          <View
+            style={[
+              styles.thumbnail,
+              styles.placeholderThumbnail,
+              isHighlighted && styles.thumbnailHighlighted,
+            ]}
+          >
+            <Text style={styles.placeholderText}>
+              {recipe.recipeTitle?.charAt(0)?.toUpperCase() ?? '?'}
+            </Text>
+          </View>
+        )}
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {recipe.recipeTitle ?? 'Sans titre'}
+        </Text>
+      </Animated.View>
+    </Pressable>
   );
 }
 
-export function RecipeCarousel({ recipes, highlightRecipeId }: RecipeCarouselProps) {
+export function RecipeCarousel({
+  recipes,
+  highlightRecipeId,
+  onRemoveRecipe,
+}: RecipeCarouselProps) {
   const flatListRef = useRef<FlatList>(null);
   const [highlightId, setHighlightId] = useState(highlightRecipeId);
 
@@ -88,7 +94,11 @@ export function RecipeCarousel({ recipes, highlightRecipeId }: RecipeCarouselPro
         horizontal
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => (
-          <RecipeCard recipe={item} isHighlighted={item.recipeId === highlightId} />
+          <RecipeCard
+            recipe={item}
+            isHighlighted={item.recipeId === highlightId}
+            onLongPress={onRemoveRecipe ? () => onRemoveRecipe(item) : undefined}
+          />
         )}
         contentContainerStyle={styles.listContent}
         onScrollToIndexFailed={() => {}}

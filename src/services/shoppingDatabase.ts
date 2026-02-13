@@ -358,6 +358,22 @@ export async function deleteItem(itemId: string): Promise<void> {
   }
 }
 
+export async function convertItemToManual(itemId: string): Promise<void> {
+  const database = getDatabase();
+
+  try {
+    database.runSync(
+      `UPDATE shopping_list_items
+       SET source_type = 'manual', source_recipe_ids = NULL, updated_at = ?
+       WHERE id = ?`,
+      [new Date().toISOString(), itemId]
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de convertir l'article. ${message}`);
+  }
+}
+
 export async function clearCheckedItems(listId: string): Promise<void> {
   const database = getDatabase();
 

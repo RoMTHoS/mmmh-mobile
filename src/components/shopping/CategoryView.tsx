@@ -7,6 +7,8 @@ import { INGREDIENT_CATEGORIES } from '../../types';
 interface CategoryViewProps {
   items: ShoppingListItem[];
   onToggleItem: (itemId: string) => void;
+  onDeleteItem?: (itemId: string) => void;
+  onEditItem?: (item: ShoppingListItem) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
 }
@@ -36,14 +38,28 @@ function groupByCategory(items: ShoppingListItem[]): CategorySection[] {
     }));
 }
 
-export function CategoryView({ items, onToggleItem, onRefresh, refreshing }: CategoryViewProps) {
+export function CategoryView({
+  items,
+  onToggleItem,
+  onDeleteItem,
+  onEditItem,
+  onRefresh,
+  refreshing,
+}: CategoryViewProps) {
   const sections = groupByCategory(items);
 
   return (
     <SectionList
       sections={sections}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <IngredientRow item={item} onToggle={onToggleItem} />}
+      renderItem={({ item }) => (
+        <IngredientRow
+          item={item}
+          onToggle={onToggleItem}
+          onDelete={onDeleteItem}
+          onEdit={onEditItem}
+        />
+      )}
       renderSectionHeader={({ section }) => (
         <Text style={styles.sectionHeader}>{section.title} :</Text>
       )}
