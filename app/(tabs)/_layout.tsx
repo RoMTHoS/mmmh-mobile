@@ -1,9 +1,28 @@
 import { useState } from 'react';
 import { Tabs } from 'expo-router';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { colors, spacing } from '../../src/theme';
 import { ImportModal } from '../../src/components/import/ImportModal';
 import { Icon } from '../../src/components/ui';
+import { useActiveShoppingList, useShoppingListRecipes } from '../../src/hooks/useShoppingList';
+
+function CartTabIcon({ color }: { color: string }) {
+  const listQuery = useActiveShoppingList();
+  const listId = listQuery.data?.id ?? '';
+  const recipesQuery = useShoppingListRecipes(listId);
+  const count = recipesQuery.data?.length ?? 0;
+
+  return (
+    <View>
+      <Icon name="cart" size={32} color={color} />
+      {count > 0 && (
+        <View style={styles.badge} testID="cart-badge">
+          <Text style={styles.badgeText}>{count > 9 ? '9+' : count}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function TabLayout() {
   const [importModalVisible, setImportModalVisible] = useState(false);
@@ -61,7 +80,7 @@ export default function TabLayout() {
           name="shopping"
           options={{
             title: 'Courses',
-            tabBarIcon: ({ color }) => <Icon name="cart" size={32} color={color} />,
+            tabBarIcon: ({ color }) => <CartTabIcon color={color} />,
           }}
         />
         <Tabs.Screen
@@ -83,5 +102,23 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     marginTop: -4,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: colors.accent,
+    borderRadius: 9999,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

@@ -1,3 +1,12 @@
+jest.mock('react', () => {
+  const actual = jest.requireActual('react');
+  return {
+    ...actual,
+    useState: (init: unknown) => [init, jest.fn()],
+    useMemo: (fn: () => unknown) => fn(),
+  };
+});
+
 import { useKeepAwake } from 'expo-keep-awake';
 import type { Recipe } from '../../src/types';
 
@@ -6,9 +15,14 @@ const mockUseRecipe = jest.fn();
 const mockUseDeleteRecipe = jest.fn();
 const mockMutateAsync = jest.fn();
 
+const mockShoppingListData = { id: 'list-1', name: 'Test List' };
+const mockShoppingRecipes: unknown[] = [];
+
 jest.mock('../../src/hooks', () => ({
   useRecipe: (id: string) => mockUseRecipe(id),
   useDeleteRecipe: () => mockUseDeleteRecipe(),
+  useActiveShoppingList: () => ({ data: mockShoppingListData }),
+  useShoppingListRecipes: () => ({ data: mockShoppingRecipes }),
 }));
 
 // Import after mocking

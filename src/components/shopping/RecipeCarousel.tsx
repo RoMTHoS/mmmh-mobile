@@ -1,20 +1,51 @@
-import { FlatList, View, Text, Image, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { FlatList, View, Text, Image, StyleSheet, Animated } from 'react-native';
 import { colors, typography, spacing, radius } from '../../theme';
 import type { ShoppingListRecipe } from '../../types';
 
 interface RecipeCarouselProps {
   recipes: ShoppingListRecipe[];
+  highlightRecipeId?: string;
 }
 
 const CARD_SIZE = 72;
 
-function RecipeCard({ recipe }: { recipe: ShoppingListRecipe }) {
+function RecipeCard({
+  recipe,
+  isHighlighted,
+}: {
+  recipe: ShoppingListRecipe;
+  isHighlighted: boolean;
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isHighlighted) {
+      Animated.sequence([
+        Animated.timing(scaleAnim, { toValue: 1.15, duration: 300, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [isHighlighted, scaleAnim]);
+
   return (
-    <View style={styles.card} testID={`carousel-card-${recipe.recipeId}`}>
+    <Animated.View
+      style={[styles.card, { transform: [{ scale: scaleAnim }] }]}
+      testID={`carousel-card-${recipe.recipeId}`}
+    >
       {recipe.recipePhotoUri ? (
-        <Image source={{ uri: recipe.recipePhotoUri }} style={styles.thumbnail} />
+        <Image
+          source={{ uri: recipe.recipePhotoUri }}
+          style={[styles.thumbnail, isHighlighted && styles.thumbnailHighlighted]}
+        />
       ) : (
-        <View style={[styles.thumbnail, styles.placeholderThumbnail]}>
+        <View
+          style={[
+            styles.thumbnail,
+            styles.placeholderThumbnail,
+            isHighlighted && styles.thumbnailHighlighted,
+          ]}
+        >
           <Text style={styles.placeholderText}>
             {recipe.recipeTitle?.charAt(0)?.toUpperCase() ?? '?'}
           </Text>
@@ -23,21 +54,44 @@ function RecipeCard({ recipe }: { recipe: ShoppingListRecipe }) {
       <Text style={styles.cardTitle} numberOfLines={1}>
         {recipe.recipeTitle ?? 'Sans titre'}
       </Text>
-    </View>
+    </Animated.View>
   );
 }
 
-export function RecipeCarousel({ recipes }: RecipeCarouselProps) {
+export function RecipeCarousel({ recipes, highlightRecipeId }: RecipeCarouselProps) {
+  const flatListRef = useRef<FlatList>(null);
+  const [highlightId, setHighlightId] = useState(highlightRecipeId);
+
+  // Auto-scroll to highlighted recipe and clear highlight after animation
+  useEffect(() => {
+    if (!highlightRecipeId) return;
+    setHighlightId(highlightRecipeId);
+
+    const idx = recipes.findIndex((r) => r.recipeId === highlightRecipeId);
+    if (idx >= 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
+      }, 100);
+    }
+
+    const timer = setTimeout(() => setHighlightId(undefined), 1500);
+    return () => clearTimeout(timer);
+  }, [highlightRecipeId, recipes]);
+
   return (
     <View style={styles.container} testID="recipe-carousel">
       <Text style={styles.sectionTitle}>Recettes dans la liste</Text>
       <FlatList
+        ref={flatListRef}
         data={recipes}
         keyExtractor={(item) => item.recipeId}
         horizontal
         showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => <RecipeCard recipe={item} />}
+        renderItem={({ item }) => (
+          <RecipeCard recipe={item} isHighlighted={item.recipeId === highlightId} />
+        )}
         contentContainerStyle={styles.listContent}
+        onScrollToIndexFailed={() => {}}
       />
     </View>
   );
@@ -73,6 +127,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  thumbnailHighlighted: {
+    borderWidth: 2,
+    borderColor: colors.accent,
   },
   placeholderText: {
     ...typography.h2,

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../src/theme';
 import { LoadingScreen } from '../../src/components/ui/LoadingScreen';
@@ -24,6 +25,7 @@ import {
 
 export default function ShoppingScreen() {
   const insets = useSafeAreaInsets();
+  const { highlightRecipe } = useLocalSearchParams<{ highlightRecipe?: string }>();
   const [activeTab, setActiveTab] = useState<ListViewTab>('categories');
 
   const listQuery = useActiveShoppingList();
@@ -105,7 +107,7 @@ export default function ShoppingScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]} testID="shopping-screen">
       <Text style={styles.headerTitle}>Liste de course</Text>
-      <RecipeCarousel recipes={recipes} />
+      <RecipeCarousel recipes={recipes} highlightRecipeId={highlightRecipe} />
       <SummaryBadges list={list!} />
       <Text style={styles.listTitle}>Liste de course</Text>
       <ListViewTabs activeTab={activeTab} onTabChange={setActiveTab} />

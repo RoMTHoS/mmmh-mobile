@@ -1,3 +1,13 @@
+jest.mock('react', () => {
+  const actual = jest.requireActual('react');
+  return {
+    ...actual,
+    useState: (init: unknown) => [init, jest.fn()],
+    useRef: (init: unknown) => ({ current: init }),
+    useEffect: jest.fn(),
+  };
+});
+
 import type { ShoppingListRecipe } from '../../../src/types';
 import { RecipeCarousel } from '../../../src/components/shopping/RecipeCarousel';
 
@@ -47,5 +57,24 @@ describe('RecipeCarousel', () => {
     const element = RecipeCarousel({ recipes: [] });
     const flatList = element.props.children[1];
     expect(flatList.props.data).toEqual([]);
+  });
+
+  it('accepts highlightRecipeId prop', () => {
+    const recipes = [mockRecipe({ recipeId: 'r1' })];
+    const element = RecipeCarousel({ recipes, highlightRecipeId: 'r1' });
+    expect(element).toBeDefined();
+    expect(element.props.testID).toBe('recipe-carousel');
+  });
+
+  it('renders without highlightRecipeId', () => {
+    const recipes = [mockRecipe({ recipeId: 'r1' })];
+    const element = RecipeCarousel({ recipes });
+    expect(element).toBeDefined();
+  });
+
+  it('handles highlightRecipeId not in recipes list', () => {
+    const recipes = [mockRecipe({ recipeId: 'r1' })];
+    const element = RecipeCarousel({ recipes, highlightRecipeId: 'non-existent' });
+    expect(element).toBeDefined();
   });
 });

@@ -39,6 +39,7 @@ describe('Shopping components barrel export', () => {
     expect(shoppingComponents.IngredientRow).toBeDefined();
     expect(shoppingComponents.ShoppingEmptyState).toBeDefined();
     expect(shoppingComponents.AddIngredientButton).toBeDefined();
+    expect(shoppingComponents.ServingsSelector).toBeDefined();
   });
 });
 
