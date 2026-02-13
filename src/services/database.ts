@@ -3,7 +3,7 @@ import uuid from 'react-native-uuid';
 import type { Recipe, CreateRecipeInput, UpdateRecipeInput } from '../types';
 
 const DATABASE_NAME = 'mmmh.db';
-const CURRENT_VERSION = 1;
+const CURRENT_VERSION = 2;
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -82,6 +82,55 @@ async function runMigrations(fromVersion: number): Promise<void> {
       );
 
       INSERT INTO schema_version (version) VALUES (1);
+    `);
+  }
+
+  if (fromVersion < 2) {
+    database.execSync(`
+      CREATE TABLE IF NOT EXISTS shopping_lists (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL DEFAULT 'Liste de courses',
+        is_active INTEGER NOT NULL DEFAULT 1,
+        meal_count INTEGER DEFAULT 0,
+        price_estimate_min REAL,
+        price_estimate_max REAL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS shopping_list_recipes (
+        id TEXT PRIMARY KEY,
+        shopping_list_id TEXT NOT NULL REFERENCES shopping_lists(id) ON DELETE CASCADE,
+        recipe_id TEXT NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+        servings_multiplier REAL NOT NULL DEFAULT 1.0,
+        added_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(shopping_list_id, recipe_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS shopping_list_items (
+        id TEXT PRIMARY KEY,
+        shopping_list_id TEXT NOT NULL REFERENCES shopping_lists(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        quantity REAL,
+        unit TEXT,
+        category TEXT CHECK (category IN ('produce', 'dairy', 'meat', 'seafood', 'pantry', 'frozen', 'other')),
+        source_type TEXT NOT NULL CHECK (source_type IN ('recipe', 'manual')),
+        source_recipe_ids TEXT,
+        is_checked INTEGER NOT NULL DEFAULT 0,
+        is_excluded INTEGER NOT NULL DEFAULT 0,
+        checked_at TEXT,
+        estimated_price REAL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_shopping_lists_active ON shopping_lists(is_active);
+      CREATE INDEX IF NOT EXISTS idx_shopping_list_recipes_list ON shopping_list_recipes(shopping_list_id);
+      CREATE INDEX IF NOT EXISTS idx_shopping_list_items_list ON shopping_list_items(shopping_list_id);
+      CREATE INDEX IF NOT EXISTS idx_shopping_list_items_category ON shopping_list_items(category);
+      CREATE INDEX IF NOT EXISTS idx_shopping_list_items_checked ON shopping_list_items(is_checked);
+
+      UPDATE schema_version SET version = 2;
     `);
   }
 }

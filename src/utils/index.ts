@@ -15,3 +15,10 @@ export {
   openSettings,
   PERMISSION_MESSAGES,
 } from './permissions';
+
+export {
+  normalizeIngredientName,
+  categorizeIngredient,
+  aggregateIngredients,
+  regenerateShoppingListItems,
+} from './ingredientAggregation';
