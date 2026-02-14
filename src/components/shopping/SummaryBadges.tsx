@@ -7,6 +7,7 @@ interface SummaryBadgesProps {
   list: ShoppingList;
 }
 
+// TODO: integrate price estimation API when available (Story 4.4 AC:11)
 function formatPrice(min: number | null, max: number | null): string {
   if (min == null || max == null) return '— €';
   if (min === max) return `${min} €`;

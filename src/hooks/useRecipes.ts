@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as db from '../services/database';
+import { getActiveShoppingList } from '../services/shoppingDatabase';
+import { regenerateShoppingListItems } from '../utils/ingredientAggregation';
 import type { CreateRecipeInput, UpdateRecipeInput } from '../types';
 
 export function useRecipes() {
@@ -34,9 +36,20 @@ export function useUpdateRecipe() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateRecipeInput }) =>
       db.updateRecipe(id, input),
-    onSuccess: (recipe) => {
+    onSuccess: async (recipe) => {
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
       queryClient.setQueryData(['recipe', recipe.id], recipe);
+
+      // Regenerate shopping list items if recipe is in an active list
+      try {
+        const activeList = await getActiveShoppingList();
+        if (activeList) {
+          await regenerateShoppingListItems(activeList.id);
+          queryClient.invalidateQueries({ queryKey: ['shopping-list-items'] });
+        }
+      } catch {
+        // Shopping list regeneration is best-effort
+      }
     },
   });
 }

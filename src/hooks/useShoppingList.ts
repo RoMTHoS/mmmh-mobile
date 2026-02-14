@@ -158,3 +158,45 @@ export function useClearCheckedItems() {
     },
   });
 }
+
+export function useDeleteItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ itemId }: { itemId: string; listId: string }) => {
+      await shoppingDb.deleteItem(itemId);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...SHOPPING_LIST_ITEMS_KEY, variables.listId],
+      });
+    },
+  });
+}
+
+export function useUpdateItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      itemId,
+      updates,
+      convertToManual,
+    }: {
+      itemId: string;
+      listId: string;
+      updates: Partial<Pick<ShoppingListItem, 'name' | 'quantity' | 'unit' | 'category'>>;
+      convertToManual?: boolean;
+    }) => {
+      if (convertToManual) {
+        await shoppingDb.convertItemToManual(itemId);
+      }
+      await shoppingDb.updateItem(itemId, updates);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...SHOPPING_LIST_ITEMS_KEY, variables.listId],
+      });
+    },
+  });
+}

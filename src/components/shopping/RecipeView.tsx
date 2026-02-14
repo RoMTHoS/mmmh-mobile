@@ -7,6 +7,8 @@ interface RecipeViewProps {
   items: ShoppingListItem[];
   recipes: ShoppingListRecipe[];
   onToggleItem: (itemId: string) => void;
+  onDeleteItem?: (itemId: string) => void;
+  onEditItem?: (item: ShoppingListItem) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
 }
@@ -65,6 +67,8 @@ export function RecipeView({
   items,
   recipes,
   onToggleItem,
+  onDeleteItem,
+  onEditItem,
   onRefresh,
   refreshing,
 }: RecipeViewProps) {
@@ -74,7 +78,14 @@ export function RecipeView({
     <SectionList
       sections={sections}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <IngredientRow item={item} onToggle={onToggleItem} />}
+      renderItem={({ item }) => (
+        <IngredientRow
+          item={item}
+          onToggle={onToggleItem}
+          onDelete={onDeleteItem}
+          onEdit={onEditItem}
+        />
+      )}
       renderSectionHeader={({ section }) => (
         <Text style={styles.sectionHeader}>{section.title} :</Text>
       )}
