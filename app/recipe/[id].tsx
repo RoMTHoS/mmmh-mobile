@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useRecipe, useActiveShoppingList, useShoppingListRecipes } from '../../src/hooks';
+import { useShoppingStore } from '../../src/stores/shoppingStore';
 import { LoadingScreen, Badge, Icon } from '../../src/components/ui';
 import { IngredientList, StepList } from '../../src/components/recipes';
 import { ServingsSelector } from '../../src/components/shopping';
@@ -24,8 +25,10 @@ export default function RecipeDetailScreen() {
   const { data: recipe, isLoading, error } = useRecipe(id);
   const [servingsSelectorVisible, setServingsSelectorVisible] = useState(false);
 
+  const activeListId = useShoppingStore((s) => s.activeListId);
   const listQuery = useActiveShoppingList();
-  const listId = listQuery.data?.id ?? '';
+  const defaultListId = listQuery.data?.id ?? '';
+  const listId = activeListId ?? defaultListId;
   const recipesQuery = useShoppingListRecipes(listId);
 
   const existingEntry = useMemo(

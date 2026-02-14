@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, Alert, Share, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import {
   ShoppingEmptyState,
   AddIngredientButton,
   EditIngredientModal,
+  ListSelector,
 } from '../../src/components/shopping';
 import type { ListViewTab } from '../../src/components/shopping';
 import {
@@ -28,6 +29,7 @@ import {
   useUpdateItem,
   useRemoveRecipeFromList,
 } from '../../src/hooks/useShoppingList';
+import { useShoppingStore } from '../../src/stores/shoppingStore';
 import { exportShoppingListAsText } from '../../src/utils/shoppingListExport';
 import type { ShoppingListItem, ShoppingListRecipe } from '../../src/types';
 
@@ -37,11 +39,26 @@ export default function ShoppingScreen() {
   const [activeTab, setActiveTab] = useState<ListViewTab>('categories');
   const [editingItem, setEditingItem] = useState<ShoppingListItem | null>(null);
 
-  const listQuery = useActiveShoppingList();
-  const list = listQuery.data;
+  const activeListId = useShoppingStore((s) => s.activeListId);
+  const setActiveListId = useShoppingStore((s) => s.setActiveListId);
 
-  const recipesQuery = useShoppingListRecipes(list?.id ?? '');
-  const itemsQuery = useShoppingListItems(list?.id ?? '');
+  const listQuery = useActiveShoppingList();
+  const defaultList = listQuery.data;
+
+  // Resolve the effective list ID: store value, or fallback to default list
+  const effectiveListId = activeListId ?? defaultList?.id ?? '';
+
+  // Set activeListId in store on first load if not set
+  useEffect(() => {
+    if (!activeListId && defaultList?.id) {
+      setActiveListId(defaultList.id);
+    }
+  }, [activeListId, defaultList?.id, setActiveListId]);
+
+  const list = defaultList;
+
+  const recipesQuery = useShoppingListRecipes(effectiveListId);
+  const itemsQuery = useShoppingListItems(effectiveListId);
 
   const toggleItem = useToggleItem();
   const addManualItem = useAddManualItem();
@@ -195,7 +212,9 @@ export default function ShoppingScreen() {
   if (recipes.length === 0) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <Text style={styles.headerTitle}>Liste de course</Text>
+        <View style={styles.header}>
+          <ListSelector activeListId={effectiveListId} />
+        </View>
         <ShoppingEmptyState />
       </View>
     );
@@ -204,7 +223,7 @@ export default function ShoppingScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]} testID="shopping-screen">
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Liste de course</Text>
+        <ListSelector activeListId={effectiveListId} />
         <View style={styles.headerActions}>
           {checkedCount > 0 && (
             <Pressable
@@ -226,7 +245,6 @@ export default function ShoppingScreen() {
         onRemoveRecipe={handleRemoveRecipe}
       />
       <SummaryBadges list={list!} />
-      <Text style={styles.listTitle}>Liste de course</Text>
       <ListViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
       <View style={styles.listContainer}>
         {activeTab === 'categories' && (
@@ -296,14 +314,6 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: spacing.xs,
-  },
-  listTitle: {
-    ...typography.label,
-    color: colors.text,
-    fontWeight: '600',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xs,
   },
   listContainer: {
     flex: 1,

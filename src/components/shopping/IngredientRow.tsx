@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import { Pressable, Text, View, StyleSheet, Animated } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+import { Text, View, StyleSheet, Animated } from 'react-native';
+import { Swipeable, TouchableOpacity } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../../theme';
 import type { ShoppingListItem } from '../../types';
@@ -71,10 +71,11 @@ export function IngredientRow({ item, onToggle, onDelete, onEdit }: IngredientRo
   const quantityText = formatQuantity(item);
 
   const row = (
-    <Pressable
+    <TouchableOpacity
       style={styles.row}
       onPress={() => onToggle(item.id)}
       onLongPress={onEdit ? () => onEdit(item) : undefined}
+      activeOpacity={0.7}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: item.isChecked }}
       testID={`ingredient-row-${item.id}`}
@@ -95,7 +96,7 @@ export function IngredientRow({ item, onToggle, onDelete, onEdit }: IngredientRo
           {item.isChecked && <Ionicons name="checkmark" size={14} color="#FFF" />}
         </View>
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 
   if (!onDelete) return row;

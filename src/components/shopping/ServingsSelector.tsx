@@ -1,8 +1,23 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, Pressable, Modal, StyleSheet, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  Modal,
+  StyleSheet,
+  Animated,
+  TextInput,
+  ScrollView,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { Icon } from '../ui';
-import { useAddRecipeToList, useRemoveRecipeFromList } from '../../hooks/useShoppingList';
+import {
+  useAddRecipeToList,
+  useRemoveRecipeFromList,
+  useShoppingLists,
+  useCreateShoppingList,
+} from '../../hooks/useShoppingList';
 import { colors, typography, spacing, radius } from '../../theme';
 import type { Recipe } from '../../types/recipe';
 import type { ShoppingListRecipe } from '../../types/shopping';
@@ -45,13 +60,22 @@ export function ServingsSelector({
     : recipeServings;
 
   const [selectedServings, setSelectedServings] = useState(initialServings);
+  const [selectedListId, setSelectedListId] = useState(listId);
+  const [listPickerVisible, setListPickerVisible] = useState(false);
+  const [isCreatingList, setIsCreatingList] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const [excludedIndices, setExcludedIndices] = useState<Set<number>>(new Set());
   const slideAnim = useRef(new Animated.Value(400)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
   const addMutation = useAddRecipeToList();
   const removeMutation = useRemoveRecipeFromList();
+  const createListMutation = useCreateShoppingList();
+  const listsQuery = useShoppingLists(true);
+  const lists = listsQuery.data ?? [];
 
   const isInList = existingEntry !== null;
+  const selectedList = lists.find((l) => l.id === selectedListId);
 
   // Reset servings when modal opens
   useEffect(() => {
@@ -60,6 +84,11 @@ export function ServingsSelector({
         ? Math.round(existingEntry.servingsMultiplier * recipeServings)
         : recipeServings;
       setSelectedServings(resetServings);
+      setSelectedListId(listId);
+      setListPickerVisible(false);
+      setIsCreatingList(false);
+      setNewListName('');
+      setExcludedIndices(new Set());
 
       slideAnim.setValue(400);
       backdropAnim.setValue(0);
@@ -97,11 +126,45 @@ export function ServingsSelector({
     setSelectedServings((prev) => Math.min(MAX_SERVINGS, prev + 1));
   };
 
+  const toggleIngredient = (index: number) => {
+    setExcludedIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const handleCreateList = () => {
+    const trimmed = newListName.trim();
+    if (!trimmed) return;
+    createListMutation.mutate(trimmed, {
+      onSuccess: (newList) => {
+        setSelectedListId(newList.id);
+        setIsCreatingList(false);
+        setNewListName('');
+        setListPickerVisible(false);
+      },
+    });
+  };
+
   const handleAdd = () => {
-    if (!listId) return;
+    if (!selectedListId) return;
     const multiplier = selectedServings / recipeServings;
+    const excludedNames =
+      excludedIndices.size > 0
+        ? Array.from(excludedIndices).map((i) => recipe.ingredients[i].name)
+        : undefined;
     addMutation.mutate(
-      { listId, recipeId: recipe.id, servingsMultiplier: multiplier },
+      {
+        listId: selectedListId,
+        recipeId: recipe.id,
+        servingsMultiplier: multiplier,
+        excludedIngredientNames: excludedNames,
+      },
       {
         onSuccess: () => {
           Toast.show({
@@ -199,21 +262,123 @@ export function ServingsSelector({
               </View>
             </View>
 
-            {/* Ingredient Preview */}
+            {/* List Picker */}
+            <View style={styles.listPickerContainer}>
+              <View style={styles.listPickerRow} testID="list-picker">
+                <Text style={styles.stepperLabel}>Liste</Text>
+                <View>
+                  <Pressable
+                    style={styles.listPickerButton}
+                    onPress={() => {
+                      setListPickerVisible(!listPickerVisible);
+                      setIsCreatingList(false);
+                      setNewListName('');
+                    }}
+                    testID="list-picker-button"
+                  >
+                    <Text style={styles.listPickerText} numberOfLines={1}>
+                      {selectedList?.name ?? 'Sélectionner'}
+                    </Text>
+                    <Ionicons
+                      name={listPickerVisible ? 'chevron-up' : 'chevron-down'}
+                      size={14}
+                      color={colors.text}
+                    />
+                  </Pressable>
+                  {listPickerVisible && (
+                    <View style={styles.listPickerDropdown} testID="list-picker-dropdown">
+                      {lists.map((l) => (
+                        <Pressable
+                          key={l.id}
+                          style={[
+                            styles.listPickerItem,
+                            l.id === selectedListId && styles.listPickerItemSelected,
+                          ]}
+                          onPress={() => {
+                            setSelectedListId(l.id);
+                            setListPickerVisible(false);
+                          }}
+                          testID={`list-picker-option-${l.id}`}
+                        >
+                          <Text
+                            style={[
+                              styles.listPickerItemText,
+                              l.id === selectedListId && styles.listPickerItemTextSelected,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {l.name}
+                          </Text>
+                          {l.id === selectedListId && (
+                            <Ionicons name="checkmark" size={16} color={colors.accent} />
+                          )}
+                        </Pressable>
+                      ))}
+                      {isCreatingList ? (
+                        <View style={styles.createListInput}>
+                          <TextInput
+                            style={styles.createListTextInput}
+                            value={newListName}
+                            onChangeText={setNewListName}
+                            placeholder="Nom de la liste"
+                            placeholderTextColor={colors.textLight}
+                            maxLength={50}
+                            autoFocus
+                            onSubmitEditing={handleCreateList}
+                            testID="create-list-input"
+                          />
+                          <Pressable onPress={handleCreateList} testID="create-list-confirm">
+                            <Ionicons name="checkmark-circle" size={22} color={colors.accent} />
+                          </Pressable>
+                        </View>
+                      ) : (
+                        <Pressable
+                          style={styles.createListOption}
+                          onPress={() => setIsCreatingList(true)}
+                          testID="create-list-button"
+                        >
+                          <Ionicons name="add" size={16} color={colors.accent} />
+                          <Text style={styles.createListText}>Nouvelle liste</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Ingredient List */}
             {scaledIngredients.length > 0 && (
               <View style={styles.previewContainer} testID="ingredient-preview">
-                <Text style={styles.previewTitle}>Aperçu des ingrédients</Text>
-                {scaledIngredients.slice(0, 5).map((ing, i) => (
-                  <Text key={i} style={styles.previewItem} numberOfLines={1}>
-                    {[ing.quantity, ing.unit, ing.name].filter(Boolean).join(' ')}
-                  </Text>
-                ))}
-                {scaledIngredients.length > 5 && (
-                  <Text style={styles.previewMore}>
-                    +{scaledIngredients.length - 5} ingrédient
-                    {scaledIngredients.length - 5 > 1 ? 's' : ''}
-                  </Text>
-                )}
+                <ScrollView
+                  style={styles.ingredientScroll}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator={false}
+                >
+                  {scaledIngredients.map((ing, i) => (
+                    <Pressable
+                      key={i}
+                      style={styles.ingredientCheckRow}
+                      onPress={() => toggleIngredient(i)}
+                      testID={`ingredient-check-${i}`}
+                    >
+                      <Text
+                        style={[
+                          styles.ingredientCheckText,
+                          excludedIndices.has(i) && styles.ingredientCheckTextExcluded,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {[ing.quantity, ing.unit, ing.name].filter(Boolean).join(' ')}
+                      </Text>
+                      <Ionicons
+                        name={excludedIndices.has(i) ? 'square-outline' : 'checkbox'}
+                        size={20}
+                        color={excludedIndices.has(i) ? colors.textLight : colors.accent}
+                      />
+                    </Pressable>
+                  ))}
+                </ScrollView>
               </View>
             )}
 
@@ -245,7 +410,7 @@ export function ServingsSelector({
                 testID="add-to-list-button"
               >
                 <Icon name="cart" size="md" color="#FFFFFF" />
-                <Text style={styles.primaryButtonText}>Ajouter à la liste</Text>
+                <Text style={styles.primaryButtonText}>Ajouter</Text>
               </Pressable>
             )}
           </Pressable>
@@ -296,11 +461,11 @@ const styles = StyleSheet.create({
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   stepperButton: {
-    width: 36,
-    height: 36,
+    width: 28,
+    height: 28,
     borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.border,
@@ -312,9 +477,10 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   stepperValue: {
-    ...typography.h3,
+    ...typography.body,
     color: colors.text,
-    minWidth: 32,
+    fontWeight: '600',
+    minWidth: 24,
     textAlign: 'center',
   },
   previewContainer: {
@@ -328,16 +494,23 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.sm,
   },
-  previewItem: {
-    ...typography.bodySmall,
-    color: colors.textMuted,
-    paddingVertical: 2,
+  ingredientScroll: {
+    maxHeight: 150,
   },
-  previewMore: {
-    ...typography.caption,
+  ingredientCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 3,
+  },
+  ingredientCheckText: {
+    ...typography.bodySmall,
+    color: colors.text,
+    flex: 1,
+  },
+  ingredientCheckTextExcluded: {
     color: colors.textLight,
-    marginTop: spacing.xs,
-    fontStyle: 'italic',
+    textDecorationLine: 'line-through',
   },
   actions: {
     gap: spacing.sm,
@@ -363,5 +536,90 @@ const styles = StyleSheet.create({
   removeButtonText: {
     ...typography.buttonSmall,
     color: colors.error,
+  },
+  listPickerContainer: {
+    zIndex: 10,
+    marginBottom: spacing.sm,
+  },
+  listPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  listPickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    maxWidth: 180,
+  },
+  listPickerText: {
+    ...typography.bodySmall,
+    color: colors.text,
+  },
+  listPickerDropdown: {
+    position: 'absolute',
+    bottom: '100%',
+    right: 0,
+    minWidth: 200,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    marginBottom: spacing.xs,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  listPickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  listPickerItemSelected: {
+    backgroundColor: colors.surfaceAlt,
+  },
+  listPickerItemText: {
+    ...typography.bodySmall,
+    color: colors.text,
+    flex: 1,
+  },
+  listPickerItemTextSelected: {
+    fontWeight: '600',
+  },
+  createListOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  createListText: {
+    ...typography.bodySmall,
+    color: colors.accent,
+    fontWeight: '500',
+  },
+  createListInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  createListTextInput: {
+    ...typography.bodySmall,
+    color: colors.text,
+    flex: 1,
+    paddingVertical: spacing.xs,
   },
 });

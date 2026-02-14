@@ -30,7 +30,7 @@ describe('Database Service', () => {
 
       await db.initializeDatabase();
 
-      expect(mockDatabase.execSync).toHaveBeenCalledTimes(2);
+      expect(mockDatabase.execSync).toHaveBeenCalledTimes(3);
       expect(mockDatabase.execSync.mock.calls[0][0]).toContain(
         'CREATE TABLE IF NOT EXISTS recipes'
       );
@@ -40,10 +40,13 @@ describe('Database Service', () => {
       expect(mockDatabase.execSync.mock.calls[1][0]).toContain(
         'CREATE TABLE IF NOT EXISTS shopping_lists'
       );
+      expect(mockDatabase.execSync.mock.calls[2][0]).toContain(
+        'ALTER TABLE shopping_lists ADD COLUMN is_default'
+      );
     });
 
     it('should skip migrations when database is current version', async () => {
-      mockDatabase.getFirstSync.mockReturnValue({ version: 2 });
+      mockDatabase.getFirstSync.mockReturnValue({ version: 3 });
 
       await db.initializeDatabase();
 
