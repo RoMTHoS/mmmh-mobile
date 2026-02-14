@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
 import type { Ingredient } from '../../types';
 
 interface IngredientListProps {
@@ -16,47 +14,18 @@ function formatIngredient(ingredient: Ingredient): string {
 }
 
 export function IngredientList({ ingredients }: IngredientListProps) {
-  const [checked, setChecked] = useState<Set<number>>(new Set());
-
-  const toggleIngredient = (index: number) => {
-    setChecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
-      return next;
-    });
-  };
-
   if (ingredients.length === 0) {
     return <Text style={styles.emptyText}>No ingredients listed</Text>;
   }
 
   return (
     <View style={styles.container} testID="ingredient-list">
-      {ingredients.map((ingredient, index) => {
-        const isChecked = checked.has(index);
-
-        return (
-          <Pressable
-            key={index}
-            style={styles.item}
-            onPress={() => toggleIngredient(index)}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: isChecked }}
-            testID={`ingredient-item-${index}`}
-          >
-            <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
-              {isChecked && <Ionicons name="checkmark" size={14} color="#FFF" />}
-            </View>
-            <Text style={[styles.text, isChecked && styles.textChecked]}>
-              {formatIngredient(ingredient)}
-            </Text>
-          </Pressable>
-        );
-      })}
+      {ingredients.map((ingredient, index) => (
+        <View key={index} style={styles.item} testID={`ingredient-item-${index}`}>
+          <Text style={styles.bullet}>•</Text>
+          <Text style={styles.text}>{formatIngredient(ingredient)}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -67,32 +36,20 @@ const styles = StyleSheet.create({
   },
   item: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 4,
   },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#D97706',
-    borderColor: '#D97706',
+  bullet: {
+    fontSize: 15,
+    color: '#374151',
+    lineHeight: 22,
   },
   text: {
     fontSize: 15,
     color: '#374151',
     flex: 1,
     lineHeight: 22,
-  },
-  textChecked: {
-    textDecorationLine: 'line-through',
-    color: '#9CA3AF',
   },
   emptyText: {
     fontSize: 15,

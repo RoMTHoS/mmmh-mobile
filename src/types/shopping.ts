@@ -23,6 +23,7 @@ export interface ShoppingList {
   id: string;
   name: string;
   isActive: boolean;
+  isDefault: boolean;
   mealCount: number;
   priceEstimateMin: number | null;
   priceEstimateMax: number | null;
