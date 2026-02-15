@@ -150,6 +150,7 @@ export function useRemoveRecipeFromList() {
   return useMutation({
     mutationFn: async ({ listId, recipeId }: { listId: string; recipeId: string }) => {
       await shoppingDb.removeRecipeFromList(listId, recipeId);
+      await regenerateShoppingListItems(listId);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: SHOPPING_LIST_KEY });
