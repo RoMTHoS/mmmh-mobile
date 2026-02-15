@@ -124,7 +124,7 @@ export default function ShoppingScreen() {
 
   const handleRemoveRecipe = useCallback(
     (recipe: ShoppingListRecipe) => {
-      if (!list) return;
+      if (!effectiveListId) return;
 
       Alert.alert(
         'Retirer la recette',
@@ -135,13 +135,13 @@ export default function ShoppingScreen() {
             text: 'Retirer',
             style: 'destructive',
             onPress: async () => {
-              removeRecipe.mutate({ listId: list.id, recipeId: recipe.recipeId });
+              removeRecipe.mutate({ listId: effectiveListId, recipeId: recipe.recipeId });
             },
           },
         ]
       );
     },
-    [list, removeRecipe]
+    [effectiveListId, removeRecipe]
   );
 
   const handleShare = useCallback(async () => {
