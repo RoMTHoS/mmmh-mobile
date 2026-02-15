@@ -314,7 +314,7 @@ export function ListSelector({ activeListId }: ListSelectorProps) {
                 <Text
                   style={[styles.createButtonText, !canCreate && styles.createButtonTextDisabled]}
                 >
-                  {canCreate ? '+ Nouvelle liste' : 'Maximum 10 listes atteint'}
+                  {canCreate ? 'Nouvelle liste' : 'Maximum 10 listes atteint'}
                 </Text>
               </Pressable>
             )}
