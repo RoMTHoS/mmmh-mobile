@@ -226,6 +226,15 @@ export default function ShoppingScreen() {
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <ListSelector activeListId={effectiveListId} />
+          <View style={styles.headerActions}>
+            <Pressable
+              onPress={handleDeleteList}
+              style={styles.headerButton}
+              testID="delete-list-button"
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
+            </Pressable>
+          </View>
         </View>
         <ShoppingEmptyState />
       </View>
