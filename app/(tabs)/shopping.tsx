@@ -24,10 +24,11 @@ import {
   useShoppingListItems,
   useToggleItem,
   useAddManualItem,
-  useClearCheckedItems,
   useDeleteItem,
   useUpdateItem,
   useRemoveRecipeFromList,
+  useDeleteShoppingList,
+  useShoppingLists,
 } from '../../src/hooks/useShoppingList';
 import { useShoppingStore } from '../../src/stores/shoppingStore';
 import { exportShoppingListAsText } from '../../src/utils/shoppingListExport';
@@ -59,13 +60,14 @@ export default function ShoppingScreen() {
 
   const recipesQuery = useShoppingListRecipes(effectiveListId);
   const itemsQuery = useShoppingListItems(effectiveListId);
+  const listsQuery = useShoppingLists(true);
 
   const toggleItem = useToggleItem();
   const addManualItem = useAddManualItem();
-  const clearChecked = useClearCheckedItems();
   const deleteItem = useDeleteItem();
   const updateItem = useUpdateItem();
   const removeRecipe = useRemoveRecipeFromList();
+  const deleteList = useDeleteShoppingList();
 
   const handleToggle = useCallback(
     (itemId: string) => {
@@ -103,24 +105,36 @@ export default function ShoppingScreen() {
     [list, updateItem]
   );
 
-  const handleClearChecked = useCallback(() => {
-    if (!list) return;
-    const checkedCount = (itemsQuery.data ?? []).filter((i) => i.isChecked).length;
-    if (checkedCount === 0) return;
+  const handleDeleteList = useCallback(() => {
+    if (!effectiveListId) return;
+    // Find the current list to check if it's the default
+    const currentList = (listsQuery?.data ?? []).find((l) => l.id === effectiveListId);
+    if (currentList?.isDefault) {
+      Alert.alert('Liste par défaut', 'La liste par défaut ne peut pas être supprimée.');
+      return;
+    }
 
     Alert.alert(
-      'Effacer les cochés',
-      `Supprimer ${checkedCount} élément${checkedCount > 1 ? 's' : ''} coché${checkedCount > 1 ? 's' : ''} ?`,
+      'Supprimer la liste',
+      'Supprimer cette liste et tous ses ingrédients ? Cette action est irréversible.',
       [
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Supprimer',
           style: 'destructive',
-          onPress: () => clearChecked.mutate(list.id),
+          onPress: () => {
+            deleteList.mutate(effectiveListId, {
+              onSuccess: () => {
+                // Switch back to default list
+                const defaultId = defaultList?.id;
+                if (defaultId) setActiveListId(defaultId);
+              },
+            });
+          },
         },
       ]
     );
-  }, [list, itemsQuery.data, clearChecked]);
+  }, [effectiveListId, deleteList, defaultList?.id, setActiveListId]);
 
   const handleRemoveRecipe = useCallback(
     (recipe: ShoppingListRecipe) => {
@@ -206,8 +220,6 @@ export default function ShoppingScreen() {
 
   const recipes = recipesQuery.data ?? [];
   const items = itemsQuery.data ?? [];
-  const checkedCount = items.filter((i) => i.isChecked).length;
-
   // Empty state
   if (recipes.length === 0) {
     return (
@@ -225,15 +237,13 @@ export default function ShoppingScreen() {
       <View style={styles.header}>
         <ListSelector activeListId={effectiveListId} />
         <View style={styles.headerActions}>
-          {checkedCount > 0 && (
-            <Pressable
-              onPress={handleClearChecked}
-              style={styles.headerButton}
-              testID="clear-checked-button"
-            >
-              <Ionicons name="trash-outline" size={20} color={colors.error} />
-            </Pressable>
-          )}
+          <Pressable
+            onPress={handleDeleteList}
+            style={styles.headerButton}
+            testID="delete-list-button"
+          >
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
+          </Pressable>
           <Pressable onPress={handleShare} style={styles.headerButton} testID="share-button">
             <Ionicons name="share-outline" size={20} color={colors.text} />
           </Pressable>
