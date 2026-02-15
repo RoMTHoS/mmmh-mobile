@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, View, Text, Image, Pressable, StyleSheet, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '../../theme';
 import type { ShoppingListRecipe } from '../../types';
 
@@ -15,10 +16,12 @@ function RecipeCard({
   recipe,
   isHighlighted,
   onLongPress,
+  onRemove,
 }: {
   recipe: ShoppingListRecipe;
   isHighlighted: boolean;
   onLongPress?: () => void;
+  onRemove?: () => void;
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -34,24 +37,36 @@ function RecipeCard({
   return (
     <Pressable onLongPress={onLongPress} testID={`carousel-card-${recipe.recipeId}`}>
       <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
-        {recipe.recipePhotoUri ? (
-          <Image
-            source={{ uri: recipe.recipePhotoUri }}
-            style={[styles.thumbnail, isHighlighted && styles.thumbnailHighlighted]}
-          />
-        ) : (
-          <View
-            style={[
-              styles.thumbnail,
-              styles.placeholderThumbnail,
-              isHighlighted && styles.thumbnailHighlighted,
-            ]}
-          >
-            <Text style={styles.placeholderText}>
-              {recipe.recipeTitle?.charAt(0)?.toUpperCase() ?? '?'}
-            </Text>
-          </View>
-        )}
+        <View>
+          {recipe.recipePhotoUri ? (
+            <Image
+              source={{ uri: recipe.recipePhotoUri }}
+              style={[styles.thumbnail, isHighlighted && styles.thumbnailHighlighted]}
+            />
+          ) : (
+            <View
+              style={[
+                styles.thumbnail,
+                styles.placeholderThumbnail,
+                isHighlighted && styles.thumbnailHighlighted,
+              ]}
+            >
+              <Text style={styles.placeholderText}>
+                {recipe.recipeTitle?.charAt(0)?.toUpperCase() ?? '?'}
+              </Text>
+            </View>
+          )}
+          {onRemove && (
+            <Pressable
+              style={styles.removeButton}
+              onPress={onRemove}
+              hitSlop={6}
+              testID={`carousel-remove-${recipe.recipeId}`}
+            >
+              <Ionicons name="close" size={18} color={colors.text} />
+            </Pressable>
+          )}
+        </View>
         <Text style={styles.cardTitle} numberOfLines={1}>
           {recipe.recipeTitle ?? 'Sans titre'}
         </Text>
@@ -98,6 +113,7 @@ export function RecipeCarousel({
             recipe={item}
             isHighlighted={item.recipeId === highlightId}
             onLongPress={onRemoveRecipe ? () => onRemoveRecipe(item) : undefined}
+            onRemove={onRemoveRecipe ? () => onRemoveRecipe(item) : undefined}
           />
         )}
         contentContainerStyle={styles.listContent}
@@ -145,6 +161,12 @@ const styles = StyleSheet.create({
   placeholderText: {
     ...typography.h2,
     color: colors.textMuted,
+  },
+  removeButton: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    padding: 2,
   },
   cardTitle: {
     ...typography.caption,

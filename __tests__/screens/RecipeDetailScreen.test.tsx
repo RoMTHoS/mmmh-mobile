@@ -25,6 +25,11 @@ jest.mock('../../src/hooks', () => ({
   useShoppingListRecipes: () => ({ data: mockShoppingRecipes }),
 }));
 
+jest.mock('../../src/stores/shoppingStore', () => ({
+  useShoppingStore: (selector: (s: { activeListId: string | null }) => unknown) =>
+    selector({ activeListId: 'list-1' }),
+}));
+
 // Import after mocking
 import RecipeDetailScreen from '../../app/recipe/[id]';
 

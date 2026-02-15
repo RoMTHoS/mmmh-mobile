@@ -13,6 +13,7 @@ interface ShoppingListRow {
   id: string;
   name: string;
   is_active: number;
+  is_default: number;
   meal_count: number;
   price_estimate_min: number | null;
   price_estimate_max: number | null;
@@ -54,6 +55,7 @@ function deserializeList(row: ShoppingListRow): ShoppingList {
     id: row.id,
     name: row.name,
     isActive: row.is_active === 1,
+    isDefault: row.is_default === 1,
     mealCount: row.meal_count,
     priceEstimateMin: row.price_estimate_min,
     priceEstimateMax: row.price_estimate_max,
@@ -95,22 +97,26 @@ function deserializeItem(row: ShoppingListItemRow): ShoppingListItem {
 
 // --- Shopping List CRUD ---
 
-export async function createShoppingList(name?: string): Promise<ShoppingList> {
+export async function createShoppingList(
+  name?: string,
+  isDefault: boolean = false
+): Promise<ShoppingList> {
   const database = getDatabase();
   const id = uuid.v4() as string;
   const now = new Date().toISOString();
 
   try {
     database.runSync(
-      `INSERT INTO shopping_lists (id, name, is_active, meal_count, created_at, updated_at)
-       VALUES (?, ?, 1, 0, ?, ?)`,
-      [id, name ?? 'Ma liste de courses', now, now]
+      `INSERT INTO shopping_lists (id, name, is_active, is_default, meal_count, created_at, updated_at)
+       VALUES (?, ?, 1, ?, 0, ?, ?)`,
+      [id, name ?? 'Ma liste de courses', isDefault ? 1 : 0, now, now]
     );
 
     return {
       id,
       name: name ?? 'Ma liste de courses',
       isActive: true,
+      isDefault,
       mealCount: 0,
       priceEstimateMin: null,
       priceEstimateMax: null,
@@ -128,12 +134,26 @@ export async function getActiveShoppingList(): Promise<ShoppingList | null> {
 
   try {
     const row = database.getFirstSync<ShoppingListRow>(
-      'SELECT * FROM shopping_lists WHERE is_active = 1 LIMIT 1'
+      'SELECT * FROM shopping_lists WHERE is_active = 1 ORDER BY is_default DESC LIMIT 1'
     );
     return row ? deserializeList(row) : null;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue';
     throw new Error(`Impossible de charger la liste de courses. ${message}`);
+  }
+}
+
+export async function getDefaultShoppingList(): Promise<ShoppingList | null> {
+  const database = getDatabase();
+
+  try {
+    const row = database.getFirstSync<ShoppingListRow>(
+      'SELECT * FROM shopping_lists WHERE is_default = 1 LIMIT 1'
+    );
+    return row ? deserializeList(row) : null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de charger la liste par défaut. ${message}`);
   }
 }
 
@@ -411,5 +431,149 @@ export async function getShoppingListItems(listId: string): Promise<ShoppingList
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue';
     throw new Error(`Impossible de charger les articles. ${message}`);
+  }
+}
+
+// --- Multi-list CRUD (Story 4.5) ---
+
+export async function getAllShoppingLists(activeOnly: boolean = true): Promise<ShoppingList[]> {
+  const database = getDatabase();
+
+  try {
+    const query = activeOnly
+      ? 'SELECT * FROM shopping_lists WHERE is_active = 1 ORDER BY is_default DESC, created_at ASC'
+      : 'SELECT * FROM shopping_lists ORDER BY is_active DESC, is_default DESC, created_at ASC';
+    const rows = database.getAllSync<ShoppingListRow>(query);
+    return rows.map(deserializeList);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de charger les listes. ${message}`);
+  }
+}
+
+export async function getShoppingListById(listId: string): Promise<ShoppingList | null> {
+  const database = getDatabase();
+
+  try {
+    const row = database.getFirstSync<ShoppingListRow>(
+      'SELECT * FROM shopping_lists WHERE id = ?',
+      [listId]
+    );
+    return row ? deserializeList(row) : null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de charger la liste. ${message}`);
+  }
+}
+
+export async function renameShoppingList(listId: string, name: string): Promise<void> {
+  const database = getDatabase();
+
+  try {
+    database.runSync('UPDATE shopping_lists SET name = ?, updated_at = ? WHERE id = ?', [
+      name,
+      new Date().toISOString(),
+      listId,
+    ]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de renommer la liste. ${message}`);
+  }
+}
+
+export async function deleteShoppingList(listId: string): Promise<void> {
+  const database = getDatabase();
+
+  try {
+    // Check if this is the default list
+    const list = database.getFirstSync<ShoppingListRow>(
+      'SELECT * FROM shopping_lists WHERE id = ?',
+      [listId]
+    );
+    if (list && list.is_default === 1) {
+      throw new Error('Impossible de supprimer la liste par défaut.');
+    }
+    database.runSync('DELETE FROM shopping_lists WHERE id = ?', [listId]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de supprimer la liste. ${message}`);
+  }
+}
+
+export async function archiveShoppingList(listId: string): Promise<void> {
+  const database = getDatabase();
+
+  try {
+    const list = database.getFirstSync<ShoppingListRow>(
+      'SELECT * FROM shopping_lists WHERE id = ?',
+      [listId]
+    );
+    if (list && list.is_default === 1) {
+      throw new Error("Impossible d'archiver la liste par défaut.");
+    }
+    database.runSync('UPDATE shopping_lists SET is_active = 0, updated_at = ? WHERE id = ?', [
+      new Date().toISOString(),
+      listId,
+    ]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible d'archiver la liste. ${message}`);
+  }
+}
+
+export async function reactivateShoppingList(listId: string): Promise<void> {
+  const database = getDatabase();
+
+  try {
+    const count = await getActiveListCount();
+    if (count >= 10) {
+      throw new Error('Maximum 10 listes actives atteint.');
+    }
+    database.runSync('UPDATE shopping_lists SET is_active = 1, updated_at = ? WHERE id = ?', [
+      new Date().toISOString(),
+      listId,
+    ]);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Maximum 10')) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de réactiver la liste. ${message}`);
+  }
+}
+
+export async function getActiveListCount(): Promise<number> {
+  const database = getDatabase();
+
+  try {
+    const result = database.getFirstSync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM shopping_lists WHERE is_active = 1'
+    );
+    return result?.count ?? 0;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de compter les listes. ${message}`);
+  }
+}
+
+export async function excludeItemsByNames(
+  listId: string,
+  ingredientNames: string[]
+): Promise<void> {
+  const database = getDatabase();
+  const now = new Date().toISOString();
+
+  try {
+    for (const name of ingredientNames) {
+      database.runSync(
+        `UPDATE shopping_list_items
+         SET is_excluded = 1, updated_at = ?
+         WHERE shopping_list_id = ? AND LOWER(name) = LOWER(?) AND is_excluded = 0`,
+        [now, listId, name]
+      );
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible d'exclure les articles. ${message}`);
   }
 }

@@ -9,6 +9,12 @@ export {
 export { useImportPolling } from './useImportPolling';
 export {
   useActiveShoppingList,
+  useShoppingLists,
+  useCreateShoppingList,
+  useRenameShoppingList,
+  useDeleteShoppingList,
+  useArchiveShoppingList,
+  useReactivateShoppingList,
   useShoppingListRecipes,
   useShoppingListItems,
   useAddRecipeToList,

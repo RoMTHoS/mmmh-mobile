@@ -29,6 +29,7 @@ const mockList: ShoppingList = {
   id: 'list-1',
   name: 'Ma liste de courses',
   isActive: true,
+  isDefault: true,
   mealCount: 2,
   priceEstimateMin: null,
   priceEstimateMax: null,

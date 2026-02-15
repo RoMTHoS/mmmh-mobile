@@ -5,16 +5,19 @@ import { colors, spacing } from '../../src/theme';
 import { ImportModal } from '../../src/components/import/ImportModal';
 import { Icon } from '../../src/components/ui';
 import { useActiveShoppingList, useShoppingListRecipes } from '../../src/hooks/useShoppingList';
+import { useShoppingStore } from '../../src/stores/shoppingStore';
 
 function CartTabIcon({ color }: { color: string }) {
+  const activeListId = useShoppingStore((s) => s.activeListId);
   const listQuery = useActiveShoppingList();
-  const listId = listQuery.data?.id ?? '';
-  const recipesQuery = useShoppingListRecipes(listId);
+  const defaultListId = listQuery.data?.id ?? '';
+  const effectiveListId = activeListId ?? defaultListId;
+  const recipesQuery = useShoppingListRecipes(effectiveListId);
   const count = recipesQuery.data?.length ?? 0;
 
   return (
     <View>
-      <Icon name="cart" size={32} color={color} />
+      <Icon name="cart-outline" size={32} color={color} />
       {count > 0 && (
         <View style={styles.badge} testID="cart-badge">
           <Text style={styles.badgeText}>{count > 9 ? '9+' : count}</Text>
