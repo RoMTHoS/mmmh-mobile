@@ -8,6 +8,10 @@ jest.mock('expo-sqlite');
 jest.mock('react-native-uuid');
 jest.mock('../../src/services/shoppingDatabase');
 jest.mock('../../src/utils/ingredientAggregation');
+jest.mock('../../src/stores/shoppingStore', () => ({
+  useShoppingStore: (selector: (s: { activeListId: string | null }) => unknown) =>
+    selector({ activeListId: 'list-1' }),
+}));
 
 // ShoppingScreen uses multiple hooks (useState, useActiveShoppingList, etc.)
 // so we test module exports and component structure rather than rendering directly
@@ -39,6 +43,7 @@ describe('Shopping components barrel export', () => {
     expect(shoppingComponents.IngredientRow).toBeDefined();
     expect(shoppingComponents.ShoppingEmptyState).toBeDefined();
     expect(shoppingComponents.AddIngredientButton).toBeDefined();
+    expect(shoppingComponents.ServingsSelector).toBeDefined();
   });
 });
 

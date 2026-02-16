@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { AppState, AppStateStatus, View } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, usePathname } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -118,13 +119,13 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <View style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <RootLayoutNav />
         </ErrorBoundary>
         <Toast />
       </QueryClientProvider>
-    </View>
+    </GestureHandlerRootView>
   );
 }

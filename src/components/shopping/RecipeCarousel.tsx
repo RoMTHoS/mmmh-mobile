@@ -1,43 +1,123 @@
-import { FlatList, View, Text, Image, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { FlatList, View, Text, Image, Pressable, StyleSheet, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '../../theme';
 import type { ShoppingListRecipe } from '../../types';
 
 interface RecipeCarouselProps {
   recipes: ShoppingListRecipe[];
+  highlightRecipeId?: string;
+  onRemoveRecipe?: (recipe: ShoppingListRecipe) => void;
 }
 
 const CARD_SIZE = 72;
 
-function RecipeCard({ recipe }: { recipe: ShoppingListRecipe }) {
+function RecipeCard({
+  recipe,
+  isHighlighted,
+  onLongPress,
+  onRemove,
+}: {
+  recipe: ShoppingListRecipe;
+  isHighlighted: boolean;
+  onLongPress?: () => void;
+  onRemove?: () => void;
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isHighlighted) {
+      Animated.sequence([
+        Animated.timing(scaleAnim, { toValue: 1.15, duration: 300, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [isHighlighted, scaleAnim]);
+
   return (
-    <View style={styles.card} testID={`carousel-card-${recipe.recipeId}`}>
-      {recipe.recipePhotoUri ? (
-        <Image source={{ uri: recipe.recipePhotoUri }} style={styles.thumbnail} />
-      ) : (
-        <View style={[styles.thumbnail, styles.placeholderThumbnail]}>
-          <Text style={styles.placeholderText}>
-            {recipe.recipeTitle?.charAt(0)?.toUpperCase() ?? '?'}
-          </Text>
+    <Pressable onLongPress={onLongPress} testID={`carousel-card-${recipe.recipeId}`}>
+      <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
+        <View>
+          {recipe.recipePhotoUri ? (
+            <Image
+              source={{ uri: recipe.recipePhotoUri }}
+              style={[styles.thumbnail, isHighlighted && styles.thumbnailHighlighted]}
+            />
+          ) : (
+            <View
+              style={[
+                styles.thumbnail,
+                styles.placeholderThumbnail,
+                isHighlighted && styles.thumbnailHighlighted,
+              ]}
+            >
+              <Text style={styles.placeholderText}>
+                {recipe.recipeTitle?.charAt(0)?.toUpperCase() ?? '?'}
+              </Text>
+            </View>
+          )}
+          {onRemove && (
+            <Pressable
+              style={styles.removeButton}
+              onPress={onRemove}
+              hitSlop={6}
+              testID={`carousel-remove-${recipe.recipeId}`}
+            >
+              <Ionicons name="close" size={18} color={colors.text} />
+            </Pressable>
+          )}
         </View>
-      )}
-      <Text style={styles.cardTitle} numberOfLines={1}>
-        {recipe.recipeTitle ?? 'Sans titre'}
-      </Text>
-    </View>
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {recipe.recipeTitle ?? 'Sans titre'}
+        </Text>
+      </Animated.View>
+    </Pressable>
   );
 }
 
-export function RecipeCarousel({ recipes }: RecipeCarouselProps) {
+export function RecipeCarousel({
+  recipes,
+  highlightRecipeId,
+  onRemoveRecipe,
+}: RecipeCarouselProps) {
+  const flatListRef = useRef<FlatList>(null);
+  const [highlightId, setHighlightId] = useState(highlightRecipeId);
+
+  // Auto-scroll to highlighted recipe and clear highlight after animation
+  useEffect(() => {
+    if (!highlightRecipeId) return;
+    setHighlightId(highlightRecipeId);
+
+    const idx = recipes.findIndex((r) => r.recipeId === highlightRecipeId);
+    if (idx >= 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
+      }, 100);
+    }
+
+    const timer = setTimeout(() => setHighlightId(undefined), 1500);
+    return () => clearTimeout(timer);
+  }, [highlightRecipeId, recipes]);
+
   return (
     <View style={styles.container} testID="recipe-carousel">
       <Text style={styles.sectionTitle}>Recettes dans la liste</Text>
       <FlatList
+        ref={flatListRef}
         data={recipes}
         keyExtractor={(item) => item.recipeId}
         horizontal
         showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => <RecipeCard recipe={item} />}
+        renderItem={({ item }) => (
+          <RecipeCard
+            recipe={item}
+            isHighlighted={item.recipeId === highlightId}
+            onLongPress={onRemoveRecipe ? () => onRemoveRecipe(item) : undefined}
+            onRemove={onRemoveRecipe ? () => onRemoveRecipe(item) : undefined}
+          />
+        )}
         contentContainerStyle={styles.listContent}
+        onScrollToIndexFailed={() => {}}
       />
     </View>
   );
@@ -74,9 +154,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  thumbnailHighlighted: {
+    borderWidth: 2,
+    borderColor: colors.accent,
+  },
   placeholderText: {
     ...typography.h2,
     color: colors.textMuted,
+  },
+  removeButton: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    padding: 2,
   },
   cardTitle: {
     ...typography.caption,

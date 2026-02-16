@@ -5,6 +5,7 @@ const mockList = (overrides?: Partial<ShoppingList>): ShoppingList => ({
   id: 'list-1',
   name: 'Ma liste de courses',
   isActive: true,
+  isDefault: true,
   mealCount: 3,
   priceEstimateMin: null,
   priceEstimateMax: null,

@@ -3,7 +3,7 @@ import uuid from 'react-native-uuid';
 import type { Recipe, CreateRecipeInput, UpdateRecipeInput } from '../types';
 
 const DATABASE_NAME = 'mmmh.db';
-const CURRENT_VERSION = 2;
+const CURRENT_VERSION = 3;
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -131,6 +131,14 @@ async function runMigrations(fromVersion: number): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_shopping_list_items_checked ON shopping_list_items(is_checked);
 
       UPDATE schema_version SET version = 2;
+    `);
+  }
+
+  if (fromVersion < 3) {
+    database.execSync(`
+      ALTER TABLE shopping_lists ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0;
+
+      UPDATE schema_version SET version = 3;
     `);
   }
 }

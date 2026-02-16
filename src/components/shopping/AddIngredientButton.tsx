@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { View, Text, Pressable, TextInput, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  TextInput,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '../../theme';
 import type { IngredientCategoryCode } from '../../types';
@@ -36,8 +45,15 @@ export function AddIngredientButton({ onAdd }: AddIngredientButtonProps) {
     setIsExpanded(false);
   };
 
-  if (!isExpanded) {
-    return (
+  const handleClose = () => {
+    setIsExpanded(false);
+    setName('');
+    setQuantity('');
+    setUnit('');
+  };
+
+  return (
+    <>
       <Pressable
         style={styles.button}
         onPress={() => setIsExpanded(true)}
@@ -46,62 +62,63 @@ export function AddIngredientButton({ onAdd }: AddIngredientButtonProps) {
         <Ionicons name="add" size={20} color={colors.accent} />
         <Text style={styles.buttonText}>Ajouter un ingrédient</Text>
       </Pressable>
-    );
-  }
 
-  return (
-    <View style={styles.form} testID="add-ingredient-form">
-      <TextInput
-        style={styles.input}
-        placeholder="Nom de l'ingrédient"
-        placeholderTextColor={colors.textLight}
-        value={name}
-        onChangeText={setName}
-        autoFocus
-        testID="add-ingredient-name"
-      />
-      <View style={styles.row}>
-        <TextInput
-          style={[styles.input, styles.smallInput]}
-          placeholder="Qté"
-          placeholderTextColor={colors.textLight}
-          value={quantity}
-          onChangeText={setQuantity}
-          keyboardType="numeric"
-          testID="add-ingredient-quantity"
-        />
-        <TextInput
-          style={[styles.input, styles.smallInput]}
-          placeholder="Unité"
-          placeholderTextColor={colors.textLight}
-          value={unit}
-          onChangeText={setUnit}
-          testID="add-ingredient-unit"
-        />
-      </View>
-      <View style={styles.actions}>
-        <Pressable
-          style={styles.cancelButton}
-          onPress={() => {
-            setIsExpanded(false);
-            setName('');
-            setQuantity('');
-            setUnit('');
-          }}
-          testID="add-ingredient-cancel"
+      <Modal visible={isExpanded} transparent animationType="fade" onRequestClose={handleClose}>
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <Text style={styles.cancelText}>Annuler</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.submitButton, !name.trim() && styles.submitDisabled]}
-          onPress={handleSubmit}
-          disabled={!name.trim()}
-          testID="add-ingredient-submit"
-        >
-          <Text style={styles.submitText}>Ajouter</Text>
-        </Pressable>
-      </View>
-    </View>
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+          <View style={styles.form} testID="add-ingredient-form">
+            <TextInput
+              style={styles.input}
+              placeholder="Nom de l'ingrédient"
+              placeholderTextColor={colors.textLight}
+              value={name}
+              onChangeText={setName}
+              autoFocus
+              testID="add-ingredient-name"
+            />
+            <View style={styles.row}>
+              <TextInput
+                style={[styles.input, styles.smallInput]}
+                placeholder="Qté"
+                placeholderTextColor={colors.textLight}
+                value={quantity}
+                onChangeText={setQuantity}
+                keyboardType="numeric"
+                testID="add-ingredient-quantity"
+              />
+              <TextInput
+                style={[styles.input, styles.smallInput]}
+                placeholder="Unité"
+                placeholderTextColor={colors.textLight}
+                value={unit}
+                onChangeText={setUnit}
+                testID="add-ingredient-unit"
+              />
+            </View>
+            <View style={styles.actions}>
+              <Pressable
+                style={styles.cancelButton}
+                onPress={handleClose}
+                testID="add-ingredient-cancel"
+              >
+                <Text style={styles.cancelText}>Annuler</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.submitButton, !name.trim() && styles.submitDisabled]}
+                onPress={handleSubmit}
+                disabled={!name.trim()}
+                testID="add-ingredient-submit"
+              >
+                <Text style={styles.submitText}>Ajouter</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </>
   );
 }
 
@@ -123,11 +140,17 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.accent,
   },
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: colors.overlay,
+  },
   form: {
     padding: spacing.md,
-    backgroundColor: colors.surfaceAlt,
-    borderTopWidth: 1,
-    borderTopColor: colors.surface,
+    paddingBottom: spacing.xl,
+    backgroundColor: colors.modalBackground,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     gap: spacing.sm,
   },
   input: {
