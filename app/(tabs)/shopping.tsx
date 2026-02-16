@@ -78,10 +78,10 @@ export default function ShoppingScreen() {
 
   const handleDeleteItem = useCallback(
     (itemId: string) => {
-      if (!list) return;
-      deleteItem.mutate({ itemId, listId: list.id });
+      if (!effectiveListId) return;
+      deleteItem.mutate({ itemId, listId: effectiveListId });
     },
-    [list, deleteItem]
+    [effectiveListId, deleteItem]
   );
 
   const handleEditItem = useCallback((item: ShoppingListItem) => {
@@ -94,15 +94,15 @@ export default function ShoppingScreen() {
       updates: Partial<Pick<ShoppingListItem, 'name' | 'quantity' | 'unit' | 'category'>>,
       convertToManual: boolean
     ) => {
-      if (!list) return;
+      if (!effectiveListId) return;
       updateItem.mutate({
         itemId,
-        listId: list.id,
+        listId: effectiveListId,
         updates,
         convertToManual,
       });
     },
-    [list, updateItem]
+    [effectiveListId, updateItem]
   );
 
   const handleDeleteList = useCallback(() => {
@@ -178,16 +178,16 @@ export default function ShoppingScreen() {
       unit?: string;
       category?: 'produce' | 'dairy' | 'meat' | 'seafood' | 'pantry' | 'frozen' | 'other';
     }) => {
-      if (!list) return;
+      if (!effectiveListId) return;
       addManualItem.mutate({
-        listId: list.id,
+        listId: effectiveListId,
         name: params.name,
         quantity: params.quantity,
         unit: params.unit,
         category: params.category,
       });
     },
-    [list, addManualItem]
+    [effectiveListId, addManualItem]
   );
 
   const handleRefresh = useCallback(() => {
