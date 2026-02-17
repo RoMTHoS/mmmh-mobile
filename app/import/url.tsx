@@ -4,10 +4,12 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { UrlInput } from '../../src/components/import/UrlInput';
+import { TrialStatusBadge } from '../../src/components/import/TrialStatusBadge';
 import { useImportStore } from '../../src/stores/importStore';
 import { submitImport } from '../../src/services/import';
 import { detectPlatform } from '../../src/utils/validation';
 import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
+import { usePlanStatus } from '../../src/hooks';
 import { colors, typography, spacing } from '../../src/theme';
 
 type ImportType = 'video' | 'website';
@@ -19,6 +21,7 @@ export default function UrlInputScreen() {
   const addJob = useImportStore((state) => state.addJob);
   const jobs = useImportStore((state) => state.jobs);
   const checkPipeline = usePipelinePreCheck();
+  const planStatus = usePlanStatus();
 
   const handleSubmit = useCallback(
     async (url: string) => {
@@ -117,6 +120,16 @@ export default function UrlInputScreen() {
           </Text>
         </View>
 
+        {planStatus?.tier === 'trial' && <TrialStatusBadge />}
+
+        {planStatus?.tier === 'trial' && (
+          <Text style={styles.pipelineLabel}>
+            {planStatus.geminiQuotaRemaining > 0
+              ? 'Import avec qualite Premium'
+              : "Import avec qualite standard (import premium utilise aujourd'hui)"}
+          </Text>
+        )}
+
         <UrlInput importType="link" onSubmit={handleSubmit} isLoading={isLoading} />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -146,5 +159,12 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body,
     color: colors.textMuted,
+  },
+  pipelineLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textAlign: 'center' as const,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
   },
 });

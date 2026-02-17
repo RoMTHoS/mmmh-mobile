@@ -1,7 +1,12 @@
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
+import { useQueryClient } from '@tanstack/react-query';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { initDeviceId, getDeviceId } from '../../src/services/planSync';
+import { getDatabase } from '../../src/services/database';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -16,7 +21,11 @@ interface MenuItemProps {
 function MenuItem({ icon, title, subtitle, onPress, isLast }: MenuItemProps) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.item, isLast && styles.itemLast, pressed && styles.itemPressed]}
+      style={({ pressed }) => [
+        styles.item,
+        isLast && styles.itemLast,
+        pressed && styles.itemPressed,
+      ]}
       onPress={onPress}
       disabled={!onPress}
     >
@@ -43,9 +52,61 @@ function MenuSection({ title, children }: { title: string; children: React.React
 
 export default function MenuScreen() {
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
+
+  const handleResetTrial = async () => {
+    Alert.alert(
+      'Reset trial & device ID',
+      'Ceci va supprimer le device ID, remettre le plan à free, et en générer un nouveau. Continuer ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Clear device ID from AsyncStorage
+              await AsyncStorage.removeItem('MMMH_DEVICE_ID');
+
+              // Reset plan to free in SQLite
+              const db = getDatabase();
+              db.runSync(
+                `UPDATE user_plan SET tier = 'free', trial_start_date = NULL, trial_ends_date = NULL, premium_activated_date = NULL, promo_code = NULL, updated_at = ?`,
+                [new Date().toISOString()]
+              );
+
+              // Reset usage counters
+              db.runSync(`DELETE FROM import_usage`);
+
+              // Generate new device ID
+              const newId = await initDeviceId();
+
+              // Invalidate all queries so UI refreshes
+              queryClient.invalidateQueries();
+
+              Toast.show({
+                type: 'success',
+                text1: 'Reset complete',
+                text2: `New device ID: ${newId.slice(0, 8)}...`,
+              });
+            } catch (error) {
+              Toast.show({
+                type: 'error',
+                text1: 'Reset failed',
+                text2: error instanceof Error ? error.message : 'Unknown error',
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
-    <ScrollView style={[styles.container, { paddingTop: insets.top }]} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { paddingTop: insets.top }]}
+      contentContainerStyle={styles.content}
+    >
       <MenuSection title="Général">
         <MenuItem
           icon="notifications-outline"
@@ -103,6 +164,23 @@ export default function MenuScreen() {
           isLast
         />
       </MenuSection>
+
+      {__DEV__ && (
+        <MenuSection title="Développeur">
+          <MenuItem
+            icon="id-card-outline"
+            title="Device ID"
+            subtitle={getDeviceId()?.slice(0, 8) ?? 'non initialisé'}
+          />
+          <MenuItem
+            icon="refresh-outline"
+            title="Reset trial & device ID"
+            subtitle="Remet le plan à free avec un nouveau device"
+            onPress={handleResetTrial}
+            isLast
+          />
+        </MenuSection>
+      )}
     </ScrollView>
   );
 }
