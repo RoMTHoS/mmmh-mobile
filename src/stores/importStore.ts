@@ -22,6 +22,10 @@ export interface ImportJob {
   estimatedTimeRemaining?: number;
   error?: ImportJobError;
   result?: unknown;
+  /** Which pipeline processed this job ('vps' or 'gemini'). Set on completion. */
+  pipeline?: 'vps' | 'gemini';
+  /** Whether Gemini failed and the job fell back to VPS. */
+  fallbackUsed?: boolean;
   createdAt: string;
 }
 

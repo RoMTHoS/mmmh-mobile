@@ -1,16 +1,21 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useImportStore } from '../stores/importStore';
 import { getImportStatus } from '../services/import';
+import * as planDb from '../services/planDatabase';
 import { logger } from '../utils';
 
 const POLL_INTERVAL = 5000; // 5 seconds
 
 export function useImportPolling() {
   const updateJob = useImportStore((state) => state.updateJob);
+  const queryClient = useQueryClient();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef(AppState.currentState);
   const prevActiveCountRef = useRef(0);
+  // Track which jobs have already had their usage incremented
+  const trackedJobsRef = useRef<Set<string>>(new Set());
 
   // Stable polling function - gets jobs from store directly
   const pollActiveJobs = useCallback(async () => {
@@ -34,7 +39,30 @@ export function useImportPolling() {
           estimatedTimeRemaining: status.estimatedTimeRemaining,
           error: status.error,
           result: status.result,
+          pipeline: status.pipelineInfo?.pipeline,
+          fallbackUsed: status.pipelineInfo?.fallbackUsed,
         });
+
+        // Track mobile-side usage on completion (advisory, not authoritative)
+        if (
+          status.status === 'completed' &&
+          status.pipelineInfo?.pipeline &&
+          !trackedJobsRef.current.has(job.jobId)
+        ) {
+          trackedJobsRef.current.add(job.jobId);
+          try {
+            if (status.pipelineInfo.pipeline === 'vps') {
+              await planDb.incrementVpsUsage();
+            } else {
+              await planDb.incrementGeminiUsage();
+            }
+            queryClient.invalidateQueries({ queryKey: ['import-usage'] });
+          } catch (usageError) {
+            logger.warn('Failed to track local usage', {
+              error: usageError instanceof Error ? usageError.message : String(usageError),
+            });
+          }
+        }
       } catch (error) {
         logger.error('Failed to poll job status', error instanceof Error ? error : undefined, {
           jobId: job.jobId,

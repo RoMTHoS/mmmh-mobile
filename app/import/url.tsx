@@ -7,6 +7,7 @@ import { UrlInput } from '../../src/components/import/UrlInput';
 import { useImportStore } from '../../src/stores/importStore';
 import { submitImport } from '../../src/services/import';
 import { detectPlatform } from '../../src/utils/validation';
+import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
 import { colors, typography, spacing } from '../../src/theme';
 
 type ImportType = 'video' | 'website';
@@ -17,6 +18,7 @@ export default function UrlInputScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const addJob = useImportStore((state) => state.addJob);
   const jobs = useImportStore((state) => state.jobs);
+  const checkPipeline = usePipelinePreCheck();
 
   const handleSubmit = useCallback(
     async (url: string) => {
@@ -32,6 +34,9 @@ export default function UrlInputScreen() {
       }
 
       setIsLoading(true);
+
+      // Pre-import pipeline check (informational only)
+      checkPipeline();
 
       // Auto-detect import type based on URL
       const platform = detectPlatform(url);

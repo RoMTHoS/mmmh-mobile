@@ -12,6 +12,7 @@ import { uploadPhoto, uploadPhotos } from '../../src/services/photoUpload';
 import { compressImage } from '../../src/utils/imageCompression';
 import { requestMediaLibraryPermission } from '../../src/utils/permissions';
 import { usePhotoBatch, MAX_PHOTOS } from '../../src/hooks/usePhotoBatch';
+import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
 import { colors } from '../../src/theme';
 
 type PhotoSource = 'camera' | 'gallery';
@@ -29,6 +30,7 @@ export default function PhotoImportScreen() {
   const [addingMore, setAddingMore] = useState(false);
 
   const batch = usePhotoBatch();
+  const checkPipeline = usePipelinePreCheck();
 
   const addJob = useImportStore((state) => state.addJob);
   const jobs = useImportStore((state) => state.jobs);
@@ -100,6 +102,7 @@ export default function PhotoImportScreen() {
         setScreenState('preview');
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Gallery pick error:', error);
       Toast.show({
         type: 'error',
@@ -173,6 +176,9 @@ export default function PhotoImportScreen() {
     setUploadProgress(0);
     setUploadError(null);
 
+    // Pre-import pipeline check (informational only)
+    checkPipeline();
+
     try {
       const compressed = await compressImage(uri);
 
@@ -217,6 +223,9 @@ export default function PhotoImportScreen() {
     setScreenState('uploading');
     setUploadProgress(0);
     setUploadError(null);
+
+    // Pre-import pipeline check (informational only)
+    checkPipeline();
 
     try {
       // Compress all images

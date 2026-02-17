@@ -22,6 +22,11 @@ const STEP_LABELS: Record<string, string> = {
   validating: 'Validation...',
   scraping: 'Lecture de la page...',
   parsing: 'Extraction des donnees...',
+  analyzing_with_gemini: 'Analyse Gemini...',
+  uploading_media: 'Envoi du media...',
+  processing_image: "Traitement de l'image...",
+  extracting_text: 'Extraction du texte...',
+  detecting_speech: 'Detection de la parole...',
   complete: 'Termine!',
 };
 
@@ -77,6 +82,9 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
     outputRange: ['0%', '100%'],
   });
 
+  const pipelineLabel = job.pipeline === 'gemini' ? 'Premium' : 'Standard';
+  const pipelineBadgeColor = job.pipeline === 'gemini' ? colors.accent : colors.textMuted;
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -84,6 +92,13 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
         <Text style={styles.url} numberOfLines={1}>
           {extractHostname(job.sourceUrl)}
         </Text>
+        {job.pipeline && (
+          <View style={[styles.pipelineBadge, { borderColor: pipelineBadgeColor }]}>
+            <Text style={[styles.pipelineBadgeText, { color: pipelineBadgeColor }]}>
+              {pipelineLabel}
+            </Text>
+          </View>
+        )}
         <Pressable
           onPress={onDismiss}
           style={({ pressed }) => [styles.dismissButton, pressed && styles.dismissButtonPressed]}
@@ -137,6 +152,13 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
               style={styles.actionButton}
             />
           )}
+
+        {job.status === 'completed' && job.fallbackUsed && (
+          <Text style={styles.fallbackNotice}>
+            Le service Premium etait temporairement indisponible. Votre recette a ete importee avec
+            le pipeline standard.
+          </Text>
+        )}
 
         {job.status === 'completed' && (
           <Button
@@ -218,5 +240,22 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginTop: spacing.sm,
+  },
+  pipelineBadge: {
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    marginRight: spacing.xs,
+  },
+  pipelineBadgeText: {
+    fontSize: 11,
+    fontFamily: fonts.script,
+  },
+  fallbackNotice: {
+    ...typography.caption,
+    color: colors.warning,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
 });
