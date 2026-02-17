@@ -3,7 +3,7 @@ import uuid from 'react-native-uuid';
 import type { Recipe, CreateRecipeInput, UpdateRecipeInput } from '../types';
 
 const DATABASE_NAME = 'mmmh.db';
-const CURRENT_VERSION = 3;
+const CURRENT_VERSION = 4;
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -139,6 +139,35 @@ async function runMigrations(fromVersion: number): Promise<void> {
       ALTER TABLE shopping_lists ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0;
 
       UPDATE schema_version SET version = 3;
+    `);
+  }
+
+  if (fromVersion < 4) {
+    database.execSync(`
+      CREATE TABLE IF NOT EXISTS user_plan (
+        id TEXT PRIMARY KEY,
+        tier TEXT NOT NULL DEFAULT 'free' CHECK (tier IN ('free', 'trial', 'premium')),
+        trial_start_date TEXT,
+        trial_ends_date TEXT,
+        premium_activated_date TEXT,
+        promo_code TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS import_usage (
+        id TEXT PRIMARY KEY,
+        usage_date TEXT NOT NULL,
+        vps_imports_used INTEGER NOT NULL DEFAULT 0,
+        gemini_imports_used INTEGER NOT NULL DEFAULT 0,
+        week_start_date TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_import_usage_date ON import_usage(usage_date);
+      CREATE INDEX IF NOT EXISTS idx_import_usage_week ON import_usage(week_start_date);
+
+      UPDATE schema_version SET version = 4;
     `);
   }
 }

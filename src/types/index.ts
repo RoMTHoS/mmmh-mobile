@@ -8,3 +8,4 @@ export type {
   RecipeWithServings,
 } from './shopping';
 export { INGREDIENT_CATEGORIES } from './shopping';
+export type { PlanTier, UserPlan, ImportUsage, PlanStatus } from './plan';
