@@ -73,10 +73,11 @@ class ImportServiceError extends Error {
 }
 
 export async function submitImport(request: SubmitImportRequest): Promise<ImportJobResponse> {
+  const headers = buildHeaders();
   try {
     const response = await fetch(`${API_BASE_URL}/api/import`, {
       method: 'POST',
-      headers: buildHeaders(),
+      headers,
       body: JSON.stringify(request),
     });
 

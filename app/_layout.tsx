@@ -8,7 +8,8 @@ import Toast from 'react-native-toast-message';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../src/components';
-import { useDatabase } from '../src/hooks';
+import { useDatabase, useTrialExpiration } from '../src/hooks';
+import { initDeviceId, ensurePlanSyncedToBackend } from '../src/services/planSync';
 import { LoadingScreen } from '../src/components/ui';
 import { colors } from '../src/theme';
 
@@ -61,6 +62,11 @@ function NavigationStatePersistence() {
   return null;
 }
 
+function TrialExpirationWatcher() {
+  useTrialExpiration();
+  return null;
+}
+
 function RootLayoutNav() {
   const { isReady: isDbReady, error: dbError } = useDatabase();
   const [fontsLoaded, fontError] = useFonts({
@@ -69,10 +75,16 @@ function RootLayoutNav() {
   });
 
   useEffect(() => {
+    initDeviceId().then(() => ensurePlanSyncedToBackend());
+  }, []);
+
+  useEffect(() => {
     if (fontError) {
+      // eslint-disable-next-line no-console
       console.error('Font loading error:', fontError);
     }
     if (dbError) {
+      // eslint-disable-next-line no-console
       console.error('Database error:', dbError);
     }
   }, [fontError, dbError]);
@@ -99,6 +111,7 @@ function RootLayoutNav() {
   return (
     <>
       <NavigationStatePersistence />
+      <TrialExpirationWatcher />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },

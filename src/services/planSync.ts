@@ -5,14 +5,40 @@
  * Backend Redis is the source of truth for tier routing and quota enforcement.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import uuid from 'react-native-uuid';
 import * as planDb from './planDatabase';
 import type { UserPlan } from '../types';
 
 const AI_PIPELINE_URL = process.env.EXPO_PUBLIC_AI_PIPELINE_URL || 'http://localhost:8001';
+const DEVICE_ID_KEY = 'MMMH_DEVICE_ID';
 
-// Device ID should come from a persistent store (e.g., AsyncStorage)
-// For now this is a placeholder — Story 5.3+ will wire the real device ID
 let deviceId: string | null = null;
+
+/**
+ * Initialize device ID from AsyncStorage, generating one if needed.
+ * Must be called once at app startup (after AsyncStorage is ready).
+ */
+export async function initDeviceId(): Promise<string> {
+  try {
+    const stored = await AsyncStorage.getItem(DEVICE_ID_KEY);
+    if (stored) {
+      deviceId = stored;
+      return stored;
+    }
+
+    const newId = uuid.v4() as string;
+    await AsyncStorage.setItem(DEVICE_ID_KEY, newId);
+    deviceId = newId;
+    return newId;
+  } catch {
+    // Fallback: generate in-memory ID (won't persist across restarts)
+    if (!deviceId) {
+      deviceId = uuid.v4() as string;
+    }
+    return deviceId;
+  }
+}
 
 export function setDeviceId(id: string): void {
   deviceId = id;
@@ -102,6 +128,51 @@ export async function syncActivatePremium(promoCode: string): Promise<UserPlan> 
   }
 
   return localPlan;
+}
+
+/**
+ * Ensure local plan state is synced to backend on startup.
+ * Handles cases where trial/premium was activated locally but sync to backend failed.
+ */
+export async function ensurePlanSyncedToBackend(): Promise<void> {
+  if (!deviceId) return;
+
+  const localPlan = await planDb.getUserPlan();
+
+  // Nothing to push if user is free tier
+  if (localPlan.tier === 'free') return;
+
+  try {
+    const response = await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const backendTier = data.plan?.tier || 'free';
+
+    // Backend already matches local — nothing to do
+    if (backendTier === localPlan.tier) return;
+
+    // Push local state to backend
+    if (localPlan.tier === 'trial') {
+      await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'trial' }),
+      });
+    } else if (localPlan.tier === 'premium') {
+      await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'premium', promo_code: localPlan.promoCode || '' }),
+      });
+    }
+  } catch {
+    // Silently fail — will retry on next app launch
+  }
 }
 
 // --- Internal helpers ---

@@ -32,3 +32,4 @@ export {
   useIncrementUsage,
 } from './usePlan';
 export { usePipelinePreCheck } from './usePipelinePreCheck';
+export { useTrialExpiration } from './useTrialExpiration';

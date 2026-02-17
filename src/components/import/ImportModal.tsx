@@ -3,6 +3,9 @@ import { View, Text, Pressable, Modal, StyleSheet, Animated, Alert } from 'react
 import { router } from 'expo-router';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
 import { Icon, IconName } from '../ui';
+import { usePlanStatus } from '../../hooks';
+import { TrialBanner } from './TrialBanner';
+import { TrialStatusBadge } from './TrialStatusBadge';
 
 interface ImportOptionProps {
   icon: IconName;
@@ -30,6 +33,7 @@ interface ImportModalProps {
 }
 
 export function ImportModal({ visible, onClose }: ImportModalProps) {
+  const planStatus = usePlanStatus();
   const slideAnim = useRef(new Animated.Value(300)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
@@ -109,6 +113,11 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
     <>
       <Text style={styles.title}>Importer une recette</Text>
 
+      <View style={styles.trialSection}>
+        {planStatus?.tier === 'free' && <TrialBanner />}
+        {planStatus?.tier === 'trial' && <TrialStatusBadge />}
+      </View>
+
       <View style={styles.options}>
         <ImportOption icon="globe" label="Lien" onPress={handleLinkImport} />
         <ImportOption icon="camera" label="Photo" onPress={handleCameraImport} />
@@ -174,7 +183,11 @@ const styles = StyleSheet.create({
   title: {
     ...typography.titleScript,
     color: colors.text,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  trialSection: {
+    width: '100%',
+    marginBottom: spacing.sm,
   },
   options: {
     flexDirection: 'row',

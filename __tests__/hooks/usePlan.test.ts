@@ -9,13 +9,16 @@ import {
   useIncrementUsage,
 } from '../../src/hooks/usePlan';
 import * as planDb from '../../src/services/planDatabase';
+import * as planSync from '../../src/services/planSync';
 import type { UserPlan, ImportUsage } from '../../src/types';
 
 jest.mock('expo-sqlite');
 jest.mock('react-native-uuid');
 jest.mock('../../src/services/planDatabase');
+jest.mock('../../src/services/planSync');
 
 const mockPlanDb = planDb as jest.Mocked<typeof planDb>;
+const mockPlanSync = planSync as jest.Mocked<typeof planSync>;
 
 const mockPlan: UserPlan = {
   id: 'plan-1',
@@ -85,14 +88,14 @@ describe('Plan Hooks', () => {
   });
 
   describe('useActivateTrial', () => {
-    it('should activate trial', async () => {
+    it('should activate trial via sync', async () => {
       const trialPlan: UserPlan = {
         ...mockPlan,
         tier: 'trial',
         trialStartDate: '2026-02-16T00:00:00.000Z',
         trialEndsDate: '2026-02-23T00:00:00.000Z',
       };
-      mockPlanDb.activateTrial.mockResolvedValue(trialPlan);
+      mockPlanSync.syncActivateTrial.mockResolvedValue(trialPlan);
 
       const { result } = renderHook(() => useActivateTrial(), {
         wrapper: createWrapper(),
@@ -104,19 +107,19 @@ describe('Plan Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockPlanDb.activateTrial).toHaveBeenCalledTimes(1);
+      expect(mockPlanSync.syncActivateTrial).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('useActivatePremium', () => {
-    it('should activate premium with promo code', async () => {
+    it('should activate premium via sync with promo code', async () => {
       const premiumPlan: UserPlan = {
         ...mockPlan,
         tier: 'premium',
         promoCode: 'PROMO123',
         premiumActivatedDate: '2026-02-16T00:00:00.000Z',
       };
-      mockPlanDb.activatePremium.mockResolvedValue(premiumPlan);
+      mockPlanSync.syncActivatePremium.mockResolvedValue(premiumPlan);
 
       const { result } = renderHook(() => useActivatePremium(), {
         wrapper: createWrapper(),
@@ -128,7 +131,7 @@ describe('Plan Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockPlanDb.activatePremium).toHaveBeenCalledWith('PROMO123');
+      expect(mockPlanSync.syncActivatePremium).toHaveBeenCalledWith('PROMO123');
     });
   });
 
