@@ -4,8 +4,8 @@
 import { TextStyle } from 'react-native';
 
 export const fonts = {
-  script: 'Pacifico',
-  sans: 'System',
+  script: 'Overlock',
+  sans: 'Shanti',
 } as const;
 
 export const fontSizes = {
@@ -26,7 +26,7 @@ export const fontWeights = {
 };
 
 export const typography = {
-  // Script styles - for headers, titles, buttons (Pacifico font)
+  // Script styles - for headers, titles, buttons (DynaPuff font)
   headerScript: {
     fontFamily: fonts.script,
     fontSize: fontSizes['2xl'],
@@ -51,33 +51,38 @@ export const typography = {
     lineHeight: 24,
   } as TextStyle,
 
-  // Sans-serif headers (legacy, for compatibility)
+  // Sans-serif headers
   h1: {
+    fontFamily: fonts.sans,
     fontSize: fontSizes['3xl'],
     fontWeight: fontWeights.bold,
     lineHeight: 40,
   } as TextStyle,
 
   h2: {
+    fontFamily: fonts.sans,
     fontSize: fontSizes['2xl'],
     fontWeight: fontWeights.semibold,
     lineHeight: 32,
   } as TextStyle,
 
   h3: {
+    fontFamily: fonts.sans,
     fontSize: fontSizes.xl,
     fontWeight: fontWeights.semibold,
     lineHeight: 28,
   } as TextStyle,
 
-  // Body text (sans-serif)
+  // Body text (sans)
   body: {
+    fontFamily: fonts.sans,
     fontSize: fontSizes.base,
     fontWeight: fontWeights.normal,
     lineHeight: 24,
   } as TextStyle,
 
   bodySmall: {
+    fontFamily: fonts.sans,
     fontSize: fontSizes.sm,
     fontWeight: fontWeights.normal,
     lineHeight: 20,
@@ -85,25 +90,29 @@ export const typography = {
 
   // Labels and captions
   label: {
+    fontFamily: fonts.sans,
     fontSize: fontSizes.sm,
     fontWeight: fontWeights.medium,
     lineHeight: 20,
   } as TextStyle,
 
   caption: {
+    fontFamily: fonts.sans,
     fontSize: fontSizes.xs,
     fontWeight: fontWeights.normal,
     lineHeight: 16,
   } as TextStyle,
 
-  // Button text (sans-serif)
+  // Button text (sans)
   button: {
+    fontFamily: fonts.sans,
     fontSize: fontSizes.base,
     fontWeight: fontWeights.semibold,
     lineHeight: 24,
   } as TextStyle,
 
   buttonSmall: {
+    fontFamily: fonts.sans,
     fontSize: fontSizes.sm,
     fontWeight: fontWeights.semibold,
     lineHeight: 20,

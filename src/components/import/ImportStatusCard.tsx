@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { router } from 'expo-router';
 import { Icon, Button } from '../ui';
 import { PlatformBadge } from './PlatformBadge';
+import { PipelineBadge } from './PipelineBadge';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
 import { extractHostname } from '../../utils/validation';
 import type { ImportJob } from '../../stores/importStore';
@@ -82,9 +83,6 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
     outputRange: ['0%', '100%'],
   });
 
-  const pipelineLabel = job.pipeline === 'gemini' ? 'Premium' : 'Standard';
-  const pipelineBadgeColor = job.pipeline === 'gemini' ? colors.accent : colors.textMuted;
-
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -92,13 +90,7 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
         <Text style={styles.url} numberOfLines={1}>
           {extractHostname(job.sourceUrl)}
         </Text>
-        {job.pipeline && (
-          <View style={[styles.pipelineBadge, { borderColor: pipelineBadgeColor }]}>
-            <Text style={[styles.pipelineBadgeText, { color: pipelineBadgeColor }]}>
-              {pipelineLabel}
-            </Text>
-          </View>
-        )}
+        {job.pipeline && <PipelineBadge pipeline={job.pipeline} />}
         <Pressable
           onPress={onDismiss}
           style={({ pressed }) => [styles.dismissButton, pressed && styles.dismissButtonPressed]}
@@ -240,17 +232,6 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginTop: spacing.sm,
-  },
-  pipelineBadge: {
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    marginRight: spacing.xs,
-  },
-  pipelineBadgeText: {
-    fontSize: 11,
-    fontFamily: fonts.script,
   },
   fallbackNotice: {
     ...typography.caption,

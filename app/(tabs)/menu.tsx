@@ -3,11 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 import { initDeviceId, getDeviceId } from '../../src/services/planSync';
 import { getDatabase } from '../../src/services/database';
-import { usePlanStatus } from '../../src/hooks';
+import { usePlanStatus, useUserPlan } from '../../src/hooks';
 import { QUOTA } from '../../src/utils/planConstants';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -52,17 +53,20 @@ function MenuSection({ title, children }: { title: string; children: React.React
   );
 }
 
+const TIER_BADGE_CONFIG = {
+  free: { label: 'Gratuit', bg: colors.surface, border: colors.textMuted, text: colors.textMuted },
+  trial: { label: 'Essai', bg: '#EFF6FF', border: colors.info, text: colors.info },
+  premium: { label: 'Premium', bg: '#FEF3C7', border: '#D4A017', text: '#D4A017' },
+} as const;
+
 function PlanUsageSection() {
   const planStatus = usePlanStatus();
+  const { data: userPlan } = useUserPlan();
 
   if (!planStatus) return null;
 
-  const tierLabel =
-    planStatus.tier === 'premium'
-      ? 'Premium'
-      : planStatus.tier === 'trial'
-        ? `Essai (${planStatus.trialDaysRemaining ?? 0} jours)`
-        : 'Gratuit';
+  const badgeConfig = TIER_BADGE_CONFIG[planStatus.tier];
+  const isTrialExpired = planStatus.tier === 'free' && userPlan?.trialStartDate !== null;
 
   const vpsLimit = planStatus.tier === 'trial' ? QUOTA.TRIAL_VPS_PER_WEEK : QUOTA.FREE_VPS_PER_WEEK;
   const vpsUsed = planStatus.tier === 'premium' ? 0 : vpsLimit - planStatus.vpsQuotaRemaining;
@@ -78,9 +82,24 @@ function PlanUsageSection() {
             <Ionicons name="diamond-outline" size={22} color={colors.accent} />
           </View>
           <View style={[styles.itemContent, { gap: 6 }]}>
-            <Text style={styles.itemTitle} testID="plan-tier-label">
-              Plan actuel : {tierLabel}
-            </Text>
+            {/* Tier badge */}
+            <View style={planStyles.tierRow}>
+              <Text style={styles.itemTitle}>Plan actuel</Text>
+              <View
+                style={[
+                  planStyles.tierBadge,
+                  { backgroundColor: badgeConfig.bg, borderColor: badgeConfig.border },
+                ]}
+                testID="plan-tier-badge"
+              >
+                <Text style={[planStyles.tierBadgeText, { color: badgeConfig.text }]}>
+                  {planStatus.tier === 'trial'
+                    ? `${badgeConfig.label} (${planStatus.trialDaysRemaining ?? 0}j)`
+                    : badgeConfig.label}
+                </Text>
+              </View>
+            </View>
+
             {planStatus.tier !== 'premium' && (
               <>
                 <Text style={styles.itemSubtitle} testID="plan-vps-usage">
@@ -105,22 +124,48 @@ function PlanUsageSection() {
               </Text>
             )}
             {planStatus.tier === 'premium' && (
-              <Text style={styles.itemSubtitle} testID="plan-unlimited">
-                Imports illimités
-              </Text>
+              <>
+                <View style={planStyles.premiumActiveRow}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                  <Text
+                    style={[styles.itemSubtitle, { color: colors.success }]}
+                    testID="plan-premium-active"
+                  >
+                    Premium actif
+                  </Text>
+                </View>
+                {userPlan?.premiumActivatedDate && (
+                  <Text style={styles.itemSubtitle}>
+                    Active le {new Date(userPlan.premiumActivatedDate).toLocaleDateString('fr-FR')}
+                  </Text>
+                )}
+                {userPlan?.promoCode && (
+                  <Text style={styles.itemSubtitle}>Code : {userPlan.promoCode}</Text>
+                )}
+              </>
             )}
             {planStatus.tier !== 'premium' && (
               <Text style={[styles.itemSubtitle, { marginTop: 2 }]}>Réinitialisation : lundi</Text>
             )}
+
+            {/* Trial expired message */}
+            {isTrialExpired && (
+              <Text
+                style={[styles.itemSubtitle, { color: colors.warning }]}
+                testID="plan-trial-expired"
+              >
+                Votre essai est termine. Passez a Premium
+              </Text>
+            )}
+
+            {/* Upgrade button */}
             {planStatus.tier !== 'premium' && (
               <Pressable
                 style={planStyles.upgradeButton}
-                onPress={() => {
-                  // TODO: Navigate to upgrade (Story 5.6)
-                }}
+                onPress={() => router.push('/upgrade')}
                 testID="plan-upgrade-button"
               >
-                <Text style={planStyles.upgradeButtonText}>Passer à Premium</Text>
+                <Text style={planStyles.upgradeButtonText}>Passer a Premium</Text>
               </Pressable>
             )}
           </View>
@@ -328,6 +373,26 @@ const styles = StyleSheet.create({
 });
 
 const planStyles = StyleSheet.create({
+  tierRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  tierBadge: {
+    borderWidth: 1,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  tierBadgeText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  premiumActiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   progressTrack: {
     height: 6,
     borderRadius: 3,

@@ -8,6 +8,7 @@ import { TrialStatusBadge } from '../../src/components/import/TrialStatusBadge';
 import { QuotaDisplay } from '../../src/components/import/QuotaDisplay';
 import { QuotaExceededModal } from '../../src/components/import/QuotaExceededModal';
 import { GeminiFallbackDialog } from '../../src/components/import/GeminiFallbackDialog';
+import { PipelineBadge } from '../../src/components/import/PipelineBadge';
 import { useImportStore } from '../../src/stores/importStore';
 import { submitImport } from '../../src/services/import';
 import { detectPlatform } from '../../src/utils/validation';
@@ -165,8 +166,7 @@ export default function UrlInputScreen() {
 
   const handleUpgrade = useCallback(() => {
     setShowQuotaExceeded(false);
-    // Navigate to upgrade screen (Story 5.6)
-    router.push('/(tabs)/menu');
+    router.push('/upgrade');
   }, []);
 
   const handleStartTrial = useCallback(() => {
@@ -197,12 +197,10 @@ export default function UrlInputScreen() {
           <QuotaDisplay />
         </View>
 
-        {planStatus?.tier === 'trial' && (
-          <Text style={styles.pipelineLabel}>
-            {planStatus.geminiQuotaRemaining > 0
-              ? 'Import avec qualite Premium'
-              : "Import avec qualite standard (import premium utilise aujourd'hui)"}
-          </Text>
+        {planStatus && (
+          <View style={styles.pipelineSection}>
+            <PipelineBadge pipeline={planStatus.canUsePremium ? 'gemini' : 'vps'} size="md" />
+          </View>
         )}
 
         <UrlInput importType="link" onSubmit={handleSubmit} isLoading={isLoading} />
@@ -252,10 +250,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
   },
-  pipelineLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
-    textAlign: 'center' as const,
+  pipelineSection: {
+    alignItems: 'center' as const,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
   },

@@ -3,6 +3,7 @@ import { render } from '@testing-library/react-native';
 import type { PlanStatus } from '../../src/types';
 
 const mockUsePlanStatus = jest.fn<PlanStatus | null, []>();
+const mockUseUserPlan = jest.fn();
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -27,6 +28,7 @@ jest.mock('../../src/services/database', () => ({
 
 jest.mock('../../src/hooks', () => ({
   usePlanStatus: () => mockUsePlanStatus(),
+  useUserPlan: () => mockUseUserPlan(),
 }));
 
 import MenuScreen from '../../app/(tabs)/menu';
@@ -34,6 +36,7 @@ import MenuScreen from '../../app/(tabs)/menu';
 describe('MenuScreen - Plan & Usage section', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseUserPlan.mockReturnValue({ data: null });
   });
 
   it('shows free tier info', () => {
@@ -48,10 +51,12 @@ describe('MenuScreen - Plan & Usage section', () => {
 
     const { getByTestId } = render(<MenuScreen />);
 
-    expect(getByTestId('plan-tier-label')).toBeTruthy();
-    const tierChildren = getByTestId('plan-tier-label').props.children;
-    const tierText = Array.isArray(tierChildren) ? tierChildren.join('') : tierChildren;
-    expect(tierText).toContain('Gratuit');
+    const badge = getByTestId('plan-tier-badge');
+    expect(badge).toBeTruthy();
+    const badgeChildren = badge.props.children;
+    const badgeEl = React.isValidElement(badgeChildren) ? badgeChildren : null;
+    const badgeText = badgeEl ? (badgeEl.props as { children: string }).children : '';
+    expect(badgeText).toContain('Gratuit');
 
     const usageChildren = getByTestId('plan-vps-usage').props.children;
     const usageText = Array.isArray(usageChildren) ? usageChildren.join('') : usageChildren;
@@ -70,14 +75,16 @@ describe('MenuScreen - Plan & Usage section', () => {
 
     const { getByTestId } = render(<MenuScreen />);
 
-    const tierChildren = getByTestId('plan-tier-label').props.children;
-    const tierText = Array.isArray(tierChildren) ? tierChildren.join('') : tierChildren;
-    expect(tierText).toContain('Essai');
+    const badge = getByTestId('plan-tier-badge');
+    const badgeChildren = badge.props.children;
+    const badgeEl = React.isValidElement(badgeChildren) ? badgeChildren : null;
+    const badgeText = badgeEl ? (badgeEl.props as { children: string }).children : '';
+    expect(badgeText).toContain('Essai');
 
     expect(getByTestId('plan-gemini-usage')).toBeTruthy();
   });
 
-  it('shows premium tier with unlimited', () => {
+  it('shows premium tier with active status', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'premium',
       trialDaysRemaining: null,
@@ -89,11 +96,13 @@ describe('MenuScreen - Plan & Usage section', () => {
 
     const { getByTestId, queryByTestId } = render(<MenuScreen />);
 
-    const tierChildren = getByTestId('plan-tier-label').props.children;
-    const tierText = Array.isArray(tierChildren) ? tierChildren.join('') : tierChildren;
-    expect(tierText).toContain('Premium');
+    const badge = getByTestId('plan-tier-badge');
+    const badgeChildren = badge.props.children;
+    const badgeEl = React.isValidElement(badgeChildren) ? badgeChildren : null;
+    const badgeText = badgeEl ? (badgeEl.props as { children: string }).children : '';
+    expect(badgeText).toContain('Premium');
 
-    expect(getByTestId('plan-unlimited')).toBeTruthy();
+    expect(getByTestId('plan-premium-active')).toBeTruthy();
     expect(queryByTestId('plan-vps-usage')).toBeNull();
     expect(queryByTestId('plan-upgrade-button')).toBeNull();
   });

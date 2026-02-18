@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import type { Step } from '../../types';
-import { colors, spacing } from '../../theme';
+import { colors, spacing, fonts } from '../../theme';
 
 interface StepListProps {
   steps: Step[];
@@ -42,17 +42,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   number: {
+    fontFamily: fonts.sans,
     color: colors.background,
     fontSize: 14,
     fontWeight: '600',
   },
   instruction: {
+    fontFamily: fonts.sans,
     flex: 1,
     fontSize: 15,
     color: colors.text,
     lineHeight: 22,
   },
   emptyText: {
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: colors.textMuted,
     fontStyle: 'italic',

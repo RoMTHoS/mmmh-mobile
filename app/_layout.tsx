@@ -9,6 +9,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../src/components';
 import { useDatabase, useTrialExpiration } from '../src/hooks';
+import { TrialExpiryModal } from '../src/components/import/TrialExpiryModal';
 import { initDeviceId, ensurePlanSyncedToBackend } from '../src/services/planSync';
 import { LoadingScreen } from '../src/components/ui';
 import { colors } from '../src/theme';
@@ -71,7 +72,9 @@ function RootLayoutNav() {
   const { isReady: isDbReady, error: dbError } = useDatabase();
   const [fontsLoaded, fontError] = useFonts({
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    Pacifico: require('../assets/fonts/Pacifico-Regular.ttf'),
+    Overlock: require('../assets/fonts/Overlock-Black.ttf'),
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    Chicle: require('../assets/fonts/Chicle-Regular.ttf'),
   });
 
   useEffect(() => {
@@ -112,6 +115,7 @@ function RootLayoutNav() {
     <>
       <NavigationStatePersistence />
       <TrialExpirationWatcher />
+      <TrialExpiryModal />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
@@ -124,6 +128,7 @@ function RootLayoutNav() {
         <Stack.Screen name="recipe/[id]" options={{ title: '' }} />
         <Stack.Screen name="recipe/[id]/edit" options={{ title: '', presentation: 'modal' }} />
         <Stack.Screen name="recipe/create" options={{ title: '', presentation: 'modal' }} />
+        <Stack.Screen name="upgrade" options={{ title: '', headerBackTitle: ' ' }} />
         <Stack.Screen name="+not-found" options={{ title: '' }} />
       </Stack>
     </>
