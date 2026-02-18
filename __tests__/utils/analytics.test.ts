@@ -45,4 +45,34 @@ describe('trackEvent', () => {
       totalImportsUsed: 3,
     });
   });
+
+  it('logs quota_exhausted_vps event', () => {
+    trackEvent('quota_exhausted_vps', { deviceId: 'dev-1', tier: 'free' });
+
+    expect(consoleSpy).toHaveBeenCalledWith('[analytics] quota_exhausted_vps', {
+      deviceId: 'dev-1',
+      tier: 'free',
+    });
+  });
+
+  it('logs quota_exhausted_gemini event', () => {
+    trackEvent('quota_exhausted_gemini', { deviceId: 'dev-1', dayOfTrial: 3 });
+
+    expect(consoleSpy).toHaveBeenCalledWith('[analytics] quota_exhausted_gemini', {
+      deviceId: 'dev-1',
+      dayOfTrial: 3,
+    });
+  });
+
+  it('logs fallback_accepted event', () => {
+    trackEvent('fallback_accepted', {});
+
+    expect(consoleSpy).toHaveBeenCalledWith('[analytics] fallback_accepted', {});
+  });
+
+  it('logs fallback_declined event', () => {
+    trackEvent('fallback_declined', {});
+
+    expect(consoleSpy).toHaveBeenCalledWith('[analytics] fallback_declined', {});
+  });
 });

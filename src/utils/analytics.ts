@@ -4,10 +4,18 @@
  * For beta: events are logged to console. Full analytics integration
  * (e.g., PostHog, Mixpanel) deferred to post-beta.
  *
- * @see Story 5.4 Task 6
+ * @see Story 5.4 Task 6, Story 5.5 Task 9
  */
 
 type TrialEvent = 'trial_started' | 'trial_import_used' | 'trial_expired' | 'trial_converted';
+
+type QuotaEvent =
+  | 'quota_exhausted_vps'
+  | 'quota_exhausted_gemini'
+  | 'fallback_accepted'
+  | 'fallback_declined';
+
+type AnalyticsEvent = TrialEvent | QuotaEvent;
 
 interface TrialStartedParams {
   date: string;
@@ -28,14 +36,31 @@ interface TrialConvertedParams {
   totalImportsUsed?: number;
 }
 
+interface QuotaExhaustedVpsParams {
+  deviceId: string;
+  tier: string;
+}
+
+interface QuotaExhaustedGeminiParams {
+  deviceId: string;
+  dayOfTrial: number;
+}
+
+// fallback_accepted and fallback_declined have no required params
+type FallbackParams = Record<string, never>;
+
 type EventParams = {
   trial_started: TrialStartedParams;
   trial_import_used: TrialImportUsedParams;
   trial_expired: TrialExpiredParams;
   trial_converted: TrialConvertedParams;
+  quota_exhausted_vps: QuotaExhaustedVpsParams;
+  quota_exhausted_gemini: QuotaExhaustedGeminiParams;
+  fallback_accepted: FallbackParams;
+  fallback_declined: FallbackParams;
 };
 
-export function trackEvent<E extends TrialEvent>(event: E, params: EventParams[E]): void {
+export function trackEvent<E extends AnalyticsEvent>(event: E, params: EventParams[E]): void {
   if (__DEV__) {
     // eslint-disable-next-line no-console
     console.log(`[analytics] ${event}`, params);
