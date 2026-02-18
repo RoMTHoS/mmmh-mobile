@@ -15,7 +15,9 @@ type QuotaEvent =
   | 'fallback_accepted'
   | 'fallback_declined';
 
-type AnalyticsEvent = TrialEvent | QuotaEvent;
+type PremiumEvent = 'premium_activated';
+
+type AnalyticsEvent = TrialEvent | QuotaEvent | PremiumEvent;
 
 interface TrialStartedParams {
   date: string;
@@ -49,6 +51,12 @@ interface QuotaExhaustedGeminiParams {
 // fallback_accepted and fallback_declined have no required params
 type FallbackParams = Record<string, never>;
 
+interface PremiumActivatedParams {
+  deviceId: string;
+  promoCode: string;
+  previousTier: string;
+}
+
 type EventParams = {
   trial_started: TrialStartedParams;
   trial_import_used: TrialImportUsedParams;
@@ -58,6 +66,7 @@ type EventParams = {
   quota_exhausted_gemini: QuotaExhaustedGeminiParams;
   fallback_accepted: FallbackParams;
   fallback_declined: FallbackParams;
+  premium_activated: PremiumActivatedParams;
 };
 
 export function trackEvent<E extends AnalyticsEvent>(event: E, params: EventParams[E]): void {

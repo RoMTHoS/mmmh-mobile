@@ -153,7 +153,10 @@ export function ReviewRecipeForm({ photoUri, onPhotoChange, hasAiPhoto }: Props)
             render={({ field: { onChange, value } }) => (
               <TextInput
                 value={value?.toString() || ''}
-                onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
+                onChangeText={(v) => {
+                  const n = parseInt(v, 10);
+                  onChange(Number.isFinite(n) && n > 0 ? n : null);
+                }}
                 placeholder="min"
                 keyboardType="numeric"
               />
@@ -171,7 +174,10 @@ export function ReviewRecipeForm({ photoUri, onPhotoChange, hasAiPhoto }: Props)
             render={({ field: { onChange, value } }) => (
               <TextInput
                 value={value?.toString() || ''}
-                onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
+                onChangeText={(v) => {
+                  const n = parseInt(v, 10);
+                  onChange(Number.isFinite(n) && n > 0 ? n : null);
+                }}
                 placeholder="min"
                 keyboardType="numeric"
               />
@@ -189,7 +195,10 @@ export function ReviewRecipeForm({ photoUri, onPhotoChange, hasAiPhoto }: Props)
             render={({ field: { onChange, value } }) => (
               <TextInput
                 value={value?.toString() || ''}
-                onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
+                onChangeText={(v) => {
+                  const n = parseInt(v, 10);
+                  onChange(Number.isFinite(n) && n > 0 ? n : null);
+                }}
                 placeholder="4"
                 keyboardType="numeric"
               />

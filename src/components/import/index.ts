@@ -16,3 +16,6 @@ export { TrialStatusBadge } from './TrialStatusBadge';
 export { QuotaDisplay } from './QuotaDisplay';
 export { QuotaExceededModal } from './QuotaExceededModal';
 export { GeminiFallbackDialog } from './GeminiFallbackDialog';
+export { PipelineBadge } from './PipelineBadge';
+export { PostImportPrompt } from './PostImportPrompt';
+export { TrialExpiryModal } from './TrialExpiryModal';
