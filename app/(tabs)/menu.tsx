@@ -7,6 +7,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 import { initDeviceId, getDeviceId } from '../../src/services/planSync';
 import { getDatabase } from '../../src/services/database';
+import { usePlanStatus } from '../../src/hooks';
+import { QUOTA } from '../../src/utils/planConstants';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -46,6 +48,84 @@ function MenuSection({ title, children }: { title: string; children: React.React
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.sectionContent}>{children}</View>
+    </View>
+  );
+}
+
+function PlanUsageSection() {
+  const planStatus = usePlanStatus();
+
+  if (!planStatus) return null;
+
+  const tierLabel =
+    planStatus.tier === 'premium'
+      ? 'Premium'
+      : planStatus.tier === 'trial'
+        ? `Essai (${planStatus.trialDaysRemaining ?? 0} jours)`
+        : 'Gratuit';
+
+  const vpsLimit = planStatus.tier === 'trial' ? QUOTA.TRIAL_VPS_PER_WEEK : QUOTA.FREE_VPS_PER_WEEK;
+  const vpsUsed = planStatus.tier === 'premium' ? 0 : vpsLimit - planStatus.vpsQuotaRemaining;
+  const vpsRatio = planStatus.tier === 'premium' ? 0 : vpsUsed / vpsLimit;
+  const barColor = vpsRatio >= 1 ? colors.error : vpsRatio >= 0.7 ? colors.warning : colors.success;
+
+  return (
+    <View style={styles.section} testID="plan-usage-section">
+      <Text style={styles.sectionTitle}>Plan & Utilisation</Text>
+      <View style={styles.sectionContent}>
+        <View style={[styles.item, styles.itemLast]}>
+          <View style={styles.itemIcon}>
+            <Ionicons name="diamond-outline" size={22} color={colors.accent} />
+          </View>
+          <View style={[styles.itemContent, { gap: 6 }]}>
+            <Text style={styles.itemTitle} testID="plan-tier-label">
+              Plan actuel : {tierLabel}
+            </Text>
+            {planStatus.tier !== 'premium' && (
+              <>
+                <Text style={styles.itemSubtitle} testID="plan-vps-usage">
+                  Imports cette semaine : {vpsUsed}/{vpsLimit}
+                </Text>
+                <View style={planStyles.progressTrack}>
+                  <View
+                    style={[
+                      planStyles.progressFill,
+                      {
+                        width: `${Math.min(vpsRatio * 100, 100)}%`,
+                        backgroundColor: barColor,
+                      },
+                    ]}
+                  />
+                </View>
+              </>
+            )}
+            {planStatus.tier === 'trial' && (
+              <Text style={styles.itemSubtitle} testID="plan-gemini-usage">
+                Import premium aujourd'hui : {planStatus.geminiQuotaRemaining > 0 ? '0/1' : '1/1'}
+              </Text>
+            )}
+            {planStatus.tier === 'premium' && (
+              <Text style={styles.itemSubtitle} testID="plan-unlimited">
+                Imports illimités
+              </Text>
+            )}
+            {planStatus.tier !== 'premium' && (
+              <Text style={[styles.itemSubtitle, { marginTop: 2 }]}>Réinitialisation : lundi</Text>
+            )}
+            {planStatus.tier !== 'premium' && (
+              <Pressable
+                style={planStyles.upgradeButton}
+                onPress={() => {
+                  // TODO: Navigate to upgrade (Story 5.6)
+                }}
+                testID="plan-upgrade-button"
+              >
+                <Text style={planStyles.upgradeButtonText}>Passer à Premium</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
@@ -107,6 +187,8 @@ export default function MenuScreen() {
       style={[styles.container, { paddingTop: insets.top }]}
       contentContainerStyle={styles.content}
     >
+      <PlanUsageSection />
+
       <MenuSection title="Général">
         <MenuItem
           icon="notifications-outline"
@@ -242,5 +324,31 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     marginTop: 2,
+  },
+});
+
+const planStyles = StyleSheet.create({
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.background,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  upgradeButton: {
+    backgroundColor: colors.accent,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    alignSelf: 'flex-start',
+    marginTop: spacing.xs,
+  },
+  upgradeButtonText: {
+    ...typography.caption,
+    fontWeight: '600',
+    color: colors.surfaceAlt,
   },
 });

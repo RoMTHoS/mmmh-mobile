@@ -6,6 +6,7 @@ import { Icon, IconName } from '../ui';
 import { usePlanStatus } from '../../hooks';
 import { TrialBanner } from './TrialBanner';
 import { TrialStatusBadge } from './TrialStatusBadge';
+import { QuotaDisplay } from './QuotaDisplay';
 
 interface ImportOptionProps {
   icon: IconName;
@@ -116,6 +117,7 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
       <View style={styles.trialSection}>
         {planStatus?.tier === 'free' && <TrialBanner />}
         {planStatus?.tier === 'trial' && <TrialStatusBadge />}
+        <QuotaDisplay />
       </View>
 
       <View style={styles.options}>

@@ -13,3 +13,6 @@ export { PhotoBatchStrip } from './PhotoBatchStrip';
 export { PhotoUploadProgress } from './PhotoUploadProgress';
 export { TrialBanner } from './TrialBanner';
 export { TrialStatusBadge } from './TrialStatusBadge';
+export { QuotaDisplay } from './QuotaDisplay';
+export { QuotaExceededModal } from './QuotaExceededModal';
+export { GeminiFallbackDialog } from './GeminiFallbackDialog';

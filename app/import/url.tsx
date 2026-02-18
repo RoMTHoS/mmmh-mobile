@@ -5,37 +5,37 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { UrlInput } from '../../src/components/import/UrlInput';
 import { TrialStatusBadge } from '../../src/components/import/TrialStatusBadge';
+import { QuotaDisplay } from '../../src/components/import/QuotaDisplay';
+import { QuotaExceededModal } from '../../src/components/import/QuotaExceededModal';
+import { GeminiFallbackDialog } from '../../src/components/import/GeminiFallbackDialog';
 import { useImportStore } from '../../src/stores/importStore';
 import { submitImport } from '../../src/services/import';
 import { detectPlatform } from '../../src/utils/validation';
 import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
-import { usePlanStatus } from '../../src/hooks';
+import { usePlanStatus, useActivateTrial } from '../../src/hooks';
+import { trackEvent } from '../../src/utils/analytics';
 import { colors, typography, spacing } from '../../src/theme';
+import { useQueryClient } from '@tanstack/react-query';
 
 type ImportType = 'video' | 'website';
 
 export default function UrlInputScreen() {
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showQuotaExceeded, setShowQuotaExceeded] = useState(false);
+  const [showGeminiFallback, setShowGeminiFallback] = useState(false);
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+
   const addJob = useImportStore((state) => state.addJob);
   const jobs = useImportStore((state) => state.jobs);
   const checkPipeline = usePipelinePreCheck();
   const planStatus = usePlanStatus();
+  const activateTrial = useActivateTrial();
 
-  const handleSubmit = useCallback(
+  const doImport = useCallback(
     async (url: string) => {
-      // Check if we already have max jobs
-      const activeJobs = jobs.filter((j) => j.status === 'pending' || j.status === 'processing');
-      if (activeJobs.length >= 3) {
-        Toast.show({
-          type: 'error',
-          text1: 'Limite atteinte',
-          text2: 'Vous avez deja 3 imports en cours',
-        });
-        return;
-      }
-
       setIsLoading(true);
 
       // Pre-import pipeline check (informational only)
@@ -61,6 +61,9 @@ export default function UrlInputScreen() {
           progress: 0,
           createdAt: response.createdAt || new Date().toISOString(),
         });
+
+        // Refresh quota display after successful import
+        queryClient.invalidateQueries({ queryKey: ['import-usage'] });
 
         Toast.show({
           type: 'success',
@@ -100,8 +103,76 @@ export default function UrlInputScreen() {
         setIsLoading(false);
       }
     },
-    [addJob, jobs]
+    [addJob, jobs, queryClient]
   );
+
+  const handleSubmit = useCallback(
+    async (url: string) => {
+      // Check if we already have max jobs
+      const activeJobs = jobs.filter((j) => j.status === 'pending' || j.status === 'processing');
+      if (activeJobs.length >= 3) {
+        Toast.show({
+          type: 'error',
+          text1: 'Limite atteinte',
+          text2: 'Vous avez deja 3 imports en cours',
+        });
+        return;
+      }
+
+      if (!planStatus) {
+        doImport(url);
+        return;
+      }
+
+      // VPS quota check: if exhausted, block for free and trial
+      if (planStatus.vpsQuotaRemaining === 0 && planStatus.tier !== 'premium') {
+        trackEvent('quota_exhausted_vps', { deviceId: '', tier: planStatus.tier });
+        setShowQuotaExceeded(true);
+        return;
+      }
+
+      // Gemini quota check: if exhausted for trial, offer VPS fallback
+      if (
+        planStatus.tier === 'trial' &&
+        planStatus.geminiQuotaRemaining === 0 &&
+        planStatus.vpsQuotaRemaining > 0
+      ) {
+        trackEvent('quota_exhausted_gemini', { deviceId: '', dayOfTrial: 0 });
+        setPendingUrl(url);
+        setShowGeminiFallback(true);
+        return;
+      }
+
+      doImport(url);
+    },
+    [planStatus, jobs, doImport]
+  );
+
+  const handleFallbackAccept = useCallback(() => {
+    trackEvent('fallback_accepted', {});
+    setShowGeminiFallback(false);
+    if (pendingUrl) {
+      doImport(pendingUrl);
+      setPendingUrl(null);
+    }
+  }, [pendingUrl, doImport]);
+
+  const handleFallbackDecline = useCallback(() => {
+    trackEvent('fallback_declined', {});
+    setShowGeminiFallback(false);
+    setPendingUrl(null);
+  }, []);
+
+  const handleUpgrade = useCallback(() => {
+    setShowQuotaExceeded(false);
+    // Navigate to upgrade screen (Story 5.6)
+    router.push('/(tabs)/menu');
+  }, []);
+
+  const handleStartTrial = useCallback(() => {
+    setShowQuotaExceeded(false);
+    activateTrial.mutate();
+  }, [activateTrial]);
 
   return (
     <KeyboardAvoidingView
@@ -122,6 +193,10 @@ export default function UrlInputScreen() {
 
         {planStatus?.tier === 'trial' && <TrialStatusBadge />}
 
+        <View style={styles.quotaSection}>
+          <QuotaDisplay />
+        </View>
+
         {planStatus?.tier === 'trial' && (
           <Text style={styles.pipelineLabel}>
             {planStatus.geminiQuotaRemaining > 0
@@ -132,6 +207,19 @@ export default function UrlInputScreen() {
 
         <UrlInput importType="link" onSubmit={handleSubmit} isLoading={isLoading} />
       </ScrollView>
+
+      <QuotaExceededModal
+        visible={showQuotaExceeded}
+        onClose={() => setShowQuotaExceeded(false)}
+        onUpgrade={handleUpgrade}
+        onStartTrial={handleStartTrial}
+      />
+
+      <GeminiFallbackDialog
+        visible={showGeminiFallback}
+        onAccept={handleFallbackAccept}
+        onDecline={handleFallbackDecline}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -159,6 +247,10 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body,
     color: colors.textMuted,
+  },
+  quotaSection: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
   },
   pipelineLabel: {
     ...typography.caption,
