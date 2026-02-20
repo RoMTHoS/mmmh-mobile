@@ -1,3 +1,5 @@
+import React from 'react';
+import { render } from '@testing-library/react-native';
 import { ImportStatusCard } from '../../../src/components/import/ImportStatusCard';
 import type { ImportJob, ImportStatus } from '../../../src/stores/importStore';
 
@@ -76,6 +78,110 @@ describe('ImportStatusCard', () => {
       };
 
       expect(mockJob.result).toBeDefined();
+    });
+
+    it('job can have pipeline metadata for completed status', () => {
+      const mockJob: ImportJob = {
+        jobId: 'job-123',
+        importType: 'video',
+        sourceUrl: 'https://www.instagram.com/reel/ABC123',
+        status: 'completed',
+        progress: 100,
+        createdAt: new Date().toISOString(),
+        pipeline: 'gemini',
+        fallbackUsed: false,
+      };
+
+      expect(mockJob.pipeline).toBe('gemini');
+      expect(mockJob.fallbackUsed).toBe(false);
+    });
+
+    it('job can have fallback metadata', () => {
+      const mockJob: ImportJob = {
+        jobId: 'job-123',
+        importType: 'photo',
+        sourceUrl: 'photo://test.jpg',
+        status: 'completed',
+        progress: 100,
+        createdAt: new Date().toISOString(),
+        pipeline: 'vps',
+        fallbackUsed: true,
+      };
+
+      expect(mockJob.pipeline).toBe('vps');
+      expect(mockJob.fallbackUsed).toBe(true);
+    });
+  });
+
+  describe('pipeline badge rendering', () => {
+    const noop = () => {};
+    const baseJob: ImportJob = {
+      jobId: 'test-1',
+      importType: 'video',
+      sourceUrl: 'https://instagram.com/reel/ABC',
+      platform: 'instagram',
+      status: 'completed',
+      progress: 100,
+      createdAt: new Date().toISOString(),
+    };
+
+    it('renders Standard badge for VPS pipeline', () => {
+      const job: ImportJob = { ...baseJob, pipeline: 'vps' };
+      const { getByText } = render(
+        React.createElement(ImportStatusCard, { job, onDismiss: noop, onRetry: noop })
+      );
+
+      expect(getByText('Standard')).toBeDefined();
+    });
+
+    it('renders Premium badge for Gemini pipeline', () => {
+      const job: ImportJob = { ...baseJob, pipeline: 'gemini' };
+      const { getByText } = render(
+        React.createElement(ImportStatusCard, { job, onDismiss: noop, onRetry: noop })
+      );
+
+      expect(getByText(/Premium/)).toBeDefined();
+    });
+
+    it('renders no pipeline badge when pipeline is not set', () => {
+      const job: ImportJob = { ...baseJob, pipeline: undefined };
+      const { queryByText } = render(
+        React.createElement(ImportStatusCard, { job, onDismiss: noop, onRetry: noop })
+      );
+
+      expect(queryByText('Standard')).toBeNull();
+      expect(queryByText(/Premium/)).toBeNull();
+    });
+  });
+
+  describe('fallback notification', () => {
+    const noop = () => {};
+    const baseJob: ImportJob = {
+      jobId: 'test-2',
+      importType: 'video',
+      sourceUrl: 'https://instagram.com/reel/DEF',
+      platform: 'instagram',
+      status: 'completed',
+      progress: 100,
+      createdAt: new Date().toISOString(),
+    };
+
+    it('shows fallback notice when completed with fallback', () => {
+      const job: ImportJob = { ...baseJob, pipeline: 'vps', fallbackUsed: true };
+      const { getByText } = render(
+        React.createElement(ImportStatusCard, { job, onDismiss: noop, onRetry: noop })
+      );
+
+      expect(getByText(/pipeline standard/)).toBeDefined();
+    });
+
+    it('does not show fallback notice when no fallback occurred', () => {
+      const job: ImportJob = { ...baseJob, pipeline: 'gemini', fallbackUsed: false };
+      const { queryByText } = render(
+        React.createElement(ImportStatusCard, { job, onDismiss: noop, onRetry: noop })
+      );
+
+      expect(queryByText(/pipeline standard/)).toBeNull();
     });
   });
 });

@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import type { Ingredient } from '../../types';
+import { fonts } from '../../theme';
 
 interface IngredientListProps {
   ingredients: Ingredient[];
@@ -41,17 +42,20 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   bullet: {
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: '#374151',
     lineHeight: 22,
   },
   text: {
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: '#374151',
     flex: 1,
     lineHeight: 22,
   },
   emptyText: {
+    fontFamily: fonts.sans,
     fontSize: 15,
     color: '#9CA3AF',
     fontStyle: 'italic',

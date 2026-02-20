@@ -9,7 +9,11 @@ import { useImportStore } from '../../src/stores/importStore';
 import { useCreateRecipe } from '../../src/hooks';
 import { reviewRecipeSchema, type ReviewRecipeFormData } from '../../src/schemas/review.schema';
 import { ReviewRecipeForm, ConfidenceIndicator } from '../../src/components/review';
+import { PipelineBadge } from '../../src/components/import/PipelineBadge';
+import { PostImportPrompt } from '../../src/components/import/PostImportPrompt';
 import { Text, Button } from '../../src/components/ui';
+import { usePlanStatus, useUserPlan } from '../../src/hooks';
+import { canActivateTrial } from '../../src/utils/planStateMachine';
 import { colors, spacing, fonts } from '../../src/theme';
 import type { Ingredient, Step } from '../../src/types';
 
@@ -39,6 +43,8 @@ export default function RecipeReviewScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
   const { removeJob, getJob } = useImportStore();
   const createRecipe = useCreateRecipe();
+  const planStatus = usePlanStatus();
+  const { data: userPlan } = useUserPlan();
 
   const job = getJob(jobId || '');
   const recipe = job?.result as ExtractedRecipe | undefined;
@@ -169,6 +175,14 @@ export default function RecipeReviewScreen() {
     );
   };
 
+  const handleValidationError = () => {
+    Toast.show({
+      type: 'error',
+      text1: 'Champs invalides',
+      text2: 'Verifiez le titre, les ingredients et les etapes',
+    });
+  };
+
   const handleCancel = () => {
     if (isDirty) {
       Alert.alert(
@@ -198,7 +212,7 @@ export default function RecipeReviewScreen() {
           ),
           headerRight: () => (
             <Pressable
-              onPress={methods.handleSubmit(handleSave)}
+              onPress={methods.handleSubmit(handleSave, handleValidationError)}
               disabled={createRecipe.isPending}
               hitSlop={8}
               style={styles.headerButtonContainer}
@@ -222,7 +236,18 @@ export default function RecipeReviewScreen() {
         >
           <Text style={styles.title}>Verifier la recette</Text>
 
-          <ConfidenceIndicator confidence={recipe.aiConfidence ?? 0.5} />
+          <View style={styles.indicatorRow}>
+            <ConfidenceIndicator confidence={recipe.aiConfidence ?? 0.5} />
+            {job?.pipeline && <PipelineBadge pipeline={job.pipeline} size="md" />}
+          </View>
+
+          {job?.pipeline && planStatus && (
+            <PostImportPrompt
+              pipeline={job.pipeline}
+              tier={planStatus.tier}
+              canActivateTrial={userPlan ? canActivateTrial(userPlan) : false}
+            />
+          )}
 
           <ReviewRecipeForm
             photoUri={photoUri}
@@ -257,9 +282,9 @@ function mapRecipeToForm(recipe: ExtractedRecipe): ReviewRecipeFormData {
         })
         .join('\n') || '',
     stepsText: recipe.instructions?.map((s) => s.text || '').join('\n') || '',
-    prepTime: recipe.prepTime ?? null,
-    cookTime: recipe.cookTime ?? null,
-    servings: recipe.servings ?? null,
+    prepTime: recipe.prepTime || null,
+    cookTime: recipe.cookTime || null,
+    servings: recipe.servings || null,
     photoUri: recipe.thumbnailUrl ?? null,
   };
 }
@@ -291,6 +316,12 @@ const styles = StyleSheet.create({
   },
   headerButtonDisabled: {
     opacity: 0.5,
+  },
+  indicatorRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    marginBottom: spacing.md,
   },
   discardSection: {
     marginTop: spacing.xl,

@@ -1,0 +1,9 @@
+export const QUOTA = {
+  FREE_VPS_PER_WEEK: 10,
+  TRIAL_VPS_PER_WEEK: 10,
+  TRIAL_GEMINI_PER_DAY: 1,
+  PREMIUM_VPS_PER_WEEK: Infinity,
+  PREMIUM_GEMINI_PER_DAY: Infinity,
+} as const;
+
+export const TRIAL_DURATION_DAYS = 7;

@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import { View, Text, Pressable, Modal, StyleSheet, Animated, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
 import { Icon, IconName } from '../ui';
+import { usePlanStatus } from '../../hooks';
 
 interface ImportOptionProps {
   icon: IconName;
@@ -30,6 +32,7 @@ interface ImportModalProps {
 }
 
 export function ImportModal({ visible, onClose }: ImportModalProps) {
+  const planStatus = usePlanStatus();
   const slideAnim = useRef(new Animated.Value(300)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
@@ -105,6 +108,11 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
     router.push('/recipe/create');
   };
 
+  const handleGetPremium = () => {
+    onClose();
+    router.push('/upgrade');
+  };
+
   const renderMainView = () => (
     <>
       <Text style={styles.title}>Importer une recette</Text>
@@ -126,6 +134,21 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
         <Icon name="pencil" size="md" color={colors.accent} />
         <Text style={styles.createButtonText}>Créer une nouvelle recette</Text>
       </Pressable>
+
+      {planStatus?.tier !== 'premium' && (
+        <Pressable
+          onPress={handleGetPremium}
+          style={({ pressed }) => [styles.premiumLink, pressed && { opacity: 0.6 }]}
+          accessibilityRole="link"
+          accessibilityLabel="Obtenir Premium"
+        >
+          <View style={styles.premiumLinkRow}>
+            <Ionicons name="diamond-outline" size={14} color={colors.accent} />
+            <Text style={styles.premiumLinkText}>Obtenir Premium</Text>
+            <Ionicons name="diamond-outline" size={14} color={colors.accent} />
+          </View>
+        </Pressable>
+      )}
     </>
   );
 
@@ -174,7 +197,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.titleScript,
     color: colors.text,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   options: {
     flexDirection: 'row',
@@ -227,5 +250,20 @@ const styles = StyleSheet.create({
     fontFamily: fonts.script,
     fontSize: 16,
     color: colors.accent,
+  },
+  premiumLink: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  premiumLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  premiumLinkText: {
+    fontFamily: fonts.script,
+    fontSize: 14,
+    color: colors.accent,
+    textDecorationLine: 'underline',
   },
 });

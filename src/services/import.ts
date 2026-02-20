@@ -2,8 +2,21 @@
  * Import service for recipe extraction API calls
  */
 
+import { getDeviceId } from './planSync';
+
 // API base URL - should come from environment config
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+
+function buildHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  const deviceId = getDeviceId();
+  if (deviceId) {
+    headers['X-Device-ID'] = deviceId;
+  }
+  return headers;
+}
 
 export interface SubmitImportRequest {
   importType: 'video' | 'website' | 'photo';
@@ -29,6 +42,14 @@ export interface ImportError {
   retryable: boolean;
 }
 
+export interface PipelineInfoResponse {
+  pipeline: 'vps' | 'gemini';
+  processingTimeMs: number;
+  confidence: number;
+  fallbackUsed: boolean;
+  fallbackReason?: string;
+}
+
 export interface ImportStatusResponse {
   jobId: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -36,6 +57,7 @@ export interface ImportStatusResponse {
   estimatedTimeRemaining?: number;
   error?: ImportError;
   result?: unknown;
+  pipelineInfo?: PipelineInfoResponse;
 }
 
 class ImportServiceError extends Error {
@@ -51,12 +73,11 @@ class ImportServiceError extends Error {
 }
 
 export async function submitImport(request: SubmitImportRequest): Promise<ImportJobResponse> {
+  const headers = buildHeaders();
   try {
     const response = await fetch(`${API_BASE_URL}/api/import`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(request),
     });
 
@@ -88,9 +109,7 @@ export async function getImportStatus(jobId: string): Promise<ImportStatusRespon
   try {
     const response = await fetch(`${API_BASE_URL}/api/import/${jobId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
     });
 
     if (!response.ok) {
@@ -121,9 +140,7 @@ export async function cancelImport(jobId: string): Promise<void> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/import/${jobId}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: buildHeaders(),
     });
 
     if (!response.ok && response.status !== 404) {

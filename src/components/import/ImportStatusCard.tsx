@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { router } from 'expo-router';
 import { Icon, Button } from '../ui';
 import { PlatformBadge } from './PlatformBadge';
+import { PipelineBadge } from './PipelineBadge';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
 import { extractHostname } from '../../utils/validation';
 import type { ImportJob } from '../../stores/importStore';
@@ -22,6 +23,11 @@ const STEP_LABELS: Record<string, string> = {
   validating: 'Validation...',
   scraping: 'Lecture de la page...',
   parsing: 'Extraction des donnees...',
+  analyzing_with_gemini: 'Analyse Gemini...',
+  uploading_media: 'Envoi du media...',
+  processing_image: "Traitement de l'image...",
+  extracting_text: 'Extraction du texte...',
+  detecting_speech: 'Detection de la parole...',
   complete: 'Termine!',
 };
 
@@ -84,6 +90,7 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
         <Text style={styles.url} numberOfLines={1}>
           {extractHostname(job.sourceUrl)}
         </Text>
+        {job.pipeline && <PipelineBadge pipeline={job.pipeline} />}
         <Pressable
           onPress={onDismiss}
           style={({ pressed }) => [styles.dismissButton, pressed && styles.dismissButtonPressed]}
@@ -137,6 +144,13 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
               style={styles.actionButton}
             />
           )}
+
+        {job.status === 'completed' && job.fallbackUsed && (
+          <Text style={styles.fallbackNotice}>
+            Le service Premium etait temporairement indisponible. Votre recette a ete importee avec
+            le pipeline standard.
+          </Text>
+        )}
 
         {job.status === 'completed' && (
           <Button
@@ -218,5 +232,11 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginTop: spacing.sm,
+  },
+  fallbackNotice: {
+    ...typography.caption,
+    color: colors.warning,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
 });

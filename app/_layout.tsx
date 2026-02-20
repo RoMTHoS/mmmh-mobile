@@ -8,7 +8,9 @@ import Toast from 'react-native-toast-message';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../src/components';
-import { useDatabase } from '../src/hooks';
+import { useDatabase, useTrialExpiration } from '../src/hooks';
+import { TrialExpiryModal } from '../src/components/import/TrialExpiryModal';
+import { initDeviceId, ensurePlanSyncedToBackend } from '../src/services/planSync';
 import { LoadingScreen } from '../src/components/ui';
 import { colors } from '../src/theme';
 
@@ -61,18 +63,31 @@ function NavigationStatePersistence() {
   return null;
 }
 
+function TrialExpirationWatcher() {
+  useTrialExpiration();
+  return null;
+}
+
 function RootLayoutNav() {
   const { isReady: isDbReady, error: dbError } = useDatabase();
   const [fontsLoaded, fontError] = useFonts({
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    Pacifico: require('../assets/fonts/Pacifico-Regular.ttf'),
+    Overlock: require('../assets/fonts/Overlock-Black.ttf'),
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    Chicle: require('../assets/fonts/Chicle-Regular.ttf'),
   });
 
   useEffect(() => {
+    initDeviceId().then(() => ensurePlanSyncedToBackend());
+  }, []);
+
+  useEffect(() => {
     if (fontError) {
+      // eslint-disable-next-line no-console
       console.error('Font loading error:', fontError);
     }
     if (dbError) {
+      // eslint-disable-next-line no-console
       console.error('Database error:', dbError);
     }
   }, [fontError, dbError]);
@@ -99,6 +114,8 @@ function RootLayoutNav() {
   return (
     <>
       <NavigationStatePersistence />
+      <TrialExpirationWatcher />
+      <TrialExpiryModal />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
@@ -111,6 +128,7 @@ function RootLayoutNav() {
         <Stack.Screen name="recipe/[id]" options={{ title: '' }} />
         <Stack.Screen name="recipe/[id]/edit" options={{ title: '', presentation: 'modal' }} />
         <Stack.Screen name="recipe/create" options={{ title: '', presentation: 'modal' }} />
+        <Stack.Screen name="upgrade" options={{ title: '', headerBackTitle: ' ' }} />
         <Stack.Screen name="+not-found" options={{ title: '' }} />
       </Stack>
     </>
