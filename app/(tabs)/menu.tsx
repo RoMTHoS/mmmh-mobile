@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
+import * as FileSystem from 'expo-file-system/legacy';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 import { initDeviceId, getDeviceId } from '../../src/services/planSync';
 import { getDatabase } from '../../src/services/database';
@@ -179,6 +180,49 @@ export default function MenuScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
 
+  const handleDeleteAllRecipes = async () => {
+    Alert.alert(
+      'Supprimer toutes les recettes',
+      'Cette action est irréversible. Toutes les recettes, ingrédients, instructions et photos seront supprimés.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer tout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const db = getDatabase();
+              db.runSync('DELETE FROM shopping_list_recipes');
+              db.runSync('DELETE FROM shopping_list_items');
+              db.runSync('DELETE FROM recipes');
+
+              // Delete persisted photos
+              const photosDir = `${FileSystem.documentDirectory}photos/`;
+              const dirInfo = await FileSystem.getInfoAsync(photosDir);
+              if (dirInfo.exists) {
+                await FileSystem.deleteAsync(photosDir, { idempotent: true });
+              }
+
+              queryClient.invalidateQueries();
+
+              Toast.show({
+                type: 'success',
+                text1: 'Recettes supprimées',
+                text2: 'Toutes les recettes ont été effacées',
+              });
+            } catch (error) {
+              Toast.show({
+                type: 'error',
+                text1: 'Erreur',
+                text2: error instanceof Error ? error.message : 'Unknown error',
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleResetTrial = async () => {
     Alert.alert(
       'Reset trial & device ID',
@@ -304,6 +348,12 @@ export default function MenuScreen() {
             title="Reset trial & device ID"
             subtitle="Remet le plan à free avec un nouveau device"
             onPress={handleResetTrial}
+          />
+          <MenuItem
+            icon="trash-outline"
+            title="Supprimer toutes les recettes"
+            subtitle="Efface les recettes, ingrédients et photos"
+            onPress={handleDeleteAllRecipes}
             isLast
           />
         </MenuSection>

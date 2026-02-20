@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { TextInput, Button, Text, Icon } from '../ui';
 import type { CreateRecipeFormData } from '../../schemas/recipe.schema';
 import { colors, spacing, radius, fonts } from '../../theme';
+import { persistImage } from '../../utils/imageCompression';
 
 interface RecipeFormProps {
   control: Control<CreateRecipeFormData>;
@@ -32,7 +33,8 @@ export function RecipeForm({
     });
 
     if (!result.canceled) {
-      onPhotoChange(result.assets[0].uri);
+      const persistedUri = await persistImage(result.assets[0].uri);
+      onPhotoChange(persistedUri);
     }
   };
 
@@ -53,7 +55,8 @@ export function RecipeForm({
     });
 
     if (!result.canceled) {
-      onPhotoChange(result.assets[0].uri);
+      const persistedUri = await persistImage(result.assets[0].uri);
+      onPhotoChange(persistedUri);
     }
   };
 
@@ -223,11 +226,7 @@ export function RecipeForm({
       {/* Delete Button (only in edit mode) */}
       {onDelete && (
         <View style={styles.deleteSection}>
-          <Button
-            title="Supprimer la recette"
-            onPress={onDelete}
-            variant="destructive"
-          />
+          <Button title="Supprimer la recette" onPress={onDelete} variant="destructive" />
         </View>
       )}
 
