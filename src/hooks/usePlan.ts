@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as planDb from '../services/planDatabase';
 import { syncActivateTrial, syncActivatePremium } from '../services/planSync';
+import { analytics } from '../services/analytics';
+import { EVENTS } from '../utils/analyticsEvents';
 import {
   canUsePremiumPipeline,
   getTrialDaysRemaining,
@@ -61,6 +63,7 @@ export function useActivateTrial() {
   return useMutation({
     mutationFn: () => syncActivateTrial(),
     onSuccess: () => {
+      analytics.track(EVENTS.TRIAL_STARTED);
       queryClient.invalidateQueries({ queryKey: USER_PLAN_KEY });
     },
   });
@@ -72,6 +75,7 @@ export function useActivatePremium() {
   return useMutation({
     mutationFn: (promoCode: string) => syncActivatePremium(promoCode),
     onSuccess: () => {
+      analytics.track(EVENTS.PLAN_UPGRADED, { tier: 'premium' });
       queryClient.invalidateQueries({ queryKey: USER_PLAN_KEY });
     },
   });

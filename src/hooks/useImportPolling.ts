@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useImportStore } from '../stores/importStore';
 import { getImportStatus } from '../services/import';
 import * as planDb from '../services/planDatabase';
+import { analytics } from '../services/analytics';
+import { EVENTS } from '../utils/analyticsEvents';
 import { logger } from '../utils';
 
 const POLL_INTERVAL = 5000; // 5 seconds
@@ -43,12 +45,24 @@ export function useImportPolling() {
           fallbackUsed: status.pipelineInfo?.fallbackUsed,
         });
 
+        if (status.status === 'failed' && !trackedJobsRef.current.has(job.jobId)) {
+          analytics.track(EVENTS.IMPORT_FAILED, {
+            import_type: job.importType,
+            error_code: status.error?.code,
+          });
+        }
+
         // Track mobile-side usage on completion (advisory, not authoritative)
         if (
           status.status === 'completed' &&
           status.pipelineInfo?.pipeline &&
           !trackedJobsRef.current.has(job.jobId)
         ) {
+          analytics.track(EVENTS.IMPORT_SUCCEEDED, {
+            import_type: job.importType,
+            pipeline: status.pipelineInfo.pipeline,
+            fallback_used: status.pipelineInfo.fallbackUsed,
+          });
           trackedJobsRef.current.add(job.jobId);
           try {
             if (status.pipelineInfo.pipeline === 'vps') {

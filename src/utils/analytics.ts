@@ -1,11 +1,13 @@
 /**
- * Lightweight analytics event tracking.
+ * Typed analytics event tracking.
  *
- * For beta: events are logged to console. Full analytics integration
- * (e.g., PostHog, Mixpanel) deferred to post-beta.
+ * Delegates to the Mixpanel analytics service. Maintains typed event
+ * signatures for existing call sites from Epic 5.
  *
- * @see Story 5.4 Task 6, Story 5.5 Task 9
+ * @see Story 5.4 Task 6, Story 5.5 Task 9, Story 6.1
  */
+
+import { analytics } from '../services/analytics';
 
 type TrialEvent = 'trial_started' | 'trial_import_used' | 'trial_expired' | 'trial_converted';
 
@@ -70,8 +72,5 @@ type EventParams = {
 };
 
 export function trackEvent<E extends AnalyticsEvent>(event: E, params: EventParams[E]): void {
-  if (__DEV__) {
-    // eslint-disable-next-line no-console
-    console.log(`[analytics] ${event}`, params);
-  }
+  analytics.track(event, params as Record<string, unknown>);
 }

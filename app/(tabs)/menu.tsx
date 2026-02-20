@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 import { initDeviceId, getDeviceId } from '../../src/services/planSync';
 import { getDatabase } from '../../src/services/database';
+import { analytics } from '../../src/services/analytics';
+import { EVENTS } from '../../src/utils/analyticsEvents';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
 import { QUOTA } from '../../src/utils/planConstants';
 
@@ -178,6 +181,10 @@ function PlanUsageSection() {
 export default function MenuScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    analytics.track(EVENTS.SETTINGS_VIEWED);
+  }, []);
 
   const handleResetTrial = async () => {
     Alert.alert(
