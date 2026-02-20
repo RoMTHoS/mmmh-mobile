@@ -14,6 +14,14 @@ import type { Recipe } from '../../src/types';
 jest.mock('expo-sqlite');
 jest.mock('react-native-uuid');
 jest.mock('../../src/services/database');
+jest.mock('../../src/services/analytics', () => ({
+  analytics: {
+    track: jest.fn(),
+    initialize: jest.fn(),
+    identify: jest.fn(),
+    setUserProperties: jest.fn(),
+  },
+}));
 
 const mockDb = db as jest.Mocked<typeof db>;
 

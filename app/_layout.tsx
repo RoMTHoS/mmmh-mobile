@@ -8,9 +8,11 @@ import Toast from 'react-native-toast-message';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../src/components';
-import { useDatabase, useTrialExpiration } from '../src/hooks';
+import { useDatabase, useTrialExpiration, useAnalyticsSync } from '../src/hooks';
 import { TrialExpiryModal } from '../src/components/import/TrialExpiryModal';
 import { initDeviceId, ensurePlanSyncedToBackend } from '../src/services/planSync';
+import { analytics } from '../src/services/analytics';
+import { EVENTS } from '../src/utils/analyticsEvents';
 import { LoadingScreen } from '../src/components/ui';
 import { colors } from '../src/theme';
 
@@ -34,6 +36,7 @@ function NavigationStatePersistence() {
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
+    analytics.track('Screen Viewed', { screen_name: pathname });
     const saveCurrentPath = async () => {
       try {
         await AsyncStorage.setItem(NAVIGATION_PATH_KEY, pathname);
@@ -68,6 +71,11 @@ function TrialExpirationWatcher() {
   return null;
 }
 
+function AnalyticsSyncWatcher() {
+  useAnalyticsSync();
+  return null;
+}
+
 function RootLayoutNav() {
   const { isReady: isDbReady, error: dbError } = useDatabase();
   const [fontsLoaded, fontError] = useFonts({
@@ -78,7 +86,14 @@ function RootLayoutNav() {
   });
 
   useEffect(() => {
-    initDeviceId().then(() => ensurePlanSyncedToBackend());
+    async function initServices() {
+      const deviceId = await initDeviceId();
+      await analytics.initialize();
+      analytics.identify(deviceId);
+      analytics.track(EVENTS.APP_OPENED);
+      ensurePlanSyncedToBackend();
+    }
+    initServices();
   }, []);
 
   useEffect(() => {
@@ -115,6 +130,7 @@ function RootLayoutNav() {
     <>
       <NavigationStatePersistence />
       <TrialExpirationWatcher />
+      <AnalyticsSyncWatcher />
       <TrialExpiryModal />
       <Stack
         screenOptions={{

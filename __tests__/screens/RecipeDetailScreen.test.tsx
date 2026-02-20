@@ -4,6 +4,7 @@ jest.mock('react', () => {
     ...actual,
     useState: (init: unknown) => [init, jest.fn()],
     useMemo: (fn: () => unknown) => fn(),
+    useEffect: jest.fn(),
   };
 });
 
@@ -28,6 +29,14 @@ jest.mock('../../src/hooks', () => ({
 jest.mock('../../src/stores/shoppingStore', () => ({
   useShoppingStore: (selector: (s: { activeListId: string | null }) => unknown) =>
     selector({ activeListId: 'list-1' }),
+}));
+
+jest.mock('../../src/services/analytics', () => ({
+  analytics: { track: jest.fn() },
+}));
+
+jest.mock('../../src/utils/analyticsEvents', () => ({
+  EVENTS: { RECIPE_VIEWED: 'Recipe Viewed' },
 }));
 
 // Import after mocking

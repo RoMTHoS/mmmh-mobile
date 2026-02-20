@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { analytics } from '../services/analytics';
+import { EVENTS } from '../utils/analyticsEvents';
 import type { Platform } from '../utils/validation';
 
 export type ImportStatus = 'pending' | 'processing' | 'completed' | 'failed';
@@ -59,6 +61,10 @@ export const useImportStore = create<ImportStore>()(
             set({
               jobs: [...jobs.filter((j) => j.jobId !== completedOrFailed.jobId), job],
             });
+            analytics.track(EVENTS.IMPORT_STARTED, {
+              import_type: job.importType,
+              platform: job.platform,
+            });
             return;
           }
 
@@ -67,6 +73,10 @@ export const useImportStore = create<ImportStore>()(
         }
 
         set({ jobs: [...jobs, job] });
+        analytics.track(EVENTS.IMPORT_STARTED, {
+          import_type: job.importType,
+          platform: job.platform,
+        });
       },
 
       updateJob: (jobId, updates) => {

@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as db from '../services/database';
 import { getActiveShoppingList } from '../services/shoppingDatabase';
 import { regenerateShoppingListItems } from '../utils/ingredientAggregation';
+import { analytics } from '../services/analytics';
+import { EVENTS } from '../utils/analyticsEvents';
 import type { CreateRecipeInput, UpdateRecipeInput } from '../types';
 
 export function useRecipes() {
@@ -24,7 +26,8 @@ export function useCreateRecipe() {
 
   return useMutation({
     mutationFn: (input: CreateRecipeInput) => db.createRecipe(input),
-    onSuccess: () => {
+    onSuccess: (recipe) => {
+      analytics.track(EVENTS.RECIPE_CREATED, { recipe_id: recipe.id });
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
     },
   });
@@ -37,6 +40,7 @@ export function useUpdateRecipe() {
     mutationFn: ({ id, input }: { id: string; input: UpdateRecipeInput }) =>
       db.updateRecipe(id, input),
     onSuccess: async (recipe) => {
+      analytics.track(EVENTS.RECIPE_EDITED, { recipe_id: recipe.id });
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
       queryClient.setQueryData(['recipe', recipe.id], recipe);
 
@@ -60,6 +64,7 @@ export function useDeleteRecipe() {
   return useMutation({
     mutationFn: (id: string) => db.deleteRecipe(id),
     onSuccess: (_, id) => {
+      analytics.track(EVENTS.RECIPE_DELETED, { recipe_id: id });
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
       queryClient.removeQueries({ queryKey: ['recipe', id] });
     },
