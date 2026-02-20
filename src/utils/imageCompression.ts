@@ -1,6 +1,7 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
 
+const PHOTOS_DIR = `${FileSystem.documentDirectory}photos/`;
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const MAX_DIMENSION = 2048;
 const JPEG_QUALITY = 0.8;
@@ -82,4 +83,20 @@ export async function compressImage(uri: string): Promise<CompressedImage> {
     height: result.height,
     fileSize,
   };
+}
+
+/**
+ * Copies an image to documentDirectory/photos/ so it persists
+ * across cache clears and dev rebuilds.
+ */
+export async function persistImage(uri: string): Promise<string> {
+  const dirInfo = await FileSystem.getInfoAsync(PHOTOS_DIR);
+  if (!dirInfo.exists) {
+    await FileSystem.makeDirectoryAsync(PHOTOS_DIR, { intermediates: true });
+  }
+
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const destination = `${PHOTOS_DIR}${filename}`;
+  await FileSystem.copyAsync({ from: uri, to: destination });
+  return destination;
 }

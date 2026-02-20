@@ -6,6 +6,7 @@ import { TextInput, Button, Text, Icon } from '../ui';
 import { AIBadge } from './AIBadge';
 import type { ReviewRecipeFormData } from '../../schemas/review.schema';
 import { colors, spacing, radius, fonts } from '../../theme';
+import { persistImage } from '../../utils/imageCompression';
 
 interface Props {
   photoUri: string | null;
@@ -28,7 +29,8 @@ export function ReviewRecipeForm({ photoUri, onPhotoChange, hasAiPhoto }: Props)
     });
 
     if (!result.canceled) {
-      onPhotoChange(result.assets[0].uri);
+      const persistedUri = await persistImage(result.assets[0].uri);
+      onPhotoChange(persistedUri);
     }
   };
 
@@ -49,7 +51,8 @@ export function ReviewRecipeForm({ photoUri, onPhotoChange, hasAiPhoto }: Props)
     });
 
     if (!result.canceled) {
-      onPhotoChange(result.assets[0].uri);
+      const persistedUri = await persistImage(result.assets[0].uri);
+      onPhotoChange(persistedUri);
     }
   };
 
