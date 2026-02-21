@@ -327,6 +327,12 @@ export default function MenuScreen() {
       <MenuSection title="À propos">
         <MenuItem icon="information-circle-outline" title="Version" subtitle="1.0.0" />
         <MenuItem
+          icon="chatbubble-ellipses-outline"
+          title="Envoyer un feedback"
+          subtitle="Bug, idee, retour general"
+          onPress={() => router.push('/feedback')}
+        />
+        <MenuItem
           icon="document-text-outline"
           title="Politique de confidentialité"
           onPress={() => {

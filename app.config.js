@@ -34,6 +34,9 @@ export default {
     extra: {
       mixpanelToken: process.env.EXPO_PUBLIC_MIXPANEL_TOKEN || '',
       analyticsEnabled: process.env.EXPO_PUBLIC_ANALYTICS_ENABLED !== 'false',
+      emailjsServiceId: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID || '',
+      emailjsTemplateId: process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID || '',
+      emailjsPublicKey: process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY || '',
     },
   },
 };

@@ -11,6 +11,7 @@ import { reviewRecipeSchema, type ReviewRecipeFormData } from '../../src/schemas
 import { ReviewRecipeForm, ConfidenceIndicator } from '../../src/components/review';
 import { PipelineBadge } from '../../src/components/import/PipelineBadge';
 import { PostImportPrompt } from '../../src/components/import/PostImportPrompt';
+import { markFirstImportCompleted } from '../../src/components/feedback/FeedbackPrompt';
 import { Text, Button } from '../../src/components/ui';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
 import { canActivateTrial } from '../../src/utils/planStateMachine';
@@ -134,6 +135,7 @@ export default function RecipeReviewScreen() {
 
       // Remove job from store after successful save
       removeJob(jobId);
+      markFirstImportCompleted();
 
       Toast.show({
         type: 'success',
