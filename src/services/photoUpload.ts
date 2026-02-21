@@ -1,5 +1,17 @@
 import { uploadAsync } from 'expo-file-system/legacy';
 import { logger } from '../utils/logger';
+import { getDeviceId } from './planSync';
+
+function buildUploadHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+  const deviceId = getDeviceId();
+  if (deviceId) {
+    headers['X-Device-ID'] = deviceId;
+  }
+  return headers;
+}
 
 // API base URL - should come from environment config
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
@@ -49,9 +61,7 @@ export async function uploadPhoto(
       fieldName: 'image',
       mimeType: 'image/jpeg',
       httpMethod: 'POST',
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: buildUploadHeaders(),
     });
 
     // Signal upload completed
@@ -122,7 +132,7 @@ export async function uploadPhotos(
         fieldName: 'image',
         mimeType: 'image/jpeg',
         httpMethod: 'POST',
-        headers: { Accept: 'application/json' },
+        headers: buildUploadHeaders(),
       });
 
       if (uploadResult.status !== 200) {
@@ -148,12 +158,11 @@ export async function uploadPhotos(
     }
 
     // Step 2: Trigger batch processing with the uploaded file paths
+    const batchHeaders = buildUploadHeaders();
+    batchHeaders['Content-Type'] = 'application/json';
     const response = await fetch(`${API_BASE_URL}/api/import/photos`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
+      headers: batchHeaders,
       body: JSON.stringify({ paths }),
     });
 

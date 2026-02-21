@@ -8,7 +8,7 @@ jest.mock('react', () => {
   };
 });
 
-import { useKeepAwake } from 'expo-keep-awake';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import type { Recipe } from '../../src/types';
 
 // Mock hooks
@@ -78,7 +78,6 @@ describe('RecipeDetailScreen', () => {
     const element = RecipeDetailScreen();
 
     expect(element).toBeDefined();
-    expect(useKeepAwake).toHaveBeenCalled();
   });
 
   it('shows error state when recipe not found', () => {
@@ -108,7 +107,6 @@ describe('RecipeDetailScreen', () => {
     const element = RecipeDetailScreen();
 
     expect(element).toBeDefined();
-    expect(useKeepAwake).toHaveBeenCalled();
   });
 
   it('displays hero image', () => {
@@ -248,7 +246,12 @@ describe('RecipeDetailScreen', () => {
     // Delete button shows Alert.alert with recipe title
   });
 
-  it('activates keep awake', () => {
+  it('activates keep awake via useEffect', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const ReactMock = require('react');
+    const mockUseEffect = ReactMock.useEffect as jest.Mock;
+    mockUseEffect.mockClear();
+
     mockUseRecipe.mockReturnValue({
       data: mockRecipe(),
       isLoading: false,
@@ -257,6 +260,19 @@ describe('RecipeDetailScreen', () => {
 
     RecipeDetailScreen();
 
-    expect(useKeepAwake).toHaveBeenCalled();
+    // Find the useEffect call that activates keep-awake (the one with [] deps)
+    const keepAwakeEffect = mockUseEffect.mock.calls.find(
+      ([, deps]: [() => void, unknown[]]) => Array.isArray(deps) && deps.length === 0
+    );
+    expect(keepAwakeEffect).toBeDefined();
+
+    // Execute the effect callback and verify it calls activateKeepAwakeAsync
+    keepAwakeEffect[0]();
+    expect(activateKeepAwakeAsync).toHaveBeenCalled();
+
+    // Execute the cleanup and verify deactivateKeepAwake is called
+    const cleanup = keepAwakeEffect[0]();
+    if (typeof cleanup === 'function') cleanup();
+    expect(deactivateKeepAwake).toHaveBeenCalled();
   });
 });

@@ -9,7 +9,7 @@ import {
   Pressable,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
-import { useKeepAwake } from 'expo-keep-awake';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useRecipe, useActiveShoppingList, useShoppingListRecipes } from '../../src/hooks';
 import { useShoppingStore } from '../../src/stores/shoppingStore';
 import { analytics } from '../../src/services/analytics';
@@ -40,7 +40,12 @@ export default function RecipeDetailScreen() {
   const isInList = existingEntry !== null;
 
   // Keep screen awake while viewing recipe (for cooking)
-  useKeepAwake();
+  useEffect(() => {
+    activateKeepAwakeAsync().catch(() => {});
+    return () => {
+      deactivateKeepAwake();
+    };
+  }, []);
 
   useEffect(() => {
     if (id) analytics.track(EVENTS.RECIPE_VIEWED, { recipe_id: id });

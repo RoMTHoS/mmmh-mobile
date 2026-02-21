@@ -1,5 +1,9 @@
 import { uploadPhotos, PhotoUploadError } from '../../src/services/photoUpload';
 
+jest.mock('../../src/services/planSync', () => ({
+  getDeviceId: jest.fn(() => 'test-device-id-456'),
+}));
+
 // Mock fetch globally for batch upload tests
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -29,7 +33,7 @@ describe('uploadPhotos (batch)', () => {
     expect(result.queuePosition).toBe(2);
   });
 
-  it('calls fetch with correct endpoint and JSON body', async () => {
+  it('calls fetch with correct endpoint, JSON body, and X-Device-ID header', async () => {
     const uris = ['file:///p1.jpg', 'file:///p2.jpg'];
     await uploadPhotos(uris);
 
@@ -38,6 +42,7 @@ describe('uploadPhotos (batch)', () => {
     expect(url).toContain('/api/import/photos');
     expect(options.method).toBe('POST');
     expect(options.headers['Content-Type']).toBe('application/json');
+    expect(options.headers['X-Device-ID']).toBe('test-device-id-456');
     const body = JSON.parse(options.body);
     expect(body.paths).toHaveLength(2);
   });
