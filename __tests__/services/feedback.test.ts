@@ -176,7 +176,11 @@ describe('feedback service', () => {
     });
 
     it('throws on non-OK response', async () => {
-      mockFetch.mockResolvedValue({ ok: false, status: 500 });
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('Internal Server Error'),
+      });
 
       await expect(submitFeedback(basePayload)).rejects.toThrow('Feedback submission failed: 500');
     });
