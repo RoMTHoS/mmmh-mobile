@@ -33,6 +33,30 @@ export interface Recipe {
   updatedAt: string;
 }
 
-export type CreateRecipeInput = Omit<Recipe, 'id' | 'createdAt' | 'updatedAt'>;
+export type CreateRecipeInput = Omit<
+  Recipe,
+  | 'id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'author'
+  | 'priceMin'
+  | 'priceMax'
+  | 'kcal'
+  | 'catalogue'
+  | 'regime'
+  | 'nutritionProteins'
+  | 'nutritionCarbs'
+  | 'nutritionFats'
+> & {
+  author?: string | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
+  kcal?: number | null;
+  catalogue?: string | null;
+  regime?: string | null;
+  nutritionProteins?: number | null;
+  nutritionCarbs?: number | null;
+  nutritionFats?: number | null;
+};
 
 export type UpdateRecipeInput = Partial<CreateRecipeInput>;

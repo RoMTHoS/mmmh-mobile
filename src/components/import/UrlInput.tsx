@@ -12,9 +12,10 @@ interface UrlInputProps {
   importType: ImportType;
   onSubmit: (url: string) => void;
   isLoading: boolean;
+  onUrlChange?: (url: string) => void;
 }
 
-export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
+export function UrlInput({ importType, onSubmit, isLoading, onUrlChange }: UrlInputProps) {
   const [url, setUrl] = useState('');
   const [detectedPlatform, setDetectedPlatform] = useState<Platform | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +24,7 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
     (text: string) => {
       setUrl(text);
       setError(null);
+      onUrlChange?.(text);
 
       // Detect video platform for video or link import types
       if ((importType === 'video' || importType === 'link') && text.length > 10) {

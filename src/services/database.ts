@@ -204,6 +204,15 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
 
   const recipe: Recipe = {
     ...input,
+    author: input.author ?? null,
+    priceMin: input.priceMin ?? null,
+    priceMax: input.priceMax ?? null,
+    kcal: input.kcal ?? null,
+    catalogue: input.catalogue ?? null,
+    regime: input.regime ?? null,
+    nutritionProteins: input.nutritionProteins ?? null,
+    nutritionCarbs: input.nutritionCarbs ?? null,
+    nutritionFats: input.nutritionFats ?? null,
     id,
     createdAt: now,
     updatedAt: now,

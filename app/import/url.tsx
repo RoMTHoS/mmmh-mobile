@@ -37,6 +37,7 @@ export default function UrlInputScreen() {
   const [showQuotaExceeded, setShowQuotaExceeded] = useState(false);
   const [showGeminiFallback, setShowGeminiFallback] = useState(false);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  const [currentUrl, setCurrentUrl] = useState('');
 
   const addJob = useImportStore((state) => state.addJob);
   const jobs = useImportStore((state) => state.jobs);
@@ -217,12 +218,17 @@ export default function UrlInputScreen() {
           <QuotaDisplay />
         </View>
 
-        <UrlInput importType="link" onSubmit={handleSubmit} isLoading={isLoading} />
+        <UrlInput
+          importType="link"
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          onUrlChange={setCurrentUrl}
+        />
       </ScrollView>
 
       <View style={[styles.bottomButtons, { paddingBottom: insets.bottom + spacing.md }]}>
         <Pressable
-          onPress={handleSubmit}
+          onPress={() => currentUrl.trim() && handleSubmit(currentUrl.trim())}
           style={({ pressed }) => [
             styles.standardButton,
             !isLoading ? {} : styles.standardButtonDisabled,

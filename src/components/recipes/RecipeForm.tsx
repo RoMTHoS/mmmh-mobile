@@ -119,10 +119,11 @@ export function RecipeForm({
             <Pressable
               style={styles.cardRowBordered}
               onPress={() => {
-                const result = Alert.prompt?.('Catalogue', 'Entrez le catalogue', (text) =>
-                  onChange(text)
-                );
-                if (!result) onChange(value ? null : 'Général');
+                if (Alert.prompt) {
+                  Alert.prompt('Catalogue', 'Entrez le catalogue', (text) => onChange(text));
+                } else {
+                  onChange(value ? null : 'Général');
+                }
               }}
             >
               <Text style={styles.cardLabel}>Catalogue</Text>
@@ -139,10 +140,11 @@ export function RecipeForm({
             <Pressable
               style={styles.cardRowBordered}
               onPress={() => {
-                const result = Alert.prompt?.('Régime', 'Entrez le régime', (text) =>
-                  onChange(text)
-                );
-                if (!result) onChange(value ? null : 'Standard');
+                if (Alert.prompt) {
+                  Alert.prompt('Régime', 'Entrez le régime', (text) => onChange(text));
+                } else {
+                  onChange(value ? null : 'Standard');
+                }
               }}
             >
               <Text style={styles.cardLabel}>Régime</Text>
