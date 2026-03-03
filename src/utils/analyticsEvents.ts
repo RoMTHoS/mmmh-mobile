@@ -41,6 +41,12 @@ export const EVENTS = {
   FEEDBACK_PROMPT_SHOWN: 'Feedback Prompt Shown',
   FEEDBACK_PROMPT_ACCEPTED: 'Feedback Prompt Accepted',
   FEEDBACK_PROMPT_DISMISSED: 'Feedback Prompt Dismissed',
+
+  // Settings (Story 6.3)
+  HELP_RESOURCE_ACCESSED: 'Help Resource Accessed',
+  SHARE_APP_TAPPED: 'Share App Tapped',
+  CLEAR_DATA_INITIATED: 'Clear Data Initiated',
+  CLEAR_DATA_CONFIRMED: 'Clear Data Confirmed',
 } as const;
 
 export type AnalyticsEventName = (typeof EVENTS)[keyof typeof EVENTS];

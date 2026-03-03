@@ -149,6 +149,10 @@ const Animated = {
   })),
 };
 
+const Share = {
+  share: jest.fn(() => Promise.resolve({ action: 'sharedAction' })),
+};
+
 module.exports = {
   View,
   Text,
@@ -164,6 +168,7 @@ module.exports = {
   Modal,
   Platform,
   Linking,
+  Share,
   KeyboardAvoidingView,
   Animated,
 };

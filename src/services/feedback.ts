@@ -131,7 +131,10 @@ export async function submitFeedback(payload: FeedbackPayload): Promise<void> {
 
   const response = await fetch(EMAILJS_API, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: 'https://mymealmatehelper.com',
+    },
     body: JSON.stringify({
       service_id: EMAILJS_SERVICE_ID,
       template_id: EMAILJS_TEMPLATE_ID,
@@ -141,6 +144,9 @@ export async function submitFeedback(payload: FeedbackPayload): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(`Feedback submission failed: ${response.status}`);
+    const body = await response.text();
+    // eslint-disable-next-line no-console
+    console.error('[Feedback] EmailJS error:', response.status, body);
+    throw new Error(`Feedback submission failed: ${response.status} — ${body}`);
   }
 }

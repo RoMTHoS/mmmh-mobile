@@ -44,6 +44,7 @@
     "expo-splash-screen": "~31.0.13",
     "expo-sqlite": "^16.0.10",
     "expo-status-bar": "~3.0.9",
+    "expo-web-browser": "~15.0.10",
     "mixpanel-react-native": "^3.3.0",
     "react": "19.1.0",
     "react-hook-form": "^7.71.1",
@@ -107,6 +108,7 @@
       "^react-native-gesture-handler$": "<rootDir>/__mocks__/react-native-gesture-handler.js",
       "^mixpanel-react-native$": "<rootDir>/__mocks__/mixpanel-react-native.js",
       "^expo-constants$": "<rootDir>/__mocks__/expo-constants.js",
+      "^expo-web-browser$": "<rootDir>/__mocks__/expo-web-browser.js",
       "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js"
     },
     "moduleFileExtensions": [
