@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../utils/toast';
 import { router } from 'expo-router';
 import { TextInput } from '../ui';
 import { colors, typography, spacing, radius } from '../../theme';

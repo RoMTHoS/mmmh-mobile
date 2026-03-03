@@ -8,7 +8,7 @@
  * @see Story 5.3 Task 8
  */
 
-import Toast from 'react-native-toast-message';
+import { Toast } from '../utils/toast';
 import { usePlanStatus } from './usePlan';
 
 /**

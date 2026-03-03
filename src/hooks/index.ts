@@ -34,3 +34,4 @@ export {
 export { usePipelinePreCheck } from './usePipelinePreCheck';
 export { useTrialExpiration } from './useTrialExpiration';
 export { useAnalyticsSync } from './useAnalyticsSync';
+export { useReducedMotion } from './useReducedMotion';

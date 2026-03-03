@@ -8,8 +8,8 @@ jest.mock('react', () => {
     useMemo: (fn: () => unknown) => fn(),
   };
 });
-jest.mock('react-native-toast-message', () => ({
-  show: jest.fn(),
+jest.mock('../../../src/utils/toast', () => ({
+  Toast: { show: jest.fn() },
 }));
 jest.mock('expo-sqlite');
 jest.mock('react-native-uuid');
@@ -39,6 +39,15 @@ const mockRecipe = (overrides?: Partial<Recipe>): Recipe => ({
   servings: 4,
   photoUri: null,
   notes: null,
+  author: null,
+  priceMin: null,
+  priceMax: null,
+  kcal: null,
+  catalogue: null,
+  regime: null,
+  nutritionProteins: null,
+  nutritionCarbs: null,
+  nutritionFats: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
   ...overrides,

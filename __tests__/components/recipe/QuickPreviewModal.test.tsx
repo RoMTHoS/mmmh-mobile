@@ -50,7 +50,7 @@ describe('QuickPreviewModal', () => {
 
   describe('Theme Integration', () => {
     it('uses modal background color', () => {
-      expect(colors.modalBackground).toBe('#FBFBFB');
+      expect(colors.modalBackground).toBe('#fef4edff');
     });
 
     it('uses h2 typography for title', () => {
@@ -59,7 +59,7 @@ describe('QuickPreviewModal', () => {
     });
 
     it('uses accent color for button', () => {
-      expect(colors.accent).toBe('#233662');
+      expect(colors.accent).toBe('#1A1A1D');
     });
   });
 

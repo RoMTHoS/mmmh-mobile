@@ -25,8 +25,8 @@ jest.mock('../../src/hooks', () => ({
 }));
 
 // Mock toast
-jest.mock('react-native-toast-message', () => ({
-  show: jest.fn(),
+jest.mock('../../src/utils/toast', () => ({
+  Toast: { show: jest.fn() },
 }));
 
 // Mock expo-image-picker

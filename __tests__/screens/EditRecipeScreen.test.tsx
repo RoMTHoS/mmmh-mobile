@@ -1,6 +1,6 @@
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import Toast from 'react-native-toast-message';
+import { useToastStore } from '../../src/stores/toastStore';
 import type { Ingredient, Step } from '../../src/types';
 import { createRecipeSchema } from '../../src/schemas/recipe.schema';
 
@@ -283,34 +283,26 @@ describe('EditRecipeScreen', () => {
   });
 
   describe('Toast Notifications', () => {
-    it('shows success toast on recipe update', () => {
-      Toast.show({
-        type: 'success',
-        text1: 'Recipe updated!',
-        text2: 'Your changes have been saved',
-        visibilityTime: 2000,
-      });
+    beforeEach(() => {
+      useToastStore.setState({ toasts: [] });
+    });
 
-      expect(Toast.show).toHaveBeenCalledWith({
-        type: 'success',
-        text1: 'Recipe updated!',
-        text2: 'Your changes have been saved',
-        visibilityTime: 2000,
-      });
+    it('shows success toast on recipe update', () => {
+      useToastStore.getState().showToast('Recipe updated!', 'success');
+
+      const toasts = useToastStore.getState().toasts;
+      expect(toasts).toHaveLength(1);
+      expect(toasts[0].type).toBe('success');
+      expect(toasts[0].message).toBe('Recipe updated!');
     });
 
     it('shows error toast on update failure', () => {
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to update recipe',
-        text2: 'Please try again',
-      });
+      useToastStore.getState().showToast('Failed to update recipe', 'error');
 
-      expect(Toast.show).toHaveBeenCalledWith({
-        type: 'error',
-        text1: 'Failed to update recipe',
-        text2: 'Please try again',
-      });
+      const toasts = useToastStore.getState().toasts;
+      expect(toasts).toHaveLength(1);
+      expect(toasts[0].type).toBe('error');
+      expect(toasts[0].message).toBe('Failed to update recipe');
     });
   });
 

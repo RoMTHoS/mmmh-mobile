@@ -17,7 +17,7 @@ import { EVENTS } from '../../src/utils/analyticsEvents';
 import { LoadingScreen, Badge, Icon } from '../../src/components/ui';
 import { IngredientList, StepList } from '../../src/components/recipes';
 import { ServingsSelector } from '../../src/components/shopping';
-import { colors, typography, spacing, fonts } from '../../src/theme';
+import { colors, typography, spacing, fonts, radius } from '../../src/theme';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PLACEHOLDER_IMAGE: ImageSourcePropType = require('../../assets/placeholder-food.png');
@@ -26,6 +26,7 @@ export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: recipe, isLoading, error } = useRecipe(id);
   const [servingsSelectorVisible, setServingsSelectorVisible] = useState(false);
+  const [displayServings, setDisplayServings] = useState<number | null>(null);
 
   const activeListId = useShoppingStore((s) => s.activeListId);
   const listQuery = useActiveShoppingList();
@@ -51,6 +52,10 @@ export default function RecipeDetailScreen() {
     if (id) analytics.track(EVENTS.RECIPE_VIEWED, { recipe_id: id });
   }, [id]);
 
+  useEffect(() => {
+    if (recipe?.servings) setDisplayServings(recipe.servings);
+  }, [recipe?.servings]);
+
   if (isLoading) {
     return (
       <>
@@ -73,6 +78,8 @@ export default function RecipeDetailScreen() {
     );
   }
 
+  const servings = displayServings ?? recipe.servings ?? 4;
+
   return (
     <>
       <Stack.Screen
@@ -88,6 +95,11 @@ export default function RecipeDetailScreen() {
             >
               <Icon name="arrow-left" size="lg" color={colors.text} />
             </Pressable>
+          ),
+          headerTitle: () => (
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {recipe.title}
+            </Text>
           ),
           headerRight: () => (
             <Pressable
@@ -111,18 +123,58 @@ export default function RecipeDetailScreen() {
         />
 
         <View style={styles.content}>
-          {/* Title */}
-          <Text style={styles.title}>{recipe.title}</Text>
+          {/* Author Row */}
+          {recipe.author && (
+            <View style={styles.authorRow}>
+              <View style={styles.authorAvatar}>
+                <Icon name="servings" size="sm" color={colors.textMuted} />
+              </View>
+              <Text style={styles.authorText}>Par {recipe.author}</Text>
+            </View>
+          )}
 
           {/* Metadata Badges */}
           <View style={styles.metadata}>
-            {recipe.cookingTime && <Badge icon="time" value={`${recipe.cookingTime} min`} />}
-            {recipe.servings && <Badge icon="servings" value={`${recipe.servings} portions`} />}
+            {recipe.cookingTime && <Badge icon="time" value={`${recipe.cookingTime} mn`} />}
+            {(recipe.priceMin || recipe.priceMax) && (
+              <Badge
+                icon="cost"
+                value={
+                  recipe.priceMin && recipe.priceMax
+                    ? `${recipe.priceMin}-${recipe.priceMax} €`
+                    : `${recipe.priceMin ?? recipe.priceMax} €`
+                }
+              />
+            )}
+            {recipe.kcal && <Badge icon="calories" value={`${recipe.kcal} kcal`} />}
+            {!recipe.priceMin && !recipe.priceMax && !recipe.kcal && recipe.servings && (
+              <Badge icon="servings" value={`${recipe.servings} portions`} />
+            )}
           </View>
 
           {/* Ingredients Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ingrédients</Text>
+            <View style={styles.ingredientsHeader}>
+              <Text style={styles.sectionTitle}>Ingrédients</Text>
+              <View style={styles.servingsStepper}>
+                <Icon name="servings" size="sm" color={colors.text} />
+                <Pressable
+                  onPress={() => setDisplayServings(Math.max(1, servings - 1))}
+                  style={styles.stepperButton}
+                  accessibilityLabel="Diminuer les portions"
+                >
+                  <Text style={styles.stepperButtonText}>-</Text>
+                </Pressable>
+                <Text style={styles.servingsCount}>{servings}</Text>
+                <Pressable
+                  onPress={() => setDisplayServings(servings + 1)}
+                  style={styles.stepperButton}
+                  accessibilityLabel="Augmenter les portions"
+                >
+                  <Text style={styles.stepperButtonText}>+</Text>
+                </Pressable>
+              </View>
+            </View>
             <IngredientList ingredients={recipe.ingredients} />
           </View>
 
@@ -152,16 +204,8 @@ export default function RecipeDetailScreen() {
         />
       )}
 
-      {/* Bottom Action Bar */}
+      {/* Bottom Action Bar — Courses + Partager only */}
       <View style={styles.actionBar}>
-        <Pressable
-          style={styles.actionButton}
-          onPress={() => {}}
-          accessibilityLabel="Enregistrer la recette"
-        >
-          <Icon name="bookmark" size="lg" color={colors.text} />
-          <Text style={styles.actionText}>Enregistrer</Text>
-        </Pressable>
         <Pressable
           style={styles.actionButton}
           onPress={() => setServingsSelectorVisible(true)}
@@ -199,6 +243,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerTitle: {
+    fontFamily: fonts.script,
+    fontSize: 18,
+    color: colors.text,
+    maxWidth: 200,
+  },
   heroImage: {
     width: '100%',
     height: 280,
@@ -208,10 +258,24 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingBottom: spacing.xl,
   },
-  title: {
-    ...typography.headerScript,
-    color: colors.text,
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     marginBottom: spacing.md,
+  },
+  authorAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authorText: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.textMuted,
   },
   metadata: {
     flexDirection: 'row',
@@ -222,10 +286,46 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing.lg,
   },
+  ingredientsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   sectionTitle: {
     ...typography.titleScript,
     color: colors.text,
-    marginBottom: spacing.md,
+  },
+  servingsStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  stepperButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperButtonText: {
+    fontFamily: fonts.sans,
+    fontSize: 18,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  servingsCount: {
+    fontFamily: fonts.sans,
+    fontSize: 16,
+    color: colors.text,
+    minWidth: 20,
+    textAlign: 'center',
   },
   notes: {
     ...typography.body,

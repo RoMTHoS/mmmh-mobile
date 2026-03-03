@@ -1,5 +1,5 @@
 import { View, StyleSheet } from 'react-native';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../utils/toast';
 import { ImportStatusCard } from './ImportStatusCard';
 import { useImportStore } from '../../stores/importStore';
 import { useImportPolling } from '../../hooks/useImportPolling';

@@ -1,21 +1,30 @@
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../src/utils/toast';
 import { UrlInput } from '../../src/components/import/UrlInput';
 import { TrialStatusBadge } from '../../src/components/import/TrialStatusBadge';
 import { QuotaDisplay } from '../../src/components/import/QuotaDisplay';
 import { QuotaExceededModal } from '../../src/components/import/QuotaExceededModal';
 import { GeminiFallbackDialog } from '../../src/components/import/GeminiFallbackDialog';
-import { PipelineBadge } from '../../src/components/import/PipelineBadge';
 import { useImportStore } from '../../src/stores/importStore';
 import { submitImport } from '../../src/services/import';
 import { detectPlatform } from '../../src/utils/validation';
 import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
 import { usePlanStatus, useActivateTrial } from '../../src/hooks';
 import { trackEvent } from '../../src/utils/analytics';
-import { colors, typography, spacing } from '../../src/theme';
+import { colors, typography, fonts, spacing, radius } from '../../src/theme';
+import { PremiumIcon } from '../../src/components/ui';
+import { PlatformBadge } from '../../src/components/import/PlatformBadge';
 import { useQueryClient } from '@tanstack/react-query';
 
 type ImportType = 'video' | 'website';
@@ -189,6 +198,17 @@ export default function UrlInputScreen() {
           <Text style={styles.subtitle}>
             Collez le lien d'une video (Instagram, TikTok, YouTube) ou d'un site de recette
           </Text>
+          <View style={styles.platformHints}>
+            <Text style={styles.hintsLabel}>Videos supportees :</Text>
+            <View style={styles.platformList}>
+              <PlatformBadge platform="instagram" size="sm" showLabel />
+              <PlatformBadge platform="tiktok" size="sm" showLabel />
+              <PlatformBadge platform="youtube" size="sm" showLabel />
+            </View>
+            <Text style={[styles.hintsLabel, { marginTop: spacing.sm }]}>
+              + tout site de recette
+            </Text>
+          </View>
         </View>
 
         {planStatus?.tier === 'trial' && <TrialStatusBadge />}
@@ -197,14 +217,34 @@ export default function UrlInputScreen() {
           <QuotaDisplay />
         </View>
 
-        {planStatus && (
-          <View style={styles.pipelineSection}>
-            <PipelineBadge pipeline={planStatus.canUsePremium ? 'gemini' : 'vps'} size="md" />
-          </View>
-        )}
-
         <UrlInput importType="link" onSubmit={handleSubmit} isLoading={isLoading} />
       </ScrollView>
+
+      <View style={[styles.bottomButtons, { paddingBottom: insets.bottom + spacing.md }]}>
+        <Pressable
+          onPress={handleSubmit}
+          style={({ pressed }) => [
+            styles.standardButton,
+            !isLoading ? {} : styles.standardButtonDisabled,
+            pressed && { opacity: 0.85 },
+          ]}
+          disabled={isLoading}
+        >
+          <Text style={styles.standardButtonText}>Import standard</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.premiumButton, pressed && { opacity: 0.85 }]}
+          onPress={() => router.push('/upgrade')}
+        >
+          <PremiumIcon width={24} color="#DAA520" />
+          <Text style={styles.premiumButtonText}>
+            {planStatus && planStatus.geminiQuotaRemaining === 0
+              ? 'Passer premium'
+              : 'Import premium'}
+          </Text>
+          <PremiumIcon width={24} color="#DAA520" />
+        </Pressable>
+      </View>
 
       <QuotaExceededModal
         visible={showQuotaExceeded}
@@ -246,13 +286,59 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textMuted,
   },
+  platformHints: {
+    marginTop: spacing.md,
+  },
+  hintsLabel: {
+    ...typography.label,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
+  platformList: {
+    flexDirection: 'row' as const,
+    gap: spacing.md,
+  },
   quotaSection: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
   },
-  pipelineSection: {
-    alignItems: 'center' as const,
+  bottomButtons: {
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  standardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  standardButtonDisabled: {
+    opacity: 0.4,
+  },
+  standardButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: colors.text,
+  },
+  premiumButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent,
+  },
+  premiumButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: '#DAA520',
   },
 });

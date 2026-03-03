@@ -3,6 +3,7 @@ import { FlatList, View, RefreshControl, StyleSheet, LayoutChangeEvent } from 'r
 import { router } from 'expo-router';
 import type { Recipe } from '../../types';
 import { RecipeCard } from './RecipeCard';
+import { colors } from '../../theme';
 
 interface RecipeGridProps {
   recipes: Recipe[];
@@ -68,8 +69,8 @@ export function RecipeGrid({ recipes, refreshing = false, onRefresh }: RecipeGri
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#D97706']}
-              tintColor="#D97706"
+              colors={[colors.accent]}
+              tintColor={colors.accent}
             />
           ) : undefined
         }

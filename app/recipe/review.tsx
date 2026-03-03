@@ -3,7 +3,7 @@ import { View, ScrollView, StyleSheet, Alert, Pressable } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../src/utils/toast';
 
 import { useImportStore } from '../../src/stores/importStore';
 import { useCreateRecipe } from '../../src/hooks';
@@ -12,10 +12,10 @@ import { ReviewRecipeForm, ConfidenceIndicator } from '../../src/components/revi
 import { PipelineBadge } from '../../src/components/import/PipelineBadge';
 import { PostImportPrompt } from '../../src/components/import/PostImportPrompt';
 import { markFirstImportCompleted } from '../../src/components/feedback/FeedbackPrompt';
-import { Text, Button } from '../../src/components/ui';
+import { Text, Button, Icon } from '../../src/components/ui';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
 import { canActivateTrial } from '../../src/utils/planStateMachine';
-import { colors, spacing, fonts } from '../../src/theme';
+import { colors, spacing, fonts, radius } from '../../src/theme';
 import type { Ingredient, Step } from '../../src/types';
 
 interface ExtractedRecipe {
@@ -209,21 +209,17 @@ export default function RecipeReviewScreen() {
           headerShadowVisible: false,
           headerLeft: () => (
             <Pressable onPress={handleCancel} hitSlop={8} style={styles.headerButtonContainer}>
-              <Text style={styles.headerButton}>Annuler</Text>
+              <Icon name="arrow-left" size="lg" color={colors.text} />
             </Pressable>
           ),
+          headerTitle: () => (
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {methods.getValues('title') || 'Vérifier la recette'}
+            </Text>
+          ),
           headerRight: () => (
-            <Pressable
-              onPress={methods.handleSubmit(handleSave, handleValidationError)}
-              disabled={createRecipe.isPending}
-              hitSlop={8}
-              style={styles.headerButtonContainer}
-            >
-              <Text
-                style={[styles.headerButton, createRecipe.isPending && styles.headerButtonDisabled]}
-              >
-                Enregistrer
-              </Text>
+            <Pressable hitSlop={8} style={styles.headerButtonContainer}>
+              <Icon name="pencil" size="lg" color={colors.text} />
             </Pressable>
           ),
         }}
@@ -257,13 +253,25 @@ export default function RecipeReviewScreen() {
             hasAiPhoto={hasAiPhoto}
           />
 
-          <View style={styles.discardSection}>
-            <Button title="Supprimer l'import" onPress={handleDiscard} variant="destructive" />
-          </View>
-
           <View style={styles.bottomPadding} />
         </ScrollView>
       </FormProvider>
+
+      {/* Sticky Bottom Buttons */}
+      <View style={styles.stickyBottom}>
+        <Pressable style={styles.modifyButton} onPress={handleDiscard}>
+          <Text style={styles.modifyButtonText}>Modifier</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.saveButton, createRecipe.isPending && styles.saveButtonDisabled]}
+          onPress={methods.handleSubmit(handleSave, handleValidationError)}
+          disabled={createRecipe.isPending}
+        >
+          <Text style={styles.saveButtonText}>
+            {createRecipe.isPending ? 'Enregistrement...' : 'Enregistrer'}
+          </Text>
+        </Pressable>
+      </View>
     </>
   );
 }
@@ -308,16 +316,15 @@ const styles = StyleSheet.create({
   },
   headerButtonContainer: {
     paddingHorizontal: spacing.sm,
-    paddingTop: 10,
-    paddingBottom: spacing.xs,
+    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerButton: {
+  headerTitle: {
     fontFamily: fonts.script,
     fontSize: 18,
     color: colors.text,
-  },
-  headerButtonDisabled: {
-    opacity: 0.5,
+    maxWidth: 200,
   },
   indicatorRow: {
     flexDirection: 'row' as const,
@@ -325,11 +332,45 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between' as const,
     marginBottom: spacing.md,
   },
-  discardSection: {
-    marginTop: spacing.xl,
-  },
   bottomPadding: {
-    height: spacing.xl,
+    height: 120,
+  },
+  stickyBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
+    gap: spacing.sm,
+    backgroundColor: colors.background,
+  },
+  modifyButton: {
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    backgroundColor: colors.surfaceAlt,
+  },
+  modifyButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: colors.text,
+  },
+  saveButton: {
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
+  },
+  saveButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: '#FFFFFF',
   },
   errorContainer: {
     flex: 1,

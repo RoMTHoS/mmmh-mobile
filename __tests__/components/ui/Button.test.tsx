@@ -57,4 +57,23 @@ describe('Button', () => {
 
     expect(element).toBeDefined();
   });
+
+  it('shows spinner instead of text when loading', () => {
+    const onPress = jest.fn();
+    const element = Button({ title: 'Save', onPress, loading: true });
+
+    // When loading, children should be ActivityIndicator not Text
+    const children = element.props.children;
+    expect(children.type.name || children.type).toBeDefined();
+    // Verify it's not showing the title text
+    expect(children.props?.children).not.toBe('Save');
+  });
+
+  it('disabled button prevents press', () => {
+    const onPress = jest.fn();
+    const element = Button({ title: 'Click', onPress, disabled: true });
+
+    expect(element.props.disabled).toBe(true);
+    expect(element.props.accessibilityState).toEqual({ disabled: true });
+  });
 });

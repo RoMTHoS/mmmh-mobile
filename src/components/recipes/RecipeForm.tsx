@@ -76,152 +76,274 @@ export function RecipeForm({
       showsVerticalScrollIndicator={false}
       automaticallyAdjustKeyboardInsets
     >
-      <View style={styles.section}>
+      {/* Top Card Section */}
+      <View style={styles.card}>
         {/* Title */}
         <Controller
           control={control}
           name="title"
           render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              label="Titre"
-              useScriptLabel
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Nom de la recette"
-              error={errors.title?.message}
-              autoFocus={autoFocusTitle}
-            />
+            <View style={styles.cardRow}>
+              <TextInput
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="Titre"
+                error={errors.title?.message}
+                autoFocus={autoFocusTitle}
+                style={styles.cardInput}
+              />
+            </View>
           )}
         />
 
-        {/* Photo */}
-        <View style={styles.photoSection}>
-          <Text style={styles.sectionLabel}>Image</Text>
-          {photoUri ? (
-            <View>
-              <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-              <View style={styles.photoActions}>
-                <Button
-                  title="Remplacer"
-                  onPress={showPhotoOptions}
-                  variant="secondary"
-                  size="sm"
-                  style={styles.photoButton}
-                />
-                <Button
-                  title="Supprimer"
-                  onPress={() => onPhotoChange(null)}
-                  variant="destructive"
-                  size="sm"
-                  style={styles.photoButton}
-                />
+        {/* Image Row */}
+        <View style={styles.cardRowBordered}>
+          <Text style={styles.cardLabel}>Image</Text>
+          <Pressable onPress={showPhotoOptions} style={styles.cameraButton}>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={styles.photoThumbnail} />
+            ) : (
+              <View style={styles.cameraIconBox}>
+                <Icon name="camera" size="md" color={colors.textMuted} />
               </View>
-            </View>
-          ) : (
-            <Pressable style={styles.addPhotoButton} onPress={showPhotoOptions}>
-              <Icon name="camera" size="lg" color={colors.textMuted} />
-              <Text style={styles.addPhotoText}>Ajouter une photo</Text>
+            )}
+          </Pressable>
+        </View>
+
+        {/* Catalogue Row */}
+        <Controller
+          control={control}
+          name="catalogue"
+          render={({ field: { onChange, value } }) => (
+            <Pressable
+              style={styles.cardRowBordered}
+              onPress={() => {
+                const result = Alert.prompt?.('Catalogue', 'Entrez le catalogue', (text) =>
+                  onChange(text)
+                );
+                if (!result) onChange(value ? null : 'Général');
+              }}
+            >
+              <Text style={styles.cardLabel}>Catalogue</Text>
+              <Text style={styles.cardChevron}>{value || 'selectionner >'}</Text>
             </Pressable>
           )}
-        </View>
+        />
 
-        {/* Cooking Time & Servings */}
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
-            <Controller
-              control={control}
-              name="cookingTime"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  label="Temps (min)"
-                  useScriptLabel
-                  value={value?.toString() || ''}
-                  onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
-                  placeholder="30"
-                  keyboardType="numeric"
-                />
-              )}
-            />
-          </View>
-          <View style={styles.halfInput}>
-            <Controller
-              control={control}
-              name="servings"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  label="Portions"
-                  useScriptLabel
-                  value={value?.toString() || ''}
-                  onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
-                  placeholder="4"
-                  keyboardType="numeric"
-                />
-              )}
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* Ingredients */}
-      <View style={styles.section}>
+        {/* Régime Row */}
         <Controller
           control={control}
-          name="ingredientsText"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              label="Ingrédients"
-              useScriptLabel
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Un ingrédient par ligne"
-              multiline
-              style={styles.multiline}
-            />
+          name="regime"
+          render={({ field: { onChange, value } }) => (
+            <Pressable
+              style={styles.cardRowBordered}
+              onPress={() => {
+                const result = Alert.prompt?.('Régime', 'Entrez le régime', (text) =>
+                  onChange(text)
+                );
+                if (!result) onChange(value ? null : 'Standard');
+              }}
+            >
+              <Text style={styles.cardLabel}>Régime</Text>
+              <Text style={styles.cardChevron}>{value || 'selectionner >'}</Text>
+            </Pressable>
+          )}
+        />
+
+        {/* Nombre de portions */}
+        <Controller
+          control={control}
+          name="servings"
+          render={({ field: { onChange, value } }) => {
+            const count = value ?? 4;
+            return (
+              <View style={styles.cardRowBordered}>
+                <Text style={styles.cardLabel}>Nombre de portions</Text>
+                <View style={styles.stepper}>
+                  <Pressable
+                    onPress={() => onChange(Math.max(1, count - 1))}
+                    style={styles.stepperBtn}
+                  >
+                    <Text style={styles.stepperBtnText}>-</Text>
+                  </Pressable>
+                  <Text style={styles.stepperValue}>{count}</Text>
+                  <Pressable onPress={() => onChange(count + 1)} style={styles.stepperBtn}>
+                    <Text style={styles.stepperBtnText}>+</Text>
+                  </Pressable>
+                </View>
+              </View>
+            );
+          }}
+        />
+      </View>
+
+      {/* Time / Price / Kcal */}
+      <View style={styles.nutritionRow}>
+        <Controller
+          control={control}
+          name="cookingTime"
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>Temps</Text>
+              <TextInput
+                value={value?.toString() || ''}
+                onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
+                placeholder="..."
+                keyboardType="numeric"
+                style={styles.nutritionInput}
+              />
+              <Text style={styles.nutritionUnit}>mn</Text>
+            </View>
+          )}
+        />
+        <Controller
+          control={control}
+          name="priceMin"
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>Prix</Text>
+              <TextInput
+                value={value?.toString() || ''}
+                onChangeText={(v) => onChange(v ? parseFloat(v) : null)}
+                placeholder="..."
+                keyboardType="numeric"
+                style={styles.nutritionInput}
+              />
+              <Text style={styles.nutritionUnit}>€</Text>
+            </View>
+          )}
+        />
+        <Controller
+          control={control}
+          name="kcal"
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>Calories</Text>
+              <TextInput
+                value={value?.toString() || ''}
+                onChangeText={(v) => onChange(v ? parseInt(v, 10) : null)}
+                placeholder="..."
+                keyboardType="numeric"
+                style={styles.nutritionInput}
+              />
+              <Text style={styles.nutritionUnit}>kcal</Text>
+            </View>
           )}
         />
       </View>
 
-      {/* Steps */}
-      <View style={styles.section}>
+      {/* Nutritions Section */}
+      <View style={styles.nutritionRow}>
         <Controller
           control={control}
-          name="stepsText"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              label="Instructions"
-              useScriptLabel
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Une étape par ligne"
-              multiline
-              style={styles.multiline}
-            />
+          name="nutritionProteins"
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>Protéines</Text>
+              <TextInput
+                value={value?.toString() || ''}
+                onChangeText={(v) => onChange(v ? parseFloat(v) : null)}
+                placeholder="..."
+                keyboardType="numeric"
+                style={styles.nutritionInput}
+              />
+              <Text style={styles.nutritionUnit}>g</Text>
+            </View>
+          )}
+        />
+        <Controller
+          control={control}
+          name="nutritionCarbs"
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>Glucides</Text>
+              <TextInput
+                value={value?.toString() || ''}
+                onChangeText={(v) => onChange(v ? parseFloat(v) : null)}
+                placeholder="..."
+                keyboardType="numeric"
+                style={styles.nutritionInput}
+              />
+              <Text style={styles.nutritionUnit}>g</Text>
+            </View>
+          )}
+        />
+        <Controller
+          control={control}
+          name="nutritionFats"
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>Lipides</Text>
+              <TextInput
+                value={value?.toString() || ''}
+                onChangeText={(v) => onChange(v ? parseFloat(v) : null)}
+                placeholder="..."
+                keyboardType="numeric"
+                style={styles.nutritionInput}
+              />
+              <Text style={styles.nutritionUnit}>g</Text>
+            </View>
           )}
         />
       </View>
+
+      {/* Ingrédients — navigable row */}
+      <Text style={styles.sectionTitle}>Ingrédients</Text>
+      <Controller
+        control={control}
+        name="ingredientsText"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <View style={styles.navSection}>
+            <TextInput
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              placeholder="Ajouter les ingrédients"
+              multiline
+              style={styles.multiline}
+            />
+          </View>
+        )}
+      />
+
+      {/* Instructions — navigable row */}
+      <Text style={styles.sectionTitle}>Instructions</Text>
+      <Controller
+        control={control}
+        name="stepsText"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <View style={styles.navSection}>
+            <TextInput
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              placeholder="Ajouter les étapes"
+              multiline
+              style={styles.multiline}
+            />
+          </View>
+        )}
+      />
 
       {/* Notes */}
-      <View style={styles.section}>
-        <Controller
-          control={control}
-          name="notes"
-          render={({ field: { onChange, onBlur, value } }) => (
+      <Text style={styles.sectionTitle}>Notes</Text>
+      <Controller
+        control={control}
+        name="notes"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <View style={styles.navSection}>
             <TextInput
-              label="Notes"
-              useScriptLabel
               value={value || ''}
               onChangeText={onChange}
               onBlur={onBlur}
-              placeholder="Astuces et conseils..."
+              placeholder="Ajouter des astuces"
               multiline
               style={styles.notesInput}
             />
-          )}
-        />
-      </View>
+          </View>
+        )}
+      />
 
       {/* Delete Button (only in edit mode) */}
       {onDelete && (
@@ -230,7 +352,6 @@ export function RecipeForm({
         </View>
       )}
 
-      {/* Bottom padding for scroll */}
       <View style={styles.bottomPadding} />
     </ScrollView>
   );
@@ -245,64 +366,154 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.md,
   },
-  section: {
-    // No background or border - just spacing
-  },
-  sectionLabel: {
-    fontFamily: fonts.script,
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  photoSection: {
-    marginTop: spacing.md,
-  },
-  photoPreview: {
-    width: '100%',
-    height: 180,
-    borderRadius: radius.md,
+
+  // Card section
+  card: {
     backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border + '30',
+    overflow: 'hidden',
   },
-  photoActions: {
+  cardRow: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  cardRowBordered: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  photoButton: {
-    flex: 1,
-  },
-  addPhotoButton: {
-    height: 120,
-    borderRadius: radius.md,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border + '30',
   },
-  addPhotoText: {
-    fontFamily: fonts.script,
+  cardLabel: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    color: colors.text,
+  },
+  cardInput: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
     fontSize: 16,
+  },
+  cardChevron: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
     color: colors.textMuted,
   },
+  cameraButton: {
+    padding: 4,
+  },
+  cameraIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoThumbnail: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+  },
+
+  // Stepper
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  stepperBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border + '30',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperBtnText: {
+    fontFamily: fonts.sans,
+    fontSize: 18,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  stepperValue: {
+    fontFamily: fonts.sans,
+    fontSize: 16,
+    color: colors.text,
+    minWidth: 20,
+    textAlign: 'center',
+  },
+
+  // Section titles
+  sectionTitle: {
+    fontFamily: fonts.script,
+    fontSize: 20,
+    color: colors.text,
+    marginTop: spacing.sm,
+  },
+
+  // Nutrition
+  nutritionRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border + '30',
+  },
+  nutritionItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  nutritionLabel: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  nutritionInput: {
+    textAlign: 'center',
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    fontSize: 15,
+    minHeight: 30,
+  },
+  nutritionUnit: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+
+  // Navigation sections
+  navSection: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border + '30',
+    overflow: 'hidden',
+  },
   multiline: {
-    minHeight: 120,
+    minHeight: 100,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   notesInput: {
-    minHeight: 80,
+    minHeight: 60,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   deleteSection: {
     marginTop: spacing.xl,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  halfInput: {
-    flex: 1,
   },
   bottomPadding: {
     height: spacing.xl,

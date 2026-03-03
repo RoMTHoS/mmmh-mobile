@@ -14,19 +14,19 @@ jest.mock('@expo/vector-icons', () => ({
 
 describe('Navigation Refactor - Theme', () => {
   it('defines cream background color', () => {
-    expect(colors.background).toBe('#FBFBFB');
+    expect(colors.background).toBe('#fff8e7ff');
   });
 
   it('defines navy text color', () => {
-    expect(colors.text).toBe('#233662');
+    expect(colors.text).toBe('#1A1A1D');
   });
 
   it('defines navy accent color', () => {
-    expect(colors.accent).toBe('#233662');
+    expect(colors.accent).toBe('#1A1A1D');
   });
 
   it('defines tab bar colors', () => {
-    expect(colors.tabBarActive).toBe('#233662');
+    expect(colors.tabBarActive).toBe('#1A1A1D');
     expect(colors.tabBarInactive).toBe('#9CA3AF');
   });
 });
@@ -53,7 +53,7 @@ describe('Navigation Refactor - Tab Structure', () => {
 describe('Navigation Refactor - Modal Routes', () => {
   it('import modal route exists', () => {
     // Verify the modal route file exists by importing the colors it uses
-    expect(colors.modalBackground).toBe('#FBFBFB');
+    expect(colors.modalBackground).toBe('#fef4edff');
   });
 
   it('quick-preview modal route exists', () => {

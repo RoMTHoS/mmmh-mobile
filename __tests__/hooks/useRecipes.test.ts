@@ -34,6 +34,15 @@ const mockRecipe: Recipe = {
   servings: 4,
   photoUri: null,
   notes: null,
+  author: null,
+  priceMin: null,
+  priceMax: null,
+  kcal: null,
+  catalogue: null,
+  regime: null,
+  nutritionProteins: null,
+  nutritionCarbs: null,
+  nutritionFats: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
@@ -158,6 +167,15 @@ describe('Recipe Hooks', () => {
         servings: 4,
         photoUri: null,
         notes: null,
+        author: null,
+        priceMin: null,
+        priceMax: null,
+        kcal: null,
+        catalogue: null,
+        regime: null,
+        nutritionProteins: null,
+        nutritionCarbs: null,
+        nutritionFats: null,
       });
 
       await waitFor(() => {

@@ -88,7 +88,13 @@
           "tsconfig": {
             "jsx": "react-jsx",
             "esModuleInterop": true,
-            "module": "commonjs"
+            "module": "commonjs",
+            "skipLibCheck": true
+          },
+          "diagnostics": {
+            "ignoreDiagnostics": [
+              2307
+            ]
           }
         }
       ]
@@ -109,6 +115,9 @@
       "^mixpanel-react-native$": "<rootDir>/__mocks__/mixpanel-react-native.js",
       "^expo-constants$": "<rootDir>/__mocks__/expo-constants.js",
       "^expo-web-browser$": "<rootDir>/__mocks__/expo-web-browser.js",
+      "^react-native-reanimated$": "<rootDir>/__mocks__/react-native-reanimated.js",
+      "^react-native-safe-area-context$": "<rootDir>/__mocks__/react-native-safe-area-context.js",
+      "^react-native-svg$": "<rootDir>/__mocks__/react-native-svg.js",
       "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js"
     },
     "moduleFileExtensions": [

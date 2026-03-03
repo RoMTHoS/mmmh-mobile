@@ -3,12 +3,13 @@ import { View, Text, ScrollView, Pressable, StyleSheet, Alert, Share, Linking } 
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../src/utils/toast';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import Constants from 'expo-constants';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { PremiumIcon } from '../../src/components/ui';
 import { SettingsSection } from '../../src/components/settings/SettingsSection';
 import { SettingsRow } from '../../src/components/settings/SettingsRow';
 import { initDeviceId, getDeviceId } from '../../src/services/planSync';
@@ -16,7 +17,6 @@ import { getDatabase } from '../../src/services/database';
 import { analytics } from '../../src/services/analytics';
 import { EVENTS } from '../../src/utils/analyticsEvents';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
-import { QUOTA } from '../../src/utils/planConstants';
 import { useSettingsStore, type ThemeMode } from '../../src/stores/settingsStore';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -57,10 +57,11 @@ function PlanUsageSection() {
   const badgeConfig = TIER_BADGE_CONFIG[planStatus.tier];
   const isTrialExpired = planStatus.tier === 'free' && userPlan?.trialStartDate !== null;
 
-  const vpsLimit = planStatus.tier === 'trial' ? QUOTA.TRIAL_VPS_PER_WEEK : QUOTA.FREE_VPS_PER_WEEK;
-  const vpsUsed = planStatus.tier === 'premium' ? 0 : vpsLimit - planStatus.vpsQuotaRemaining;
-  const vpsRatio = planStatus.tier === 'premium' ? 0 : vpsUsed / vpsLimit;
-  const barColor = vpsRatio >= 1 ? colors.error : vpsRatio >= 0.7 ? colors.warning : colors.success;
+  const PREMIUM_IMPORTS_PER_WEEK = 2;
+  const premiumUsed = PREMIUM_IMPORTS_PER_WEEK - (planStatus.geminiQuotaRemaining ?? 0);
+  const premiumRatio = premiumUsed / PREMIUM_IMPORTS_PER_WEEK;
+  const barColor =
+    premiumRatio >= 1 ? colors.error : premiumRatio >= 0.7 ? colors.warning : colors.success;
 
   return (
     <View style={sectionStyles.section} testID="plan-usage-section">
@@ -68,7 +69,7 @@ function PlanUsageSection() {
       <View style={sectionStyles.sectionContent}>
         <View style={[rowStyles.item, rowStyles.itemLast]}>
           <View style={rowStyles.itemIcon}>
-            <Ionicons name="diamond-outline" size={22} color={colors.accent} />
+            <PremiumIcon width={22} />
           </View>
           <View style={[rowStyles.itemContent, { gap: 6 }]}>
             {/* Tier badge */}
@@ -92,14 +93,14 @@ function PlanUsageSection() {
             {planStatus.tier !== 'premium' && (
               <>
                 <Text style={rowStyles.itemSubtitle} testID="plan-vps-usage">
-                  Imports cette semaine : {vpsUsed}/{vpsLimit}
+                  Premium import utilisé : {premiumUsed}/{PREMIUM_IMPORTS_PER_WEEK}
                 </Text>
                 <View style={planStyles.progressTrack}>
                   <View
                     style={[
                       planStyles.progressFill,
                       {
-                        width: `${Math.min(vpsRatio * 100, 100)}%`,
+                        width: `${Math.min(premiumRatio * 100, 100)}%`,
                         backgroundColor: barColor,
                       },
                     ]}
@@ -156,7 +157,7 @@ function PlanUsageSection() {
                 onPress={() => router.push('/upgrade')}
                 testID="plan-upgrade-button"
               >
-                <Text style={planStyles.upgradeButtonText}>Passer a Premium</Text>
+                <Text style={planStyles.upgradeButtonText}>Passer Premium</Text>
               </Pressable>
             )}
           </View>
@@ -565,7 +566,7 @@ const rowStyles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
@@ -626,6 +627,6 @@ const planStyles = StyleSheet.create({
   upgradeButtonText: {
     ...typography.caption,
     fontWeight: '600',
-    color: colors.surfaceAlt,
+    color: '#DAA520',
   },
 });

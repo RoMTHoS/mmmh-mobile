@@ -2,14 +2,26 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 
 // Mock dependencies before importing component
+jest.mock('react-native-svg', () => {
+  const RN = jest.requireActual('react');
+  const mock = (name: string) => (props: Record<string, unknown>) =>
+    RN.createElement('View', { testID: `svg-${name}` }, props.children as React.ReactNode);
+  return {
+    __esModule: true,
+    default: mock('Svg'),
+    Svg: mock('Svg'),
+    Path: mock('Path'),
+    Ellipse: mock('Ellipse'),
+  };
+});
+
 jest.mock('expo-router', () => ({
   Stack: { Screen: ({ children }: { children: React.ReactNode }) => children },
   router: { back: jest.fn(), push: jest.fn() },
 }));
 
-jest.mock('react-native-toast-message', () => ({
-  __esModule: true,
-  default: { show: jest.fn() },
+jest.mock('../../src/utils/toast', () => ({
+  Toast: { show: jest.fn() },
 }));
 
 const mockMutate = jest.fn();
@@ -45,22 +57,25 @@ describe('UpgradeScreen', () => {
     };
   });
 
-  describe('comparison table', () => {
-    it('renders comparison table', () => {
-      const { getByTestId, getByText } = render(React.createElement(UpgradeScreen));
-
-      expect(getByTestId('comparison-table')).toBeDefined();
-      expect(getByText('Gratuit')).toBeDefined();
-      expect(getByText('Premium')).toBeDefined();
-      expect(getByText('Imports par semaine')).toBeDefined();
-    });
-
-    it('shows all comparison rows', () => {
+  describe('branding and benefits', () => {
+    it('renders MMMH PREMIUM branding', () => {
       const { getByText } = render(React.createElement(UpgradeScreen));
 
-      expect(getByText('10')).toBeDefined();
-      expect(getByText('Illimite')).toBeDefined();
-      expect(getByText('Excellente')).toBeDefined();
+      expect(getByText('PREMIUM')).toBeDefined();
+    });
+
+    it('renders benefit bullets', () => {
+      const { getByText } = render(React.createElement(UpgradeScreen));
+
+      expect(getByText(/Importe tes recettes en illimité/)).toBeDefined();
+      expect(getByText(/Sauvegarde tes recettes dans le cloud/)).toBeDefined();
+      expect(getByText(/IA plus performante/)).toBeDefined();
+    });
+
+    it('renders "Voir les offres" button', () => {
+      const { getByText } = render(React.createElement(UpgradeScreen));
+
+      expect(getByText('Voir les offres')).toBeDefined();
     });
   });
 
@@ -102,23 +117,12 @@ describe('UpgradeScreen', () => {
       expect(getByText('Premium actif')).toBeDefined();
     });
 
-    it('does not show comparison table when premium', () => {
+    it('does not show promo section when premium', () => {
       mockPlanStatus = { ...mockPlanStatus, tier: 'premium' };
 
       const { queryByTestId } = render(React.createElement(UpgradeScreen));
 
-      expect(queryByTestId('comparison-table')).toBeNull();
       expect(queryByTestId('promo-section')).toBeNull();
-    });
-  });
-
-  describe('benefits section', () => {
-    it('renders three benefits', () => {
-      const { getByText } = render(React.createElement(UpgradeScreen));
-
-      expect(getByText('Qualite Premium')).toBeDefined();
-      expect(getByText('Imports illimites')).toBeDefined();
-      expect(getByText('Videos completes')).toBeDefined();
     });
   });
 });
