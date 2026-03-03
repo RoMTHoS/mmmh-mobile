@@ -53,7 +53,7 @@ describe('Navigation Refactor - Tab Structure', () => {
 describe('Navigation Refactor - Modal Routes', () => {
   it('import modal route exists', () => {
     // Verify the modal route file exists by importing the colors it uses
-    expect(colors.modalBackground).toBe('#fef4edff');
+    expect(colors.modalBackground).toBe('#fff8e7ff');
   });
 
   it('quick-preview modal route exists', () => {

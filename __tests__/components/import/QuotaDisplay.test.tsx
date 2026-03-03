@@ -36,7 +36,7 @@ describe('QuotaDisplay', () => {
     expect(queryByTestId('quota-display')).toBeNull();
   });
 
-  it('shows VPS usage for free tier', () => {
+  it('shows premium usage for free tier with quota exhausted', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'free',
       trialDaysRemaining: null,
@@ -46,15 +46,15 @@ describe('QuotaDisplay', () => {
       geminiQuotaRemaining: 0,
     });
 
-    const { getByTestId, queryByTestId } = render(<QuotaDisplay />);
+    const { getByTestId } = render(<QuotaDisplay />);
 
     const children = getByTestId('quota-vps-text').props.children;
     const text = Array.isArray(children) ? children.join('') : children;
-    expect(text).toContain('7/10');
-    expect(queryByTestId('quota-gemini-text')).toBeNull();
+    expect(text).toContain('2/2');
+    expect(text).toContain('Import premium');
   });
 
-  it('shows VPS and Gemini usage for trial tier', () => {
+  it('shows premium usage for trial tier with 1 remaining', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 5,
@@ -68,28 +68,29 @@ describe('QuotaDisplay', () => {
 
     const children = getByTestId('quota-vps-text').props.children;
     const text = Array.isArray(children) ? children.join('') : children;
-    expect(text).toContain('2/10');
-    expect(getByTestId('quota-gemini-text')).toBeTruthy();
+    expect(text).toContain('1/2');
+    expect(text).toContain('Import premium');
   });
 
-  it('shows green Gemini text when available', () => {
+  it('shows 0/2 when both premium imports available', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 5,
       isTrialExpired: false,
       canUsePremium: true,
       vpsQuotaRemaining: 10,
-      geminiQuotaRemaining: 1,
+      geminiQuotaRemaining: 2,
     });
 
     const { getByTestId } = render(<QuotaDisplay />);
-    const geminiText = getByTestId('quota-gemini-text');
-    expect(geminiText.props.children).toEqual(
-      expect.arrayContaining([expect.stringContaining('disponible')])
-    );
+
+    const children = getByTestId('quota-vps-text').props.children;
+    const text = Array.isArray(children) ? children.join('') : children;
+    expect(text).toContain('0/2');
+    expect(text).toContain('cette semaine');
   });
 
-  it('shows orange Gemini text when used', () => {
+  it('shows 2/2 when all premium imports used', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 5,
@@ -100,10 +101,11 @@ describe('QuotaDisplay', () => {
     });
 
     const { getByTestId } = render(<QuotaDisplay />);
-    const geminiText = getByTestId('quota-gemini-text');
-    expect(geminiText.props.children).toEqual(
-      expect.arrayContaining([expect.stringContaining('utilise')])
-    );
+
+    const children = getByTestId('quota-vps-text').props.children;
+    const text = Array.isArray(children) ? children.join('') : children;
+    expect(text).toContain('2/2');
+    expect(text).toContain('cette semaine');
   });
 
   it('shows progress bar', () => {
@@ -120,7 +122,7 @@ describe('QuotaDisplay', () => {
     expect(getByTestId('quota-progress-bar')).toBeTruthy();
   });
 
-  it('shows 10/10 when quota exhausted', () => {
+  it('shows 2/2 when quota exhausted', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'free',
       trialDaysRemaining: null,
@@ -133,6 +135,6 @@ describe('QuotaDisplay', () => {
     const { getByTestId } = render(<QuotaDisplay />);
     const children = getByTestId('quota-vps-text').props.children;
     const text = Array.isArray(children) ? children.join('') : children;
-    expect(text).toContain('10/10');
+    expect(text).toContain('2/2');
   });
 });

@@ -80,27 +80,37 @@ describe('UpgradeScreen', () => {
   });
 
   describe('promo code section', () => {
-    it('renders promo code input', () => {
-      const { getByTestId } = render(React.createElement(UpgradeScreen));
+    const openPromoSection = (getByText: ReturnType<typeof render>['getByText']) => {
+      fireEvent.press(getByText('Voir les offres'));
+      fireEvent.press(getByText('Vous avez un code promo ?'));
+    };
 
-      expect(getByTestId('promo-section')).toBeDefined();
-      expect(getByTestId('promo-input')).toBeDefined();
+    it('renders promo code input', () => {
+      const { getByText, getByPlaceholderText } = render(React.createElement(UpgradeScreen));
+
+      openPromoSection(getByText);
+
+      expect(getByText('Entrez votre code promo')).toBeDefined();
+      expect(getByPlaceholderText('MMMH-BETA-2026')).toBeDefined();
     });
 
     it('shows error for empty code', () => {
-      const { getByText, getByTestId } = render(React.createElement(UpgradeScreen));
+      const { getByText } = render(React.createElement(UpgradeScreen));
 
-      // Set a short code
-      fireEvent.changeText(getByTestId('promo-input'), 'AB');
+      openPromoSection(getByText);
+
+      // Press Activer without entering any code
       fireEvent.press(getByText('Activer'));
 
-      expect(getByTestId('promo-error')).toBeDefined();
+      expect(getByText('Code promo requis')).toBeDefined();
     });
 
     it('calls activatePremium with valid code', () => {
-      const { getByText, getByTestId } = render(React.createElement(UpgradeScreen));
+      const { getByText, getByPlaceholderText } = render(React.createElement(UpgradeScreen));
 
-      fireEvent.changeText(getByTestId('promo-input'), 'MMMH-BETA-2026');
+      openPromoSection(getByText);
+
+      fireEvent.changeText(getByPlaceholderText('MMMH-BETA-2026'), 'MMMH-BETA-2026');
       fireEvent.press(getByText('Activer'));
 
       expect(mockMutate).toHaveBeenCalledWith('MMMH-BETA-2026', expect.any(Object));
@@ -120,9 +130,10 @@ describe('UpgradeScreen', () => {
     it('does not show promo section when premium', () => {
       mockPlanStatus = { ...mockPlanStatus, tier: 'premium' };
 
-      const { queryByTestId } = render(React.createElement(UpgradeScreen));
+      const { queryByText } = render(React.createElement(UpgradeScreen));
 
-      expect(queryByTestId('promo-section')).toBeNull();
+      expect(queryByText('Voir les offres')).toBeNull();
+      expect(queryByText('Vous avez un code promo ?')).toBeNull();
     });
   });
 });
