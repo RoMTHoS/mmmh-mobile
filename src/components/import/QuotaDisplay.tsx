@@ -1,58 +1,49 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, typography, spacing, radius } from '../../theme';
 import { usePlanStatus } from '../../hooks';
-import { QUOTA } from '../../utils/planConstants';
+
+const PREMIUM_IMPORTS_PER_WEEK = 2;
 
 export function QuotaDisplay() {
   const planStatus = usePlanStatus();
 
   if (!planStatus || planStatus.tier === 'premium') return null;
 
-  const vpsLimit = planStatus.tier === 'trial' ? QUOTA.TRIAL_VPS_PER_WEEK : QUOTA.FREE_VPS_PER_WEEK;
-  const vpsUsed = vpsLimit - planStatus.vpsQuotaRemaining;
-  const vpsRatio = vpsUsed / vpsLimit;
+  const premiumUsed = PREMIUM_IMPORTS_PER_WEEK - (planStatus.geminiQuotaRemaining ?? 0);
+  const premiumRatio = premiumUsed / PREMIUM_IMPORTS_PER_WEEK;
 
-  const barColor = vpsRatio >= 1 ? colors.error : vpsRatio >= 0.7 ? colors.warning : colors.success;
+  const barColor = '#DAA520';
+  const trackStyle =
+    premiumRatio === 0
+      ? { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DAA520' }
+      : { backgroundColor: 'rgba(255,255,255,0.3)' };
 
   return (
     <View style={styles.container} testID="quota-display">
       <View style={styles.row}>
         <Text style={styles.label} testID="quota-vps-text">
-          Imports standard : {vpsUsed}/{vpsLimit} cette semaine
+          Import premium : {premiumUsed}/{PREMIUM_IMPORTS_PER_WEEK} cette semaine
         </Text>
       </View>
-      <View style={styles.progressTrack} testID="quota-progress-bar">
+      <View style={[styles.progressTrack, trackStyle]} testID="quota-progress-bar">
         <View
           style={[
             styles.progressFill,
-            { width: `${Math.min(vpsRatio * 100, 100)}%`, backgroundColor: barColor },
+            { width: `${Math.min(premiumRatio * 100, 100)}%`, backgroundColor: barColor },
           ]}
         />
       </View>
-      {planStatus.tier === 'trial' && (
-        <Text
-          style={[
-            styles.geminiText,
-            { color: planStatus.geminiQuotaRemaining > 0 ? colors.success : colors.warning },
-          ]}
-          testID="quota-gemini-text"
-        >
-          Import premium :{' '}
-          {planStatus.geminiQuotaRemaining > 0 ? "disponible aujourd'hui" : "utilise aujourd'hui"}
-        </Text>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.md,
     padding: spacing.sm,
     gap: spacing.xs,
     width: '100%',
+    backgroundColor: colors.text,
   },
   row: {
     flexDirection: 'row',
@@ -60,8 +51,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    ...typography.caption,
-    color: colors.text,
+    ...typography.body,
+    color: '#DAA520',
   },
   progressTrack: {
     height: 6,

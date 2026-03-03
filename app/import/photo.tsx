@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, Alert, ActivityIndicator, Text } from 'react-native';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../src/utils/toast';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraCapture } from '../../src/components/import/CameraCapture';
 import { PhotoPreview } from '../../src/components/import/PhotoPreview';

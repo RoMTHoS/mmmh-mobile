@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography, spacing } from '../../theme';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { colors, spacing } from '../../theme';
 import { CollectionCard, NewCollectionCard } from './CollectionCard';
 
 interface Collection {
@@ -26,7 +26,11 @@ export function CollectionSection({
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
-      <View style={styles.grid}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+      >
         {collections.map((collection) => (
           <CollectionCard
             key={collection.id}
@@ -37,23 +41,25 @@ export function CollectionSection({
           />
         ))}
         {showNewButton && onNewPress && <NewCollectionCard onPress={onNewPress} />}
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   title: {
-    ...typography.headerScript,
+    fontFamily: 'Shanti',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: 'bold',
     color: colors.text,
     marginBottom: spacing.md,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  row: {
+    gap: spacing.md,
+    paddingRight: spacing.xl,
   },
 });

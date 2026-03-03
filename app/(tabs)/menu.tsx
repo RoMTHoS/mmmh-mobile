@@ -1,61 +1,46 @@
 import { useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert, Share, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../src/utils/toast';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
+import Constants from 'expo-constants';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { PremiumIcon } from '../../src/components/ui';
+import { SettingsSection } from '../../src/components/settings/SettingsSection';
+import { SettingsRow } from '../../src/components/settings/SettingsRow';
 import { initDeviceId, getDeviceId } from '../../src/services/planSync';
 import { getDatabase } from '../../src/services/database';
 import { analytics } from '../../src/services/analytics';
 import { EVENTS } from '../../src/utils/analyticsEvents';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
-import { QUOTA } from '../../src/utils/planConstants';
+import { useSettingsStore, type ThemeMode } from '../../src/stores/settingsStore';
 
-type IconName = React.ComponentProps<typeof Ionicons>['name'];
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+const BUILD_NUMBER =
+  Constants.expoConfig?.ios?.buildNumber ??
+  Constants.expoConfig?.android?.versionCode?.toString() ??
+  '1';
 
-interface MenuItemProps {
-  icon: IconName;
-  title: string;
-  subtitle?: string;
-  onPress?: () => void;
-  isLast?: boolean;
-}
+const URLS = {
+  faq: 'https://mymealmatehelper.com/faq',
+  privacy: 'https://mymealmatehelper.com/privacy',
+  terms: 'https://mymealmatehelper.com/terms',
+  download: 'https://mymealmatehelper.com/download',
+} as const;
 
-function MenuItem({ icon, title, subtitle, onPress, isLast }: MenuItemProps) {
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.item,
-        isLast && styles.itemLast,
-        pressed && styles.itemPressed,
-      ]}
-      onPress={onPress}
-      disabled={!onPress}
-    >
-      <View style={styles.itemIcon}>
-        <Ionicons name={icon} size={22} color={colors.accent} />
-      </View>
-      <View style={styles.itemContent}>
-        <Text style={styles.itemTitle}>{title}</Text>
-        {subtitle && <Text style={styles.itemSubtitle}>{subtitle}</Text>}
-      </View>
-      {onPress && <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />}
-    </Pressable>
-  );
-}
+const SUPPORT_EMAIL = 'support@mymealmatehelper.com';
 
-function MenuSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.sectionContent}>{children}</View>
-    </View>
-  );
-}
+const THEME_LABELS: Record<ThemeMode, string> = {
+  light: 'Clair',
+  dark: 'Sombre',
+  system: 'Système',
+};
+
+const THEME_OPTIONS: ThemeMode[] = ['light', 'dark', 'system'];
 
 const TIER_BADGE_CONFIG = {
   free: { label: 'Gratuit', bg: colors.surface, border: colors.textMuted, text: colors.textMuted },
@@ -72,23 +57,24 @@ function PlanUsageSection() {
   const badgeConfig = TIER_BADGE_CONFIG[planStatus.tier];
   const isTrialExpired = planStatus.tier === 'free' && userPlan?.trialStartDate !== null;
 
-  const vpsLimit = planStatus.tier === 'trial' ? QUOTA.TRIAL_VPS_PER_WEEK : QUOTA.FREE_VPS_PER_WEEK;
-  const vpsUsed = planStatus.tier === 'premium' ? 0 : vpsLimit - planStatus.vpsQuotaRemaining;
-  const vpsRatio = planStatus.tier === 'premium' ? 0 : vpsUsed / vpsLimit;
-  const barColor = vpsRatio >= 1 ? colors.error : vpsRatio >= 0.7 ? colors.warning : colors.success;
+  const PREMIUM_IMPORTS_PER_WEEK = 2;
+  const premiumUsed = PREMIUM_IMPORTS_PER_WEEK - (planStatus.geminiQuotaRemaining ?? 0);
+  const premiumRatio = premiumUsed / PREMIUM_IMPORTS_PER_WEEK;
+  const barColor =
+    premiumRatio >= 1 ? colors.error : premiumRatio >= 0.7 ? colors.warning : colors.success;
 
   return (
-    <View style={styles.section} testID="plan-usage-section">
-      <Text style={styles.sectionTitle}>Plan & Utilisation</Text>
-      <View style={styles.sectionContent}>
-        <View style={[styles.item, styles.itemLast]}>
-          <View style={styles.itemIcon}>
-            <Ionicons name="diamond-outline" size={22} color={colors.accent} />
+    <View style={sectionStyles.section} testID="plan-usage-section">
+      <Text style={sectionStyles.sectionTitle}>Plan & Utilisation</Text>
+      <View style={sectionStyles.sectionContent}>
+        <View style={[rowStyles.item, rowStyles.itemLast]}>
+          <View style={rowStyles.itemIcon}>
+            <PremiumIcon width={22} />
           </View>
-          <View style={[styles.itemContent, { gap: 6 }]}>
+          <View style={[rowStyles.itemContent, { gap: 6 }]}>
             {/* Tier badge */}
             <View style={planStyles.tierRow}>
-              <Text style={styles.itemTitle}>Plan actuel</Text>
+              <Text style={rowStyles.itemTitle}>Plan actuel</Text>
               <View
                 style={[
                   planStyles.tierBadge,
@@ -106,15 +92,15 @@ function PlanUsageSection() {
 
             {planStatus.tier !== 'premium' && (
               <>
-                <Text style={styles.itemSubtitle} testID="plan-vps-usage">
-                  Imports cette semaine : {vpsUsed}/{vpsLimit}
+                <Text style={rowStyles.itemSubtitle} testID="plan-vps-usage">
+                  Premium import utilisé : {premiumUsed}/{PREMIUM_IMPORTS_PER_WEEK}
                 </Text>
                 <View style={planStyles.progressTrack}>
                   <View
                     style={[
                       planStyles.progressFill,
                       {
-                        width: `${Math.min(vpsRatio * 100, 100)}%`,
+                        width: `${Math.min(premiumRatio * 100, 100)}%`,
                         backgroundColor: barColor,
                       },
                     ]}
@@ -123,7 +109,7 @@ function PlanUsageSection() {
               </>
             )}
             {planStatus.tier === 'trial' && (
-              <Text style={styles.itemSubtitle} testID="plan-gemini-usage">
+              <Text style={rowStyles.itemSubtitle} testID="plan-gemini-usage">
                 Import premium aujourd'hui : {planStatus.geminiQuotaRemaining > 0 ? '0/1' : '1/1'}
               </Text>
             )}
@@ -132,30 +118,32 @@ function PlanUsageSection() {
                 <View style={planStyles.premiumActiveRow}>
                   <Ionicons name="checkmark-circle" size={16} color={colors.success} />
                   <Text
-                    style={[styles.itemSubtitle, { color: colors.success }]}
+                    style={[rowStyles.itemSubtitle, { color: colors.success }]}
                     testID="plan-premium-active"
                   >
                     Premium actif
                   </Text>
                 </View>
                 {userPlan?.premiumActivatedDate && (
-                  <Text style={styles.itemSubtitle}>
+                  <Text style={rowStyles.itemSubtitle}>
                     Active le {new Date(userPlan.premiumActivatedDate).toLocaleDateString('fr-FR')}
                   </Text>
                 )}
                 {userPlan?.promoCode && (
-                  <Text style={styles.itemSubtitle}>Code : {userPlan.promoCode}</Text>
+                  <Text style={rowStyles.itemSubtitle}>Code : {userPlan.promoCode}</Text>
                 )}
               </>
             )}
             {planStatus.tier !== 'premium' && (
-              <Text style={[styles.itemSubtitle, { marginTop: 2 }]}>Réinitialisation : lundi</Text>
+              <Text style={[rowStyles.itemSubtitle, { marginTop: 2 }]}>
+                Réinitialisation : lundi
+              </Text>
             )}
 
             {/* Trial expired message */}
             {isTrialExpired && (
               <Text
-                style={[styles.itemSubtitle, { color: colors.warning }]}
+                style={[rowStyles.itemSubtitle, { color: colors.warning }]}
                 testID="plan-trial-expired"
               >
                 Votre essai est termine. Passez a Premium
@@ -169,13 +157,34 @@ function PlanUsageSection() {
                 onPress={() => router.push('/upgrade')}
                 testID="plan-upgrade-button"
               >
-                <Text style={planStyles.upgradeButtonText}>Passer a Premium</Text>
+                <Text style={planStyles.upgradeButtonText}>Passer Premium</Text>
               </Pressable>
             )}
           </View>
         </View>
       </View>
     </View>
+  );
+}
+
+function ThemeSelector() {
+  const theme = useSettingsStore((s) => s.theme);
+  const setTheme = useSettingsStore((s) => s.setTheme);
+
+  const handleCycleTheme = () => {
+    const currentIndex = THEME_OPTIONS.indexOf(theme);
+    const nextIndex = (currentIndex + 1) % THEME_OPTIONS.length;
+    setTheme(THEME_OPTIONS[nextIndex]);
+  };
+
+  return (
+    <SettingsRow
+      icon="color-palette-outline"
+      title="Apparence"
+      value={THEME_LABELS[theme]}
+      onPress={handleCycleTheme}
+      testID="theme-toggle"
+    />
   );
 }
 
@@ -186,6 +195,119 @@ export default function MenuScreen() {
   useEffect(() => {
     analytics.track(EVENTS.SETTINGS_VIEWED);
   }, []);
+
+  const openUrl = (url: string) => {
+    Linking.openURL(url);
+  };
+
+  const trackHelpResource = (resource: string) => {
+    analytics.track(EVENTS.HELP_RESOURCE_ACCESSED, { resource });
+  };
+
+  const handleViewTutorial = async () => {
+    trackHelpResource('tutorial');
+    await AsyncStorage.setItem('MMMH_SHOW_ONBOARDING', 'true');
+    Toast.show({
+      type: 'info',
+      text1: 'Tutoriel',
+      text2: "Le tutoriel s'affichera au prochain démarrage",
+    });
+  };
+
+  const handleSendFeedback = () => {
+    trackHelpResource('feedback');
+    router.push('/feedback');
+  };
+
+  const handleFAQ = () => {
+    trackHelpResource('faq');
+    openUrl(URLS.faq);
+  };
+
+  const handleContactSupport = () => {
+    trackHelpResource('support');
+    Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Support mmmh`);
+  };
+
+  const handleShareApp = async () => {
+    analytics.track(EVENTS.SHARE_APP_TAPPED);
+    try {
+      await Share.share({
+        message: `Découvre mmmh, l'app qui transforme tes vidéos de recettes en fiches pratiques ! ${URLS.download}`,
+      });
+    } catch {
+      // User cancelled or share failed — no action needed
+    }
+  };
+
+  const handleClearAllData = () => {
+    analytics.track(EVENTS.CLEAR_DATA_INITIATED);
+    Alert.alert(
+      'Effacer toutes les données',
+      'Êtes-vous sûr ? Toutes les recettes, collections, listes de courses et préférences seront supprimées.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Continuer',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Confirmation finale',
+              'Cette action est irréversible. Toutes vos données seront définitivement perdues.',
+              [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                  text: 'Tout effacer',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      analytics.track(EVENTS.CLEAR_DATA_CONFIRMED);
+
+                      const db = getDatabase();
+                      db.runSync('DELETE FROM shopping_list_items');
+                      db.runSync('DELETE FROM shopping_list_recipes');
+                      db.runSync('DELETE FROM shopping_lists');
+                      db.runSync('DELETE FROM recipe_tags');
+                      db.runSync('DELETE FROM ingredients');
+                      db.runSync('DELETE FROM instructions');
+                      db.runSync('DELETE FROM recipes');
+                      db.runSync('DELETE FROM import_usage');
+                      db.runSync(
+                        "UPDATE user_plan SET tier = 'free', trial_start_date = NULL, trial_ends_date = NULL, premium_activated_date = NULL, promo_code = NULL"
+                      );
+
+                      // Delete persisted photos
+                      const photosDir = `${FileSystem.documentDirectory}photos/`;
+                      const dirInfo = await FileSystem.getInfoAsync(photosDir);
+                      if (dirInfo.exists) {
+                        await FileSystem.deleteAsync(photosDir, { idempotent: true });
+                      }
+
+                      await AsyncStorage.clear();
+                      analytics.reset();
+                      queryClient.invalidateQueries();
+
+                      Toast.show({
+                        type: 'success',
+                        text1: 'Données effacées',
+                        text2: 'Toutes les données ont été supprimées',
+                      });
+                    } catch (error) {
+                      Toast.show({
+                        type: 'error',
+                        text1: 'Erreur',
+                        text2: error instanceof Error ? error.message : 'Erreur inconnue',
+                      });
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
 
   const handleDeleteAllRecipes = async () => {
     Alert.alert(
@@ -203,7 +325,6 @@ export default function MenuScreen() {
               db.runSync('DELETE FROM shopping_list_items');
               db.runSync('DELETE FROM recipes');
 
-              // Delete persisted photos
               const photosDir = `${FileSystem.documentDirectory}photos/`;
               const dirInfo = await FileSystem.getInfoAsync(photosDir);
               if (dirInfo.exists) {
@@ -241,23 +362,14 @@ export default function MenuScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Clear device ID from AsyncStorage
               await AsyncStorage.removeItem('MMMH_DEVICE_ID');
-
-              // Reset plan to free in SQLite
               const db = getDatabase();
               db.runSync(
                 `UPDATE user_plan SET tier = 'free', trial_start_date = NULL, trial_ends_date = NULL, premium_activated_date = NULL, promo_code = NULL, updated_at = ?`,
                 [new Date().toISOString()]
               );
-
-              // Reset usage counters
               db.runSync(`DELETE FROM import_usage`);
-
-              // Generate new device ID
               const newId = await initDeviceId();
-
-              // Invalidate all queries so UI refreshes
               queryClient.invalidateQueries();
 
               Toast.show({
@@ -282,88 +394,123 @@ export default function MenuScreen() {
     <ScrollView
       style={[styles.container, { paddingTop: insets.top }]}
       contentContainerStyle={styles.content}
+      testID="settings-screen"
     >
+      {/* Account / Plan & Usage */}
       <PlanUsageSection />
 
-      <MenuSection title="Général">
-        <MenuItem
-          icon="notifications-outline"
-          title="Notifications"
-          subtitle="Gérer les préférences"
-          onPress={() => {
-            // TODO: Implement notifications settings
-          }}
-        />
-        <MenuItem
-          icon="color-palette-outline"
-          title="Apparence"
-          subtitle="Mode clair"
-          onPress={() => {
-            // TODO: Implement appearance settings
-          }}
+      {/* Preferences */}
+      <SettingsSection title="Préférences" testID="preferences-section">
+        <ThemeSelector />
+        <SettingsRow
+          icon="scale-outline"
+          title="Unités"
+          value="Métrique"
+          disabled
+          subtitle="Bientôt disponible"
           isLast
+          testID="units-row"
         />
-      </MenuSection>
+      </SettingsSection>
 
-      <MenuSection title="Données">
-        <MenuItem
-          icon="cloud-upload-outline"
-          title="Sauvegarde & Sync"
-          subtitle="Sauvegarder vos recettes"
-          onPress={() => {
-            // TODO: V1.0+ - Implement backup
-          }}
+      {/* Help */}
+      <SettingsSection title="Aide" testID="help-section">
+        <SettingsRow
+          icon="school-outline"
+          title="Voir le tutoriel"
+          onPress={handleViewTutorial}
+          testID="help-tutorial"
         />
-        <MenuItem
-          icon="trash-outline"
-          title="Vider le cache"
-          onPress={() => {
-            // TODO: Implement cache clearing
-          }}
+        <SettingsRow
+          icon="chatbubble-ellipses-outline"
+          title="Envoyer un feedback"
+          subtitle="Bug, idée, retour général"
+          onPress={handleSendFeedback}
+          testID="help-feedback"
+        />
+        <SettingsRow icon="help-circle-outline" title="FAQ" onPress={handleFAQ} testID="help-faq" />
+        <SettingsRow
+          icon="mail-outline"
+          title="Contacter le support"
+          subtitle={SUPPORT_EMAIL}
+          onPress={handleContactSupport}
           isLast
+          testID="help-support"
         />
-      </MenuSection>
+      </SettingsSection>
 
-      <MenuSection title="À propos">
-        <MenuItem icon="information-circle-outline" title="Version" subtitle="1.0.0" />
-        <MenuItem
+      {/* About */}
+      <SettingsSection title="À propos" testID="about-section">
+        <SettingsRow
+          icon="information-circle-outline"
+          title="Version"
+          value={`${APP_VERSION} (${BUILD_NUMBER})`}
+          testID="about-version"
+        />
+        <SettingsRow
           icon="document-text-outline"
           title="Politique de confidentialité"
-          onPress={() => {
-            // TODO: Open privacy policy
-          }}
+          onPress={() => openUrl(URLS.privacy)}
+          testID="about-privacy"
         />
-        <MenuItem
-          icon="help-circle-outline"
-          title="Aide & Support"
-          onPress={() => {
-            // TODO: Open help
-          }}
-          isLast
+        <SettingsRow
+          icon="reader-outline"
+          title="Conditions d'utilisation"
+          onPress={() => openUrl(URLS.terms)}
+          testID="about-terms"
         />
-      </MenuSection>
+        <SettingsRow
+          icon="code-slash-outline"
+          title="Licences open source"
+          onPress={() => router.push('/licenses')}
+          testID="about-licenses"
+        />
+        <SettingsRow
+          icon="share-social-outline"
+          title="Partager l'app"
+          onPress={handleShareApp}
+          testID="share-app"
+        />
+        <Text style={styles.credits} testID="credits">
+          Built with love by RoMTHoS
+        </Text>
+      </SettingsSection>
 
+      {/* Danger Zone */}
+      <SettingsSection title="Zone de danger" testID="danger-zone-section">
+        <SettingsRow
+          icon="trash-outline"
+          title="Effacer toutes les données"
+          subtitle="Supprime recettes, collections et préférences"
+          onPress={handleClearAllData}
+          destructive
+          isLast
+          testID="clear-all-data"
+        />
+      </SettingsSection>
+
+      {/* Developer (debug only) */}
       {__DEV__ && (
-        <MenuSection title="Développeur">
-          <MenuItem
+        <SettingsSection title="Développeur" testID="dev-section">
+          <SettingsRow
             icon="id-card-outline"
             title="Device ID"
             subtitle={getDeviceId()?.slice(0, 8) ?? 'non initialisé'}
           />
-          <MenuItem
+          <SettingsRow
             icon="refresh-outline"
             title="Reset trial & device ID"
             subtitle="Remet le plan à free avec un nouveau device"
             onPress={handleResetTrial}
           />
-          <MenuItem
+          <SettingsRow
             icon="trash-outline"
             title="Supprimer toutes les recettes"
             subtitle="Efface les recettes, ingrédients et photos"
             onPress={handleDeleteAllRecipes}
             isLast
           />
-        </MenuSection>
+        </SettingsSection>
       )}
     </ScrollView>
   );
@@ -377,6 +524,15 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.base,
   },
+  credits: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
+});
+
+const sectionStyles = StyleSheet.create({
   section: {
     marginBottom: spacing.xl,
   },
@@ -393,6 +549,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
   },
+});
+
+const rowStyles = StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -403,14 +562,11 @@ const styles = StyleSheet.create({
   itemLast: {
     borderBottomWidth: 0,
   },
-  itemPressed: {
-    backgroundColor: colors.background,
-  },
   itemIcon: {
     width: 36,
     height: 36,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
@@ -471,6 +627,6 @@ const planStyles = StyleSheet.create({
   upgradeButtonText: {
     ...typography.caption,
     fontWeight: '600',
-    color: colors.surfaceAlt,
+    color: '#DAA520',
   },
 });

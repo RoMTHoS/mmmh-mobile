@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
 import { View, TextInput, Text, Pressable, StyleSheet, Keyboard } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { Icon, Button } from '../ui';
+import { Icon } from '../ui';
 import { PlatformBadge } from './PlatformBadge';
-import { colors, typography, spacing, radius, fonts } from '../../theme';
+import { colors, spacing, radius, fonts } from '../../theme';
 import { validateVideoUrl, isValidUrl, type Platform } from '../../utils/validation';
 
 export type ImportType = 'video' | 'website' | 'link';
@@ -12,9 +12,10 @@ interface UrlInputProps {
   importType: ImportType;
   onSubmit: (url: string) => void;
   isLoading: boolean;
+  onUrlChange?: (url: string) => void;
 }
 
-export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
+export function UrlInput({ importType, onSubmit, isLoading, onUrlChange }: UrlInputProps) {
   const [url, setUrl] = useState('');
   const [detectedPlatform, setDetectedPlatform] = useState<Platform | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +24,7 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
     (text: string) => {
       setUrl(text);
       setError(null);
+      onUrlChange?.(text);
 
       // Detect video platform for video or link import types
       if ((importType === 'video' || importType === 'link') && text.length > 10) {
@@ -124,34 +126,6 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
           <Icon name="check" size="sm" color={colors.success} />
         </View>
       )}
-
-      {(importType === 'video' || importType === 'link') &&
-        !detectedPlatform &&
-        url.length === 0 && (
-          <View style={styles.platformHints}>
-            <Text style={styles.hintsLabel}>
-              {importType === 'link' ? 'Videos supportees:' : 'Plateformes supportees:'}
-            </Text>
-            <View style={styles.platformList}>
-              <PlatformBadge platform="instagram" size="sm" showLabel />
-              <PlatformBadge platform="tiktok" size="sm" showLabel />
-              <PlatformBadge platform="youtube" size="sm" showLabel />
-            </View>
-            {importType === 'link' && (
-              <Text style={[styles.hintsLabel, { marginTop: spacing.sm }]}>
-                + tout site de recette
-              </Text>
-            )}
-          </View>
-        )}
-
-      <Button
-        title="Importer la recette"
-        onPress={handleSubmit}
-        loading={isLoading}
-        disabled={!url.trim() || isLoading}
-        style={styles.submitButton}
-      />
     </View>
   );
 }
@@ -211,20 +185,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.success,
-  },
-  platformHints: {
-    marginTop: spacing.lg,
-  },
-  hintsLabel: {
-    ...typography.label,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-  },
-  platformList: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  submitButton: {
-    marginTop: spacing.xl,
   },
 });

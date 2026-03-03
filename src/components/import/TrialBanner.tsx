@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../utils/toast';
 import { colors, typography, spacing, radius } from '../../theme';
 import { useUserPlan, useActivateTrial, usePlanStatus } from '../../hooks';
 import { canActivateTrial } from '../../utils/planStateMachine';

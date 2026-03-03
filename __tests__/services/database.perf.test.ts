@@ -34,6 +34,15 @@ function generateMockRecipe(index: number): CreateRecipeInput {
     servings: Math.floor(Math.random() * 6) + 2,
     photoUri: null,
     notes: `Notes for recipe ${index + 1}`,
+    author: null,
+    priceMin: null,
+    priceMax: null,
+    kcal: null,
+    catalogue: null,
+    regime: null,
+    nutritionProteins: null,
+    nutritionCarbs: null,
+    nutritionFats: null,
   };
 }
 

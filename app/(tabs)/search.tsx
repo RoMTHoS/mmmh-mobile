@@ -1,10 +1,20 @@
-import { View, Text, FlatList, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Dimensions,
+  RefreshControl,
+} from 'react-native';
 import { useState, useMemo } from 'react';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
-import { LoadingScreen, SearchBar, Icon } from '../../src/components/ui';
-import { colors, typography, spacing, radius } from '../../src/theme';
+import { SearchBar, Icon, EmptyState } from '../../src/components/ui';
+import { RecipeGridSkeleton } from '../../src/components/recipes/RecipeGridSkeleton';
+import { colors, spacing, radius, fonts } from '../../src/theme';
 import type { Recipe } from '../../src/types';
 
 const NUM_COLUMNS = 3;
@@ -18,9 +28,6 @@ interface RecipeGridItemProps {
 }
 
 function RecipeGridItem({ recipe, onPress }: RecipeGridItemProps) {
-  // Vary height for masonry effect
-  const aspectRatio = recipe.id.charCodeAt(0) % 2 === 0 ? 1 : 1.3;
-
   return (
     <Pressable
       style={({ pressed }) => [styles.gridItem, pressed && styles.gridItemPressed]}
@@ -29,19 +36,12 @@ function RecipeGridItem({ recipe, onPress }: RecipeGridItemProps) {
       accessibilityLabel={recipe.title}
     >
       {recipe.photoUri ? (
-        <Image
-          source={{ uri: recipe.photoUri }}
-          style={[styles.gridImage, { aspectRatio }]}
-          resizeMode="cover"
-        />
+        <Image source={{ uri: recipe.photoUri }} style={styles.gridImage} resizeMode="cover" />
       ) : (
-        <View style={[styles.gridImage, styles.gridImagePlaceholder, { aspectRatio }]}>
+        <View style={[styles.gridImage, styles.gridImagePlaceholder]}>
           <Icon name="camera" size="lg" color={colors.textLight} />
         </View>
       )}
-      <Text style={styles.gridItemTitle} numberOfLines={1}>
-        {recipe.title}
-      </Text>
     </Pressable>
   );
 }
@@ -68,7 +68,17 @@ export default function SearchScreen() {
   };
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <SearchBar
+          value=""
+          onChangeText={() => {}}
+          placeholder="Rechercher"
+          style={styles.searchBar}
+        />
+        <RecipeGridSkeleton />
+      </View>
+    );
   }
 
   if (error) {
@@ -82,7 +92,6 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.pageTitle}>Toutes les recettes</Text>
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}
@@ -91,17 +100,17 @@ export default function SearchScreen() {
       />
 
       {filteredRecipes.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Icon name="search" size="lg" color={colors.textMuted} />
-          <Text style={styles.emptyText}>
-            {searchQuery ? 'Aucune recette trouvée' : 'Aucune recette'}
-          </Text>
-          <Text style={styles.emptySubtext}>
-            {searchQuery
+        <EmptyState
+          icon="search"
+          title={searchQuery ? 'Aucune recette trouvée' : 'Aucune recette'}
+          description={
+            searchQuery
               ? "Essayez avec d'autres mots-clés"
-              : 'Importez ou créez votre première recette'}
-          </Text>
-        </View>
+              : 'Importez ou créez votre première recette'
+          }
+          actionLabel={searchQuery ? undefined : 'Importer une recette'}
+          onAction={searchQuery ? undefined : () => router.push('/import')}
+        />
       ) : (
         <FlatList
           data={filteredRecipes}
@@ -110,8 +119,14 @@ export default function SearchScreen() {
           contentContainerStyle={styles.gridContent}
           columnWrapperStyle={styles.gridRow}
           renderItem={({ item }) => <RecipeGridItem recipe={item} onPress={handleRecipePress} />}
-          refreshing={isRefetching}
-          onRefresh={refetch}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+            />
+          }
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -123,12 +138,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  pageTitle: {
-    ...typography.headerScript,
-    color: colors.text,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.md,
   },
   searchBar: {
     margin: spacing.md,
@@ -150,35 +159,13 @@ const styles = StyleSheet.create({
   },
   gridImage: {
     width: '100%',
+    aspectRatio: 1,
     borderRadius: radius.md,
   },
   gridImagePlaceholder: {
     backgroundColor: colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  gridItemTitle: {
-    ...typography.sectionTitle,
-    color: colors.text,
-    marginTop: spacing.xs,
-    fontSize: 14,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  emptyText: {
-    ...typography.titleScript,
-    color: colors.text,
-    marginTop: spacing.md,
-  },
-  emptySubtext: {
-    ...typography.body,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-    textAlign: 'center',
   },
   errorContainer: {
     flex: 1,
@@ -188,7 +175,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   errorText: {
-    ...typography.titleScript,
+    fontFamily: fonts.script,
+    fontSize: 20,
     color: colors.error,
     marginTop: spacing.md,
   },

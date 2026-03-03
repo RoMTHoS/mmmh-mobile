@@ -4,26 +4,26 @@
  */
 export const colors = {
   // Backgrounds
-  background: '#FBFBFB', // Cream - main app background
-  surface: '#F4F4F4', // Light gray - cards, inputs
-  surfaceAlt: '#FFFFFF', // White - badges, secondary surfaces
+  background: '#fff8e7ff', // Cream - main app background
+  surface: '#FFFEFA', // Light gray - cards, inputs
+  surfaceAlt: '#FFFEFA', // White - badges, secondary surfaces
 
   // Text
-  text: '#233662', // Navy - primary text
+  text: '#1A1A1D', // Navy - primary text
   textMuted: '#6B7280', // Gray - secondary text
   textLight: '#9CA3AF', // Light gray - placeholders
 
   // Interactive
-  accent: '#233662', // Navy - buttons, active states
-  accentLight: '#212842', // Darker navy - hover/pressed states
+  accent: '#1A1A1D', // Navy - buttons, active states
+  accentLight: '#1A1A1D', // Darker navy - hover/pressed states
 
   // Borders
-  border: '#233662', // Navy border
-  borderMedium: '#233662', // Navy borders for modals
-  borderLight: '#233662', // Navy subtle border
+  border: '#1A1A1D', // Navy border
+  borderMedium: '#1A1A1D', // Navy borders for modals
+  borderLight: '#1A1A1D', // Navy subtle border
 
   // Tab bar
-  tabBarActive: '#233662', // Navy
+  tabBarActive: '#1A1A1D', // Navy
   tabBarInactive: '#9CA3AF', // Gray
 
   // Semantic colors
@@ -34,7 +34,7 @@ export const colors = {
 
   // Overlay
   overlay: 'rgba(0, 0, 0, 0.5)',
-  modalBackground: '#FBFBFB',
+  modalBackground: '#fff8e7ff',
 } as const;
 
 export type ColorKey = keyof typeof colors;

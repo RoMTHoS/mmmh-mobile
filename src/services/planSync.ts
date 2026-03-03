@@ -97,13 +97,17 @@ export async function syncActivateTrial(): Promise<UserPlan> {
   if (!deviceId) return localPlan;
 
   try {
-    await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
+    const response = await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'trial' }),
     });
+
+    if (!response.ok) {
+      // Log but don't revert trial — backend may already have it
+    }
   } catch {
-    // Backend sync failed — local is already updated
+    // Network error — backend will sync on next startup
   }
 
   return localPlan;
@@ -118,13 +122,24 @@ export async function syncActivatePremium(promoCode: string): Promise<UserPlan> 
   if (!deviceId) return localPlan;
 
   try {
-    await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
+    const response = await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'premium', promo_code: promoCode }),
     });
-  } catch {
-    // Backend sync failed — local is already updated
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const detail = errorData.detail || `HTTP ${response.status}`;
+      // Revert local plan since backend rejected
+      await planDb.deactivatePremium();
+      throw new Error(`Premium activation failed: ${detail}`);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Premium activation failed')) {
+      throw error;
+    }
+    // Network error — local is updated, backend will sync on next startup
   }
 
   return localPlan;
@@ -158,17 +173,21 @@ export async function ensurePlanSyncedToBackend(): Promise<void> {
 
     // Push local state to backend
     if (localPlan.tier === 'trial') {
-      await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
+      const resp = await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'trial' }),
       });
+      // 409 = already active, which is fine
+      if (!resp.ok && resp.status !== 409) return;
     } else if (localPlan.tier === 'premium') {
-      await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
+      const resp = await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'premium', promo_code: localPlan.promoCode || '' }),
       });
+      // 409 = already active, which is fine
+      if (!resp.ok && resp.status !== 409) return;
     }
   } catch {
     // Silently fail — will retry on next app launch

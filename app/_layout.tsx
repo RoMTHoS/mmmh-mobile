@@ -4,12 +4,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, usePathname } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
+import { ToastProvider } from '../src/components/ui/Toast';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../src/components';
 import { useDatabase, useTrialExpiration, useAnalyticsSync } from '../src/hooks';
 import { TrialExpiryModal } from '../src/components/import/TrialExpiryModal';
+import { FeedbackPrompt } from '../src/components/feedback/FeedbackPrompt';
 import { initDeviceId, ensurePlanSyncedToBackend } from '../src/services/planSync';
 import { analytics } from '../src/services/analytics';
 import { EVENTS } from '../src/utils/analyticsEvents';
@@ -83,6 +84,8 @@ function RootLayoutNav() {
     Overlock: require('../assets/fonts/Overlock-Black.ttf'),
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     Chicle: require('../assets/fonts/Chicle-Regular.ttf'),
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    Shanti: require('../assets/fonts/Shanti-Regular.ttf'),
   });
 
   useEffect(() => {
@@ -132,18 +135,28 @@ function RootLayoutNav() {
       <TrialExpirationWatcher />
       <AnalyticsSyncWatcher />
       <TrialExpiryModal />
+      <FeedbackPrompt />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
+          animation: 'slide_from_right',
         }}
       >
+        <Stack.Screen name="splash" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ title: '', headerShown: false }} />
         <Stack.Screen name="(modals)" options={{ headerShown: false }} />
-        <Stack.Screen name="import" options={{ title: 'Importer recette', headerBackTitle: ' ' }} />
+        <Stack.Screen name="import" options={{ headerShown: false }} />
         <Stack.Screen name="recipe/[id]" options={{ title: '' }} />
-        <Stack.Screen name="recipe/[id]/edit" options={{ title: '', presentation: 'modal' }} />
-        <Stack.Screen name="recipe/create" options={{ title: '', presentation: 'modal' }} />
+        <Stack.Screen
+          name="recipe/[id]/edit"
+          options={{ title: '', presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="recipe/create"
+          options={{ title: '', presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen name="feedback" options={{ title: 'Feedback', headerBackTitle: ' ' }} />
         <Stack.Screen name="upgrade" options={{ title: '', headerBackTitle: ' ' }} />
         <Stack.Screen name="+not-found" options={{ title: '' }} />
       </Stack>
@@ -158,7 +171,7 @@ export default function RootLayout() {
         <ErrorBoundary>
           <RootLayoutNav />
         </ErrorBoundary>
-        <Toast />
+        <ToastProvider />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

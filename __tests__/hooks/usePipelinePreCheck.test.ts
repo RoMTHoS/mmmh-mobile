@@ -1,4 +1,3 @@
-import Toast from 'react-native-toast-message';
 import type { PlanStatus } from '../../src/types';
 
 // Mock usePlanStatus
@@ -7,8 +6,9 @@ jest.mock('../../src/hooks/usePlan', () => ({
   usePlanStatus: () => mockUsePlanStatus(),
 }));
 
-jest.mock('react-native-toast-message', () => ({
-  show: jest.fn(),
+const mockToastShow = jest.fn();
+jest.mock('../../src/utils/toast', () => ({
+  Toast: { show: (...args: unknown[]) => mockToastShow(...args) },
 }));
 
 // Import after mocks
@@ -25,7 +25,7 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
   it('does nothing for free tier', () => {
@@ -41,7 +41,7 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
   it('does nothing for premium tier', () => {
@@ -57,7 +57,7 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
   it('does nothing for trial tier with remaining Gemini quota', () => {
@@ -73,7 +73,7 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
   it('shows info Toast for trial tier with exhausted Gemini quota', () => {
@@ -89,8 +89,8 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).toHaveBeenCalledTimes(1);
-    expect(Toast.show).toHaveBeenCalledWith(
+    expect(mockToastShow).toHaveBeenCalledTimes(1);
+    expect(mockToastShow).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'info',
         text1: 'Import standard',
@@ -112,6 +112,6 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).toHaveBeenCalledTimes(1);
+    expect(mockToastShow).toHaveBeenCalledTimes(1);
   });
 });

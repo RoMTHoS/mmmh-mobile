@@ -1,6 +1,10 @@
 import { uploadPhoto, PhotoUploadError } from '../../src/services/photoUpload';
 import { uploadAsync } from 'expo-file-system';
 
+jest.mock('../../src/services/planSync', () => ({
+  getDeviceId: jest.fn(() => 'test-device-id-123'),
+}));
+
 describe('uploadPhoto', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -28,6 +32,22 @@ describe('uploadPhoto', () => {
         fieldName: 'image',
         mimeType: 'image/jpeg',
         httpMethod: 'POST',
+      })
+    );
+  });
+
+  it('sends X-Device-ID header with upload request', async () => {
+    const mockUri = 'file:///test/photo.jpg';
+
+    await uploadPhoto(mockUri);
+
+    expect(uploadAsync).toHaveBeenCalledWith(
+      expect.any(String),
+      mockUri,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'X-Device-ID': 'test-device-id-123',
+        }),
       })
     );
   });

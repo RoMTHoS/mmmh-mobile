@@ -1,26 +1,61 @@
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { useState, useMemo } from 'react';
+import { View, Text, ScrollView, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { useMemo } from 'react';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
-import { LoadingScreen, SearchBar, Icon } from '../../src/components/ui';
+import { Icon, MmmhLogo } from '../../src/components/ui';
 import { CollectionSection } from '../../src/components/collections';
 import { ImportStatusList } from '../../src/components/import';
-import { colors, typography, spacing } from '../../src/theme';
+import { RecipeGridSkeleton } from '../../src/components/recipes/RecipeGridSkeleton';
+import { colors, typography, fonts, spacing, radius } from '../../src/theme';
+import type { Recipe } from '../../src/types';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const NEW_RECIPE_CARD_WIDTH = SCREEN_WIDTH * 0.5;
+
+function NewRecipeCard({ recipe }: { recipe: Recipe }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.newRecipeCard, pressed && { opacity: 0.85 }]}
+      onPress={() => router.push(`/recipe/${recipe.id}`)}
+      accessibilityLabel={recipe.title}
+    >
+      <View style={styles.newRecipeImageContainer}>
+        {recipe.photoUri ? (
+          <Image
+            source={{ uri: recipe.photoUri }}
+            style={styles.newRecipeImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.newRecipeImage, styles.newRecipePlaceholder]}>
+            <Icon name="camera" size="lg" color={colors.textLight} />
+          </View>
+        )}
+        <View style={styles.newRecipeOverlay}>
+          <Text style={styles.newRecipeTitle} numberOfLines={1}>
+            {recipe.title}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const [searchQuery, setSearchQuery] = useState('');
   const { data: recipes, isLoading, error } = useRecipes();
 
-  // Group recipes into collections based on tags/categories
-  // For now, we'll create mock collections using recipe images
+  const latestRecipes = useMemo(() => {
+    if (!recipes || recipes.length === 0) return [];
+    return recipes.slice(0, 2);
+  }, [recipes]);
+
   const collections = useMemo(() => {
     if (!recipes || recipes.length === 0) return { recipeBooks: [], menus: [] };
 
     const recipeImages = recipes.filter((r) => r.photoUri).map((r) => r.photoUri as string);
 
-    // Mock collections - in full implementation, these would come from DB
     const recipeBooks = [
       {
         id: 'all',
@@ -49,7 +84,6 @@ export default function HomeScreen() {
     if (id === 'all') {
       router.push('/(tabs)/search');
     }
-    // TODO: Navigate to collection detail
   };
 
   const handleNewCollection = () => {
@@ -57,7 +91,14 @@ export default function HomeScreen() {
   };
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.logoContainer}>
+          <MmmhLogo width={140} />
+        </View>
+        <RecipeGridSkeleton />
+      </View>
+    );
   }
 
   if (error) {
@@ -72,13 +113,9 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholder="Rechercher"
-        onFocus={() => router.push('/(tabs)/search')}
-        style={styles.searchBar}
-      />
+      <View style={styles.logoContainer}>
+        <MmmhLogo width={140} />
+      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -86,6 +123,22 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ImportStatusList />
+
+        {/* Nouvelle recette section */}
+        {latestRecipes.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Nouvelle recette</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.newRecipeRow}
+            >
+              {latestRecipes.map((recipe) => (
+                <NewRecipeCard key={recipe.id} recipe={recipe} />
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         <CollectionSection
           title="Livre de recette"
@@ -112,8 +165,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  searchBar: {
-    margin: spacing.md,
+  logoContainer: {
+    alignItems: 'center',
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xl,
   },
   scrollView: {
     flex: 1,
@@ -121,6 +176,60 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.lg,
+  },
+  section: {
+    marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    fontFamily: 'Shanti',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  newRecipeRow: {
+    gap: spacing.md,
+    paddingRight: spacing.xl,
+  },
+  newRecipeCard: {
+    width: NEW_RECIPE_CARD_WIDTH,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  newRecipeImageContainer: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#000',
+  },
+  newRecipeImage: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: colors.surfaceAlt,
+  },
+  newRecipePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  newRecipeOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.sm,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: '#000',
+  },
+  newRecipeTitle: {
+    fontFamily: fonts.script,
+    fontSize: 14,
+    color: colors.text,
+    textAlign: 'center',
   },
   errorContainer: {
     flex: 1,

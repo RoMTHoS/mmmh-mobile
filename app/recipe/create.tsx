@@ -3,7 +3,8 @@ import { StyleSheet, Alert, Pressable } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Toast from 'react-native-toast-message';
+import { ActivityIndicator } from 'react-native';
+import { useToastStore } from '../../src/stores/toastStore';
 
 import { useCreateRecipe } from '../../src/hooks';
 import { Text } from '../../src/components/ui';
@@ -15,6 +16,7 @@ import { colors, spacing, fonts } from '../../src/theme';
 export default function CreateRecipeScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const createRecipe = useCreateRecipe();
+  const showToast = useToastStore((s) => s.showToast);
 
   const {
     control,
@@ -29,6 +31,15 @@ export default function CreateRecipeScreen() {
       cookingTime: null,
       servings: null,
       notes: '',
+      author: null,
+      priceMin: null,
+      priceMax: null,
+      kcal: null,
+      catalogue: null,
+      regime: null,
+      nutritionProteins: null,
+      nutritionCarbs: null,
+      nutritionFats: null,
     },
   });
 
@@ -63,22 +74,21 @@ export default function CreateRecipeScreen() {
         servings: data.servings ?? null,
         notes: data.notes || null,
         photoUri,
+        author: data.author ?? null,
+        priceMin: data.priceMin ?? null,
+        priceMax: data.priceMax ?? null,
+        kcal: data.kcal ?? null,
+        catalogue: data.catalogue ?? null,
+        regime: data.regime ?? null,
+        nutritionProteins: data.nutritionProteins ?? null,
+        nutritionCarbs: data.nutritionCarbs ?? null,
+        nutritionFats: data.nutritionFats ?? null,
       });
 
-      Toast.show({
-        type: 'success',
-        text1: 'Recette enregistrée',
-        text2: 'Votre recette a été créée avec succès',
-        visibilityTime: 2000,
-      });
-
+      showToast('Recette enregistrée', 'success');
       router.replace(`/recipe/${recipe.id}`);
     } catch {
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur de sauvegarde',
-        text2: 'Veuillez réessayer',
-      });
+      showToast('Erreur de sauvegarde, veuillez réessayer', 'error');
     }
   };
 
@@ -116,11 +126,11 @@ export default function CreateRecipeScreen() {
               hitSlop={8}
               style={styles.headerButtonContainer}
             >
-              <Text
-                style={[styles.headerButton, createRecipe.isPending && styles.headerButtonDisabled]}
-              >
-                Valider
-              </Text>
+              {createRecipe.isPending ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <Text style={styles.headerButton}>Valider</Text>
+              )}
             </Pressable>
           ),
         }}

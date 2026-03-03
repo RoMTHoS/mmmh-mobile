@@ -1,70 +1,48 @@
 import { useState, useCallback } from 'react';
-import { View, ScrollView, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  ScrollView,
+  TextInput,
+  StyleSheet,
+  Modal,
+  Pressable,
+  ActivityIndicator,
+} from 'react-native';
 import { Stack, router } from 'expo-router';
-import Toast from 'react-native-toast-message';
 
-import { Text, Button } from '../src/components/ui';
-import { Icon } from '../src/components/ui';
+import { Text, Icon, MmmhLogo, PremiumIcon } from '../src/components/ui';
 import { usePlanStatus, useActivatePremium } from '../src/hooks';
+import { Toast } from '../src/utils/toast';
 import { trackEvent } from '../src/utils/analytics';
 import { colors, fonts, spacing, radius } from '../src/theme';
 
-const PROMO_CODE_MIN = 4;
 const PROMO_CODE_MAX = 20;
-const PROMO_CODE_REGEX = /^[A-Za-z0-9-]+$/;
-
-const COMPARISON_ROWS = [
-  { feature: 'Imports par semaine', free: '10', premium: 'Illimite' },
-  { feature: "Qualite d'import", free: 'Standard', premium: 'Premium (IA avancee)' },
-  { feature: "Types d'import", free: 'URL, Photo', premium: 'URL, Photo, Video HD' },
-  { feature: 'Reconnaissance', free: 'PaddleOCR + IA locale', premium: 'Google Gemini Vision' },
-  { feature: 'Precision', free: 'Bonne', premium: 'Excellente' },
-];
-
-const BENEFITS = [
-  {
-    icon: 'check' as const,
-    title: 'Qualite Premium',
-    description: 'Gemini Vision AI extrait les recettes avec une meilleure precision',
-  },
-  {
-    icon: 'refresh' as const,
-    title: 'Imports illimites',
-    description: 'Plus de limites hebdomadaires',
-  },
-  {
-    icon: 'video' as const,
-    title: 'Videos completes',
-    description: 'Analyse audio + visuelle pour les recettes video',
-  },
-];
 
 export default function UpgradeScreen() {
   const planStatus = usePlanStatus();
   const activatePremium = useActivatePremium();
 
+  const [pricingVisible, setPricingVisible] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');
+  const [showPromoInput, setShowPromoInput] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState<string | null>(null);
 
   const isPremium = planStatus?.tier === 'premium';
 
-  const validatePromoCode = (code: string): string | null => {
-    if (!code.trim()) return 'Code promo requis';
-    if (code.length < PROMO_CODE_MIN) return `Minimum ${PROMO_CODE_MIN} caracteres`;
-    if (code.length > PROMO_CODE_MAX) return `Maximum ${PROMO_CODE_MAX} caracteres`;
-    if (!PROMO_CODE_REGEX.test(code)) return 'Caracteres alphanumeriques et tirets uniquement';
-    return null;
-  };
+  const handleCloseModal = useCallback(() => {
+    setPricingVisible(false);
+    setShowPromoInput(false);
+    setPromoCode('');
+    setPromoError(null);
+  }, []);
 
-  const handleActivate = useCallback(() => {
-    const error = validatePromoCode(promoCode);
-    if (error) {
-      setPromoError(error);
+  const handleActivatePromo = useCallback(() => {
+    if (!promoCode.trim()) {
+      setPromoError('Code promo requis');
       return;
     }
-
     setPromoError(null);
-
     activatePremium.mutate(promoCode.trim(), {
       onSuccess: () => {
         trackEvent('premium_activated', {
@@ -72,25 +50,24 @@ export default function UpgradeScreen() {
           promoCode: promoCode.trim(),
           previousTier: planStatus?.tier ?? 'free',
         });
-
         Toast.show({
           type: 'success',
-          text1: 'Premium active !',
-          text2: "Profitez d'imports illimites en haute qualite.",
+          text1: 'Premium activé !',
+          text2: "Profitez d'imports illimités en haute qualité.",
           visibilityTime: 4000,
         });
-
+        handleCloseModal();
         router.back();
       },
       onError: (err: Error) => {
         if (err.message.includes('promo') || err.message.includes('code')) {
           setPromoError('Code promo invalide');
         } else {
-          setPromoError('Impossible de verifier le code. Verifiez votre connexion.');
+          setPromoError('Impossible de vérifier le code.');
         }
       },
     });
-  }, [promoCode, activatePremium, planStatus]);
+  }, [promoCode, activatePremium, planStatus, handleCloseModal]);
 
   return (
     <>
@@ -106,8 +83,6 @@ export default function UpgradeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Passez a Premium</Text>
-
         {isPremium ? (
           <View style={styles.activeCard} testID="premium-active-card">
             <Icon name="check" size="lg" color={colors.success} />
@@ -118,92 +93,153 @@ export default function UpgradeScreen() {
           </View>
         ) : (
           <>
-            {/* Comparison Table */}
-            <View style={styles.table} testID="comparison-table">
-              <View style={styles.tableHeader}>
-                <Text style={[styles.tableHeaderCell, styles.featureCell]}> </Text>
-                <Text style={[styles.tableHeaderCell, styles.tierCell]}>Gratuit</Text>
-                <Text style={[styles.tableHeaderCell, styles.tierCell, styles.premiumHeader]}>
-                  Premium
-                </Text>
-              </View>
-              {COMPARISON_ROWS.map((row, i) => (
-                <View key={i} style={[styles.tableRow, i % 2 === 0 && styles.tableRowAlt]}>
-                  <Text style={[styles.tableCell, styles.featureCell]}>{row.feature}</Text>
-                  <Text style={[styles.tableCell, styles.tierCell]}>{row.free}</Text>
-                  <Text style={[styles.tableCell, styles.tierCell, styles.premiumCell]}>
-                    {row.premium}
-                  </Text>
-                </View>
-              ))}
+            {/* Crown illustration */}
+            <View style={styles.crownContainer}>
+              <PremiumIcon width={150} />
             </View>
 
-            {/* Pricing */}
-            <View style={styles.pricingSection}>
-              <Text style={styles.pricingText}>Gratuit avec code promo</Text>
-            </View>
+            {/* MMMH PREMIUM branding */}
+            <MmmhLogo width={280} />
+            <Text style={styles.premiumLabel}>PREMIUM</Text>
 
-            {/* Promo Code Input */}
-            <View style={styles.promoSection} testID="promo-section">
-              <Text style={styles.promoLabel}>Code promo</Text>
-              <View style={styles.promoRow}>
-                <TextInput
-                  style={[styles.promoInput, promoError && styles.promoInputError]}
-                  value={promoCode}
-                  onChangeText={(text) => {
-                    setPromoCode(text);
-                    setPromoError(null);
-                  }}
-                  placeholder="MMMH-BETA-2026"
-                  placeholderTextColor={colors.textLight}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  maxLength={PROMO_CODE_MAX}
-                  editable={!activatePremium.isPending}
-                  testID="promo-input"
-                />
-                <Button
-                  title={activatePremium.isPending ? '' : 'Activer'}
-                  onPress={handleActivate}
-                  disabled={!promoCode.trim() || activatePremium.isPending}
-                  size="md"
-                  style={styles.activateButton}
-                />
-                {activatePremium.isPending && (
-                  <ActivityIndicator color={colors.surface} style={styles.activateSpinner} />
-                )}
-              </View>
-              {promoError && (
-                <Text style={styles.promoError} testID="promo-error">
-                  {promoError}
-                </Text>
-              )}
-            </View>
-
-            {/* Benefits */}
+            {/* Benefits list */}
             <View style={styles.benefitsSection}>
-              {BENEFITS.map((benefit, i) => (
-                <View key={i} style={styles.benefitRow}>
-                  <View style={styles.benefitIcon}>
-                    <Icon name={benefit.icon} size="md" color={colors.accent} />
-                  </View>
-                  <View style={styles.benefitText}>
-                    <Text style={styles.benefitTitle}>{benefit.title}</Text>
-                    <Text style={styles.benefitDescription}>{benefit.description}</Text>
+              <View style={styles.benefitRow}>
+                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.benefitText}>Importe tes recettes en illimité</Text>
+              </View>
+
+              <View style={styles.benefitRow}>
+                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.benefitText}>Sauvegarde tes recettes dans le cloud</Text>
+              </View>
+
+              <View style={styles.benefitRow}>
+                <Text style={styles.bullet}>•</Text>
+                <View>
+                  <Text style={styles.benefitText}>IA plus performante</Text>
+                  <View style={styles.subBenefits}>
+                    <Text style={styles.subBenefitText}>• Harder : Recette plus complette</Text>
+                    <Text style={styles.subBenefitText}>• Better : Recette plus précise</Text>
+                    <Text style={styles.subBenefitText}>• Faster : Génération plus rapide</Text>
+                    <Text style={styles.subBenefitText}>• Stronger : Résultat garantie</Text>
                   </View>
                 </View>
-              ))}
+              </View>
             </View>
           </>
         )}
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {!isPremium && (
+        <View style={styles.bottomButtonContainer}>
+          <Pressable style={styles.offresButton} onPress={() => setPricingVisible(true)}>
+            <Text style={styles.offresButtonText}>Voir les offres</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {/* Pricing Modal */}
+      <Modal
+        visible={pricingVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleCloseModal} />
+          <View style={styles.pricingSheet}>
+            {!showPromoInput ? (
+              <>
+                {/* Annual option */}
+                <Pressable
+                  style={[
+                    styles.pricingOption,
+                    selectedPlan === 'annual' && styles.pricingOptionSelected,
+                  ]}
+                  onPress={() => setSelectedPlan('annual')}
+                >
+                  <View>
+                    <Text style={styles.pricingOptionTitle}>Annuel</Text>
+                    <Text style={styles.pricingStrikethrough}>71,88 € → 47,88 € / an</Text>
+                  </View>
+                  <Text style={styles.pricingPrice}>3,99 € / mois</Text>
+                </Pressable>
+
+                {/* Monthly option */}
+                <Pressable
+                  style={[
+                    styles.pricingOption,
+                    selectedPlan === 'monthly' && styles.pricingOptionSelected,
+                  ]}
+                  onPress={() => setSelectedPlan('monthly')}
+                >
+                  <Text style={styles.pricingOptionTitle}>Mensuel</Text>
+                  <Text style={styles.pricingPrice}>5,99 € / mois</Text>
+                </Pressable>
+
+                <Pressable style={styles.promoLink} onPress={() => setShowPromoInput(true)}>
+                  <Text style={styles.promoLinkText}>Vous avez un code promo ?</Text>
+                </Pressable>
+
+                {/* Continue button */}
+                <Pressable style={styles.continueButton} onPress={handleCloseModal}>
+                  <Text style={styles.continueButtonText}>Continuer</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.pricingTitle}>Entrez votre code promo</Text>
+
+                <View style={styles.promoRow}>
+                  <TextInput
+                    style={[styles.promoInput, promoError && styles.promoInputError]}
+                    value={promoCode}
+                    onChangeText={(text) => {
+                      setPromoCode(text);
+                      setPromoError(null);
+                    }}
+                    placeholder="MMMH-BETA-2026"
+                    placeholderTextColor={colors.textLight}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    maxLength={PROMO_CODE_MAX}
+                    editable={!activatePremium.isPending}
+                    autoFocus
+                  />
+                  <Pressable
+                    style={[styles.continueButton, { flex: 0, paddingHorizontal: spacing.lg }]}
+                    onPress={handleActivatePromo}
+                    disabled={activatePremium.isPending}
+                  >
+                    {activatePremium.isPending ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.continueButtonText}>Activer</Text>
+                    )}
+                  </Pressable>
+                </View>
+                {promoError && <Text style={styles.promoError}>{promoError}</Text>}
+
+                <Pressable
+                  style={styles.promoLink}
+                  onPress={() => {
+                    setShowPromoInput(false);
+                    setPromoError(null);
+                  }}
+                >
+                  <Text style={styles.promoLinkText}>Retour aux offres</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
-
-const GOLD = '#D4A017';
 
 const styles = StyleSheet.create({
   container: {
@@ -212,13 +248,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.md,
-  },
-  title: {
-    fontFamily: fonts.script,
-    fontSize: 28,
-    lineHeight: 44,
-    color: colors.text,
-    marginBottom: spacing.lg,
+    alignItems: 'center',
   },
 
   // Active premium state
@@ -230,6 +260,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.success,
     gap: spacing.sm,
+    width: '100%',
   },
   activeText: {
     fontFamily: fonts.script,
@@ -243,75 +274,155 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Comparison table
-  table: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    marginBottom: spacing.lg,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: colors.accent,
-    paddingVertical: spacing.sm,
-  },
-  tableHeaderCell: {
-    fontFamily: fonts.script,
-    fontSize: 14,
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: spacing.sm,
-  },
-  tableRowAlt: {
-    backgroundColor: colors.surface,
-  },
-  tableCell: {
-    fontFamily: fonts.script,
-    fontSize: 12,
-    color: colors.text,
-    paddingHorizontal: spacing.xs,
-  },
-  featureCell: {
-    flex: 2,
-    paddingLeft: spacing.sm,
-  },
-  tierCell: {
-    flex: 1.5,
-    textAlign: 'center',
-  },
-  premiumHeader: {
-    color: GOLD,
-  },
-  premiumCell: {
-    color: colors.accent,
-    fontWeight: '600',
-  },
-
-  // Pricing
-  pricingSection: {
-    alignItems: 'center',
+  // Crown
+  crownContainer: {
+    marginTop: spacing.lg,
     marginBottom: spacing.md,
   },
-  pricingText: {
+
+  // Branding
+  premiumLabel: {
     fontFamily: fonts.script,
-    fontSize: 16,
-    color: colors.textMuted,
+    fontSize: 28,
+    color: colors.text,
+    fontWeight: '700',
+    letterSpacing: 6,
+    marginBottom: spacing.lg,
   },
 
-  // Promo code
-  promoSection: {
-    marginBottom: spacing.xl,
+  // Benefits
+  benefitsSection: {
+    width: '100%',
+    gap: spacing.lg,
+    marginTop: spacing.xl * 3,
   },
-  promoLabel: {
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingLeft: spacing.md,
+  },
+  bullet: {
+    fontFamily: fonts.script,
+    fontSize: 22,
+    color: colors.text,
+    lineHeight: 28,
+  },
+  benefitText: {
+    fontFamily: fonts.script,
+    fontSize: 20,
+    color: colors.text,
+    lineHeight: 28,
+  },
+  subBenefits: {
+    marginTop: spacing.xs,
+    marginLeft: spacing.md,
+    gap: 4,
+  },
+  subBenefitText: {
+    fontFamily: fonts.script,
+    fontSize: 17,
+    color: colors.text,
+    lineHeight: 26,
+  },
+
+  // Bottom fixed button
+  bottomButtonContainer: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xl,
+    paddingTop: spacing.sm,
+    backgroundColor: colors.background,
+  },
+  offresButton: {
+    width: '100%',
+    paddingVertical: spacing.md + 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+  },
+  offresButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 18,
+    color: '#FFFFFF',
+  },
+
+  // Promo
+  promoLink: {
+    alignSelf: 'center',
+  },
+  promoLinkText: {
     fontFamily: fonts.script,
     fontSize: 14,
-    color: colors.text,
+    color: colors.textMuted,
+    textDecorationLine: 'underline',
+    textAlign: 'center',
+  },
+  // Pricing Modal
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: colors.overlay,
+  },
+  pricingSheet: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl + spacing.lg,
+    gap: spacing.sm,
+  },
+  pricingTitle: {
+    fontFamily: fonts.script,
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
     marginBottom: spacing.xs,
   },
+  pricingOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border + '40',
+    backgroundColor: colors.surfaceAlt,
+  },
+  pricingOptionSelected: {
+    borderColor: colors.accent,
+    borderWidth: 2,
+  },
+  pricingOptionTitle: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  pricingStrikethrough: {
+    fontFamily: fonts.script,
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  pricingPrice: {
+    fontFamily: fonts.script,
+    fontSize: 15,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  continueButton: {
+    paddingVertical: spacing.md + 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  continueButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 18,
+    color: '#FFFFFF',
+  },
+
   promoRow: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -330,51 +441,10 @@ const styles = StyleSheet.create({
   promoInputError: {
     borderColor: colors.error,
   },
-  activateButton: {
-    minWidth: 90,
-  },
-  activateSpinner: {
-    position: 'absolute',
-    right: 35,
-  },
   promoError: {
     fontFamily: fonts.script,
     fontSize: 13,
     color: colors.error,
-    marginTop: spacing.xs,
-  },
-
-  // Benefits
-  benefitsSection: {
-    gap: spacing.md,
-  },
-  benefitRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  benefitIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  benefitText: {
-    flex: 1,
-  },
-  benefitTitle: {
-    fontFamily: fonts.script,
-    fontSize: 15,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  benefitDescription: {
-    fontFamily: fonts.script,
-    fontSize: 13,
-    color: colors.textMuted,
-    lineHeight: 18,
   },
 
   bottomPadding: {

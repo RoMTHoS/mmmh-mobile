@@ -1,6 +1,6 @@
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import Toast from 'react-native-toast-message';
+import { useToastStore } from '../../src/stores/toastStore';
 import { createRecipeSchema } from '../../src/schemas/recipe.schema';
 
 // Mock modules
@@ -162,34 +162,25 @@ describe('CreateRecipeScreen', () => {
   });
 
   describe('Toast Notifications', () => {
-    it('shows success toast on recipe save', () => {
-      Toast.show({
-        type: 'success',
-        text1: 'Recipe saved!',
-        text2: 'Your recipe has been created successfully',
-        visibilityTime: 2000,
-      });
+    beforeEach(() => {
+      useToastStore.setState({ toasts: [] });
+    });
 
-      expect(Toast.show).toHaveBeenCalledWith({
-        type: 'success',
-        text1: 'Recipe saved!',
-        text2: 'Your recipe has been created successfully',
-        visibilityTime: 2000,
-      });
+    it('shows success toast on recipe save', () => {
+      useToastStore.getState().showToast('Recipe saved!', 'success');
+
+      const toasts = useToastStore.getState().toasts;
+      expect(toasts).toHaveLength(1);
+      expect(toasts[0].type).toBe('success');
+      expect(toasts[0].message).toBe('Recipe saved!');
     });
 
     it('shows error toast on save failure', () => {
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to save recipe',
-        text2: 'Please try again',
-      });
+      useToastStore.getState().showToast('Failed to save recipe', 'error');
 
-      expect(Toast.show).toHaveBeenCalledWith({
-        type: 'error',
-        text1: 'Failed to save recipe',
-        text2: 'Please try again',
-      });
+      const toasts = useToastStore.getState().toasts;
+      expect(toasts).toHaveLength(1);
+      expect(toasts[0].type).toBe('error');
     });
   });
 

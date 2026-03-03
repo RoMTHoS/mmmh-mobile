@@ -3,7 +3,7 @@ import uuid from 'react-native-uuid';
 import type { Recipe, CreateRecipeInput, UpdateRecipeInput } from '../types';
 
 const DATABASE_NAME = 'mmmh.db';
-const CURRENT_VERSION = 4;
+const CURRENT_VERSION = 5;
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -16,6 +16,15 @@ interface RecipeRow {
   servings: number | null;
   photoUri: string | null;
   notes: string | null;
+  author: string | null;
+  priceMin: number | null;
+  priceMax: number | null;
+  kcal: number | null;
+  catalogue: string | null;
+  regime: string | null;
+  nutritionProteins: number | null;
+  nutritionCarbs: number | null;
+  nutritionFats: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -170,6 +179,22 @@ async function runMigrations(fromVersion: number): Promise<void> {
       UPDATE schema_version SET version = 4;
     `);
   }
+
+  if (fromVersion < 5) {
+    database.execSync(`
+      ALTER TABLE recipes ADD COLUMN author TEXT;
+      ALTER TABLE recipes ADD COLUMN priceMin REAL;
+      ALTER TABLE recipes ADD COLUMN priceMax REAL;
+      ALTER TABLE recipes ADD COLUMN kcal INTEGER;
+      ALTER TABLE recipes ADD COLUMN catalogue TEXT;
+      ALTER TABLE recipes ADD COLUMN regime TEXT;
+      ALTER TABLE recipes ADD COLUMN nutritionProteins REAL;
+      ALTER TABLE recipes ADD COLUMN nutritionCarbs REAL;
+      ALTER TABLE recipes ADD COLUMN nutritionFats REAL;
+
+      UPDATE schema_version SET version = 5;
+    `);
+  }
 }
 
 export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
@@ -179,6 +204,15 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
 
   const recipe: Recipe = {
     ...input,
+    author: input.author ?? null,
+    priceMin: input.priceMin ?? null,
+    priceMax: input.priceMax ?? null,
+    kcal: input.kcal ?? null,
+    catalogue: input.catalogue ?? null,
+    regime: input.regime ?? null,
+    nutritionProteins: input.nutritionProteins ?? null,
+    nutritionCarbs: input.nutritionCarbs ?? null,
+    nutritionFats: input.nutritionFats ?? null,
     id,
     createdAt: now,
     updatedAt: now,
@@ -186,8 +220,8 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
 
   try {
     database.runSync(
-      `INSERT INTO recipes (id, title, ingredients, steps, cookingTime, servings, photoUri, notes, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO recipes (id, title, ingredients, steps, cookingTime, servings, photoUri, notes, author, priceMin, priceMax, kcal, catalogue, regime, nutritionProteins, nutritionCarbs, nutritionFats, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         recipe.id,
         recipe.title,
@@ -197,6 +231,15 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
         recipe.servings,
         recipe.photoUri,
         recipe.notes,
+        recipe.author,
+        recipe.priceMin,
+        recipe.priceMax,
+        recipe.kcal,
+        recipe.catalogue,
+        recipe.regime,
+        recipe.nutritionProteins,
+        recipe.nutritionCarbs,
+        recipe.nutritionFats,
         recipe.createdAt,
         recipe.updatedAt,
       ]
@@ -255,7 +298,10 @@ export async function updateRecipe(id: string, input: UpdateRecipeInput): Promis
     database.runSync(
       `UPDATE recipes SET
         title = ?, ingredients = ?, steps = ?, cookingTime = ?,
-        servings = ?, photoUri = ?, notes = ?, updatedAt = ?
+        servings = ?, photoUri = ?, notes = ?, author = ?,
+        priceMin = ?, priceMax = ?, kcal = ?, catalogue = ?,
+        regime = ?, nutritionProteins = ?, nutritionCarbs = ?,
+        nutritionFats = ?, updatedAt = ?
        WHERE id = ?`,
       [
         updated.title,
@@ -265,6 +311,15 @@ export async function updateRecipe(id: string, input: UpdateRecipeInput): Promis
         updated.servings,
         updated.photoUri,
         updated.notes,
+        updated.author,
+        updated.priceMin,
+        updated.priceMax,
+        updated.kcal,
+        updated.catalogue,
+        updated.regime,
+        updated.nutritionProteins,
+        updated.nutritionCarbs,
+        updated.nutritionFats,
         updated.updatedAt,
         id,
       ]
