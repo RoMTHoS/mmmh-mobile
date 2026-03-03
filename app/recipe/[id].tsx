@@ -56,6 +56,10 @@ export default function RecipeDetailScreen() {
     if (recipe?.servings) setDisplayServings(recipe.servings);
   }, [recipe?.servings]);
 
+  useEffect(() => {
+    if (id) analytics.track(EVENTS.RECIPE_VIEWED, { recipe_id: id });
+  }, [id]);
+
   if (isLoading) {
     return (
       <>
