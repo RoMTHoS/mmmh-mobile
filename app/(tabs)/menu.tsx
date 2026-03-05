@@ -57,9 +57,10 @@ function PlanUsageSection() {
   const badgeConfig = TIER_BADGE_CONFIG[planStatus.tier];
   const isTrialExpired = planStatus.tier === 'free' && userPlan?.trialStartDate !== null;
 
-  const PREMIUM_IMPORTS_PER_WEEK = 2;
-  const premiumUsed = PREMIUM_IMPORTS_PER_WEEK - (planStatus.geminiQuotaRemaining ?? 0);
-  const premiumRatio = premiumUsed / PREMIUM_IMPORTS_PER_WEEK;
+  const geminiPerWeek = planStatus.tier === 'trial' ? 2 : 2;
+  const geminiRemaining = planStatus.geminiQuotaRemaining ?? 0;
+  const premiumUsed = geminiPerWeek - geminiRemaining;
+  const premiumRatio = premiumUsed / geminiPerWeek;
   const barColor =
     premiumRatio >= 1 ? colors.error : premiumRatio >= 0.7 ? colors.warning : colors.success;
 
@@ -93,7 +94,7 @@ function PlanUsageSection() {
             {planStatus.tier !== 'premium' && (
               <>
                 <Text style={rowStyles.itemSubtitle} testID="plan-vps-usage">
-                  Premium import utilisé : {premiumUsed}/{PREMIUM_IMPORTS_PER_WEEK}
+                  Premium import utilisé : {premiumUsed}/{geminiPerWeek}
                 </Text>
                 <View style={planStyles.progressTrack}>
                   <View

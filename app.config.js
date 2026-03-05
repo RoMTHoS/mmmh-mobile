@@ -1,7 +1,7 @@
 export default {
   expo: {
-    name: 'mmmh-mobile',
-    slug: 'mmmh-mobile',
+    name: 'mmmh',
+    slug: 'mmmh',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
@@ -9,9 +9,9 @@ export default {
     newArchEnabled: true,
     scheme: 'mmmh',
     splash: {
-      image: './assets/splash-icon.png',
-      resizeMode: 'contain',
-      backgroundColor: '#ffffff',
+      image: './assets/branding/splash.png',
+      resizeMode: 'cover',
+      backgroundColor: '#fff8e7',
     },
     ios: {
       supportsTablet: true,
@@ -20,7 +20,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#ffffff',
+        backgroundColor: '#fff8e7',
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,

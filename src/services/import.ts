@@ -22,6 +22,7 @@ export interface SubmitImportRequest {
   importType: 'video' | 'website' | 'photo';
   sourceUrl: string;
   html?: string;
+  forcePremium?: boolean;
 }
 
 export interface ImportJobResponse {

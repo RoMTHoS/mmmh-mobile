@@ -7,6 +7,8 @@ import {
   Modal,
   Pressable,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 
@@ -148,7 +150,10 @@ export default function UpgradeScreen() {
         animationType="slide"
         onRequestClose={handleCloseModal}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <Pressable style={StyleSheet.absoluteFill} onPress={handleCloseModal} />
           <View style={styles.pricingSheet}>
             {!showPromoInput ? (
@@ -235,7 +240,7 @@ export default function UpgradeScreen() {
               </>
             )}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );
@@ -284,17 +289,19 @@ const styles = StyleSheet.create({
   premiumLabel: {
     fontFamily: fonts.script,
     fontSize: 28,
+    lineHeight: 40,
     color: colors.text,
     fontWeight: '700',
     letterSpacing: 6,
+    marginTop: 0,
     marginBottom: spacing.lg,
   },
 
   // Benefits
   benefitsSection: {
     width: '100%',
-    gap: spacing.lg,
-    marginTop: spacing.xl * 3,
+    gap: spacing.sm,
+    marginTop: spacing.xl,
   },
   benefitRow: {
     flexDirection: 'row',

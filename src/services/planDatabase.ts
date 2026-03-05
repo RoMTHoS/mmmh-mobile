@@ -272,6 +272,22 @@ export async function getWeekUsage(): Promise<number> {
   }
 }
 
+export async function getWeekGeminiUsage(): Promise<number> {
+  const database = getDatabase();
+  const weekStart = getWeekStartDate(new Date());
+
+  try {
+    const result = database.getFirstSync<{ total: number }>(
+      'SELECT COALESCE(SUM(gemini_imports_used), 0) as total FROM import_usage WHERE week_start_date = ?',
+      [weekStart]
+    );
+    return result?.total ?? 0;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de charger l'utilisation Gemini hebdomadaire. ${message}`);
+  }
+}
+
 export async function incrementVpsUsage(): Promise<void> {
   const database = getDatabase();
   const usage = await getTodayUsage();

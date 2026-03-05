@@ -1,16 +1,18 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, typography, spacing, radius } from '../../theme';
 import { usePlanStatus } from '../../hooks';
-
-const PREMIUM_IMPORTS_PER_WEEK = 2;
+import { QUOTA } from '../../utils/planConstants';
 
 export function QuotaDisplay() {
   const planStatus = usePlanStatus();
 
   if (!planStatus || planStatus.tier === 'premium') return null;
 
-  const premiumUsed = PREMIUM_IMPORTS_PER_WEEK - (planStatus.geminiQuotaRemaining ?? 0);
-  const premiumRatio = premiumUsed / PREMIUM_IMPORTS_PER_WEEK;
+  const geminiPerWeek =
+    planStatus.tier === 'trial' ? QUOTA.TRIAL_GEMINI_PER_WEEK : QUOTA.FREE_GEMINI_PER_WEEK;
+  const geminiRemaining = planStatus.geminiQuotaRemaining ?? 0;
+  const premiumUsed = geminiPerWeek - geminiRemaining;
+  const premiumRatio = premiumUsed / geminiPerWeek;
 
   const barColor = '#DAA520';
   const trackStyle =
@@ -22,7 +24,7 @@ export function QuotaDisplay() {
     <View style={styles.container} testID="quota-display">
       <View style={styles.row}>
         <Text style={styles.label} testID="quota-vps-text">
-          Import premium : {premiumUsed}/{PREMIUM_IMPORTS_PER_WEEK} cette semaine
+          Import premium : {premiumUsed}/{geminiPerWeek} cette semaine
         </Text>
       </View>
       <View style={[styles.progressTrack, trackStyle]} testID="quota-progress-bar">

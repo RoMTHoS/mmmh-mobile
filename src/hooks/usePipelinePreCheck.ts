@@ -13,11 +13,10 @@ import { usePlanStatus } from './usePlan';
 
 /**
  * Returns a function that checks the local plan state and shows
- * an info Toast if the user's Gemini quota is exhausted for today.
+ * an info Toast if the user's Gemini quota is exhausted for the week.
  *
- * - Free tier: no message (always VPS)
- * - Trial + quota remaining: no message (will use Gemini)
- * - Trial + quota used: shows info message
+ * - Free + quota remaining: no message (will use Gemini)
+ * - Free/Trial + quota used: shows info message
  * - Premium: no message (always Gemini)
  */
 export function usePipelinePreCheck() {
@@ -26,11 +25,11 @@ export function usePipelinePreCheck() {
   return function checkPipeline(): void {
     if (!planStatus) return;
 
-    if (planStatus.tier === 'trial' && planStatus.geminiQuotaRemaining <= 0) {
+    if (planStatus.tier !== 'premium' && planStatus.geminiQuotaRemaining <= 0) {
       Toast.show({
         type: 'info',
         text1: 'Import standard',
-        text2: 'Votre import premium du jour a ete utilise. Import avec qualite standard.',
+        text2: 'Vos imports premium de la semaine ont été utilisés. Import avec qualité standard.',
         visibilityTime: 4000,
       });
     }
