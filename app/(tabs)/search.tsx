@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
 import { SearchBar, Icon, EmptyState } from '../../src/components/ui';
 import { RecipeGridSkeleton } from '../../src/components/recipes/RecipeGridSkeleton';
+import { useUIStore } from '../../src/stores/uiStore';
 import { colors, spacing, radius, fonts } from '../../src/theme';
 import type { Recipe } from '../../src/types';
 
@@ -49,6 +50,7 @@ function RecipeGridItem({ recipe, onPress }: RecipeGridItemProps) {
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
+  const openImportModal = useUIStore((s) => s.openImportModal);
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
 
   const filteredRecipes = useMemo(() => {
@@ -109,7 +111,7 @@ export default function SearchScreen() {
               : 'Importez ou créez votre première recette'
           }
           actionLabel={searchQuery ? undefined : 'Importer une recette'}
-          onAction={searchQuery ? undefined : () => router.push('/import')}
+          onAction={searchQuery ? undefined : openImportModal}
         />
       ) : (
         <FlatList

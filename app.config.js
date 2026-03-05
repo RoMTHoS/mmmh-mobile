@@ -37,6 +37,7 @@ export default {
       emailjsServiceId: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID || '',
       emailjsTemplateId: process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID || '',
       emailjsPublicKey: process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY || '',
+      devSkipOnboarding: process.env.DEV_SKIP_ONBOARDING === 'true',
     },
   },
 };
