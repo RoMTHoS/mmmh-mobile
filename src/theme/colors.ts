@@ -1,32 +1,45 @@
 /**
- * Color palette for MMMH app
- * Based on design mockups - cream/navy theme
+ * MMMH Color Palette
+ *
+ * 3 core colors + grey accents:
+ *   - Cream (#fff8e7)  — app background
+ *   - White (#FFFEFA)  — containers, cards, surfaces
+ *   - Dark  (#1A1A1D)  — text, borders, accents
+ *   - Grey  (#6B7280 / #9CA3AF) — muted text, inactive icons
  */
+
+const cream = '#fff8e7';
+const white = '#FFFEFA';
+const dark = '#1A1A1D';
+const grey = '#6B7280';
+const greyLight = '#9CA3AF';
+
 export const colors = {
   // Backgrounds
-  background: '#fff8e7ff', // Cream - main app background
-  surface: '#FFFEFA', // Light gray - cards, inputs
-  surfaceAlt: '#FFFEFA', // White - badges, secondary surfaces
+  background: cream,
+  surface: white,
+  surfaceAlt: white,
+  modalBackground: cream,
 
   // Text
-  text: '#1A1A1D', // Navy - primary text
-  textMuted: '#6B7280', // Gray - secondary text
-  textLight: '#9CA3AF', // Light gray - placeholders
+  text: dark,
+  textMuted: grey,
+  textLight: greyLight,
 
   // Interactive
-  accent: '#1A1A1D', // Navy - buttons, active states
-  accentLight: '#1A1A1D', // Darker navy - hover/pressed states
+  accent: dark,
+  accentLight: dark,
 
   // Borders
-  border: '#1A1A1D', // Navy border
-  borderMedium: '#1A1A1D', // Navy borders for modals
-  borderLight: '#1A1A1D', // Navy subtle border
+  border: dark,
+  borderMedium: dark,
+  borderLight: dark,
 
   // Tab bar
-  tabBarActive: '#1A1A1D', // Navy
-  tabBarInactive: '#9CA3AF', // Gray
+  tabBarActive: dark,
+  tabBarInactive: greyLight,
 
-  // Semantic colors
+  // Semantic
   success: '#22C55E',
   warning: '#F59E0B',
   error: '#EF4444',
@@ -34,7 +47,6 @@ export const colors = {
 
   // Overlay
   overlay: 'rgba(0, 0, 0, 0.5)',
-  modalBackground: '#fff8e7ff',
 } as const;
 
 export type ColorKey = keyof typeof colors;

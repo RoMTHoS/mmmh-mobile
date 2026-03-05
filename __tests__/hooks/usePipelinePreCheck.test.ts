@@ -28,7 +28,23 @@ describe('usePipelinePreCheck', () => {
     expect(mockToastShow).not.toHaveBeenCalled();
   });
 
-  it('does nothing for free tier', () => {
+  it('does nothing for free tier with remaining Gemini quota', () => {
+    mockUsePlanStatus.mockReturnValue({
+      tier: 'free',
+      trialDaysRemaining: 0,
+      isTrialExpired: false,
+      canUsePremium: false,
+      vpsQuotaRemaining: 5,
+      geminiQuotaRemaining: 2,
+    });
+
+    const check = usePipelinePreCheck();
+    check();
+
+    expect(mockToastShow).not.toHaveBeenCalled();
+  });
+
+  it('shows info Toast for free tier with exhausted Gemini quota', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'free',
       trialDaysRemaining: 0,
@@ -41,7 +57,13 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(mockToastShow).not.toHaveBeenCalled();
+    expect(mockToastShow).toHaveBeenCalledTimes(1);
+    expect(mockToastShow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'info',
+        text1: 'Import standard',
+      })
+    );
   });
 
   it('does nothing for premium tier', () => {

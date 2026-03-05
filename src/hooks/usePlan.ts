@@ -27,24 +27,24 @@ export function usePlanStatus(): PlanStatus | null {
 
   if (!plan) return null;
 
-  const weekUsage = usage?.weekTotal ?? 0;
-  const todayGemini = usage?.today.geminiImportsUsed ?? 0;
+  const weekVpsUsage = usage?.weekTotal ?? 0;
+  const weekGeminiUsage = usage?.weekGeminiTotal ?? 0;
 
   let vpsPerWeek: number;
-  let geminiPerDay: number;
+  let geminiPerWeek: number;
 
   switch (plan.tier) {
     case 'premium':
       vpsPerWeek = QUOTA.PREMIUM_VPS_PER_WEEK;
-      geminiPerDay = QUOTA.PREMIUM_GEMINI_PER_DAY;
+      geminiPerWeek = QUOTA.PREMIUM_GEMINI_PER_WEEK;
       break;
     case 'trial':
       vpsPerWeek = QUOTA.TRIAL_VPS_PER_WEEK;
-      geminiPerDay = QUOTA.TRIAL_GEMINI_PER_DAY;
+      geminiPerWeek = QUOTA.TRIAL_GEMINI_PER_WEEK;
       break;
     default:
       vpsPerWeek = QUOTA.FREE_VPS_PER_WEEK;
-      geminiPerDay = 0;
+      geminiPerWeek = QUOTA.FREE_GEMINI_PER_WEEK;
   }
 
   return {
@@ -52,8 +52,8 @@ export function usePlanStatus(): PlanStatus | null {
     trialDaysRemaining: getTrialDaysRemaining(plan),
     isTrialExpired: isTrialExpired(plan),
     canUsePremium: canUsePremiumPipeline(plan),
-    vpsQuotaRemaining: Math.max(0, vpsPerWeek - weekUsage),
-    geminiQuotaRemaining: Math.max(0, geminiPerDay - todayGemini),
+    vpsQuotaRemaining: Math.max(0, vpsPerWeek - weekVpsUsage),
+    geminiQuotaRemaining: Math.max(0, geminiPerWeek - weekGeminiUsage),
   };
 }
 
@@ -87,7 +87,8 @@ export function useImportUsage() {
     queryFn: async () => {
       const today = await planDb.getTodayUsage();
       const weekTotal = await planDb.getWeekUsage();
-      return { today, weekTotal };
+      const weekGeminiTotal = await planDb.getWeekGeminiUsage();
+      return { today, weekTotal, weekGeminiTotal };
     },
   });
 }

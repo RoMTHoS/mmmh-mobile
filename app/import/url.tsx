@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,11 +47,13 @@ export default function UrlInputScreen() {
   const activateTrial = useActivateTrial();
 
   const doImport = useCallback(
-    async (url: string) => {
+    async (url: string, forcePremium = false) => {
       setIsLoading(true);
 
       // Pre-import pipeline check (informational only)
-      checkPipeline();
+      if (!forcePremium) {
+        checkPipeline();
+      }
 
       // Auto-detect import type based on URL
       const platform = detectPlatform(url);
@@ -60,6 +63,7 @@ export default function UrlInputScreen() {
         const response = await submitImport({
           importType,
           sourceUrl: url,
+          ...(forcePremium ? { forcePremium: true } : {}),
         });
 
         // Add job to store
@@ -174,6 +178,43 @@ export default function UrlInputScreen() {
     setPendingUrl(null);
   }, []);
 
+  const handlePremiumImport = useCallback(() => {
+    const url = currentUrl.trim();
+    if (!url) {
+      Toast.show({
+        type: 'error',
+        text1: 'Lien requis',
+        text2: 'Collez un lien avant de lancer un import premium.',
+      });
+      return;
+    }
+
+    // No quota left → go to upgrade
+    if (!planStatus || planStatus.geminiQuotaRemaining <= 0) {
+      router.push('/upgrade');
+      return;
+    }
+
+    // Premium users → import directly, no confirmation needed
+    if (planStatus.tier === 'premium') {
+      doImport(url, true);
+      return;
+    }
+
+    // Free/trial → confirm before using limited quota
+    Alert.alert(
+      'Import premium',
+      `Vous voulez utiliser un de vos imports premium ? (${planStatus.geminiQuotaRemaining} restant${planStatus.geminiQuotaRemaining > 1 ? 's' : ''})`,
+      [
+        { text: 'Non', style: 'cancel' },
+        {
+          text: 'Oui',
+          onPress: () => doImport(url, true),
+        },
+      ]
+    );
+  }, [currentUrl, planStatus, doImport]);
+
   const handleUpgrade = useCallback(() => {
     setShowQuotaExceeded(false);
     router.push('/upgrade');
@@ -227,24 +268,27 @@ export default function UrlInputScreen() {
       </ScrollView>
 
       <View style={[styles.bottomButtons, { paddingBottom: insets.bottom + spacing.md }]}>
-        <Pressable
-          onPress={() => currentUrl.trim() && handleSubmit(currentUrl.trim())}
-          style={({ pressed }) => [
-            styles.standardButton,
-            !isLoading ? {} : styles.standardButtonDisabled,
-            pressed && { opacity: 0.85 },
-          ]}
-          disabled={isLoading}
-        >
-          <Text style={styles.standardButtonText}>Import standard</Text>
-        </Pressable>
+        {planStatus?.tier !== 'premium' && (
+          <Pressable
+            onPress={() => currentUrl.trim() && handleSubmit(currentUrl.trim())}
+            style={({ pressed }) => [
+              styles.standardButton,
+              !isLoading ? {} : styles.standardButtonDisabled,
+              pressed && { opacity: 0.85 },
+            ]}
+            disabled={isLoading}
+          >
+            <Text style={styles.standardButtonText}>Import standard</Text>
+          </Pressable>
+        )}
         <Pressable
           style={({ pressed }) => [styles.premiumButton, pressed && { opacity: 0.85 }]}
-          onPress={() => router.push('/upgrade')}
+          onPress={handlePremiumImport}
+          disabled={isLoading}
         >
           <PremiumIcon width={24} color="#DAA520" />
           <Text style={styles.premiumButtonText}>
-            {planStatus && planStatus.geminiQuotaRemaining === 0
+            {planStatus && planStatus.geminiQuotaRemaining <= 0
               ? 'Passer premium'
               : 'Import premium'}
           </Text>
