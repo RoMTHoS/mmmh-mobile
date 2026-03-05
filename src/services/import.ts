@@ -19,8 +19,9 @@ function buildHeaders(): Record<string, string> {
 }
 
 export interface SubmitImportRequest {
-  importType: 'video' | 'website' | 'photo';
-  sourceUrl: string;
+  importType: 'video' | 'website' | 'photo' | 'text';
+  sourceUrl?: string;
+  sourceText?: string;
   html?: string;
   forcePremium?: boolean;
 }
@@ -76,10 +77,24 @@ class ImportServiceError extends Error {
 export async function submitImport(request: SubmitImportRequest): Promise<ImportJobResponse> {
   const headers = buildHeaders();
   try {
+    const body =
+      request.importType === 'text'
+        ? {
+            importType: request.importType,
+            text: request.sourceText,
+            forcePremium: request.forcePremium,
+          }
+        : {
+            importType: request.importType,
+            sourceUrl: request.sourceUrl,
+            html: request.html,
+            forcePremium: request.forcePremium,
+          };
+
     const response = await fetch(`${API_BASE_URL}/api/import`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(request),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

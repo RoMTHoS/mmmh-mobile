@@ -32,6 +32,13 @@ export default function ImportLayout() {
           presentation: 'fullScreenModal',
         }}
       />
+      <Stack.Screen
+        name="text"
+        options={{
+          title: 'Importer du texte',
+          presentation: 'card',
+        }}
+      />
     </Stack>
   );
 }

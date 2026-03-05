@@ -98,8 +98,8 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
   };
 
   const handleTextImport = () => {
-    // TODO: Epic 2 - Navigate to text input
     onClose();
+    router.push('/import/text');
   };
 
   const handleCreateRecipe = () => {
