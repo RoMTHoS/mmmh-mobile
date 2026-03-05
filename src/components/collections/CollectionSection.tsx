@@ -48,7 +48,7 @@ export function CollectionSection({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
   },
   title: {
     fontFamily: 'Shanti',
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: 'bold',
     color: colors.text,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   row: {
     gap: spacing.md,

@@ -205,14 +205,9 @@ export default function MenuScreen() {
     analytics.track(EVENTS.HELP_RESOURCE_ACCESSED, { resource });
   };
 
-  const handleViewTutorial = async () => {
+  const handleViewTutorial = () => {
     trackHelpResource('tutorial');
-    await AsyncStorage.setItem('MMMH_SHOW_ONBOARDING', 'true');
-    Toast.show({
-      type: 'info',
-      text1: 'Tutoriel',
-      text2: "Le tutoriel s'affichera au prochain démarrage",
-    });
+    router.push({ pathname: '/onboarding', params: { from: 'settings' } });
   };
 
   const handleSendFeedback = () => {
@@ -268,9 +263,6 @@ export default function MenuScreen() {
                       db.runSync('DELETE FROM shopping_list_items');
                       db.runSync('DELETE FROM shopping_list_recipes');
                       db.runSync('DELETE FROM shopping_lists');
-                      db.runSync('DELETE FROM recipe_tags');
-                      db.runSync('DELETE FROM ingredients');
-                      db.runSync('DELETE FROM instructions');
                       db.runSync('DELETE FROM recipes');
                       db.runSync('DELETE FROM import_usage');
                       db.runSync(

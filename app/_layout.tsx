@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Stack, usePathname } from 'expo-router';
+import { Stack, router, usePathname } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ToastProvider } from '../src/components/ui/Toast';
@@ -16,6 +16,7 @@ import { analytics } from '../src/services/analytics';
 import { EVENTS } from '../src/utils/analyticsEvents';
 import { LoadingScreen } from '../src/components/ui';
 import { colors } from '../src/theme';
+import { shouldShowOnboarding } from './onboarding';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Ignore errors - splash screen may already be hidden
@@ -79,6 +80,7 @@ function AnalyticsSyncWatcher() {
 
 function RootLayoutNav() {
   const { isReady: isDbReady, error: dbError } = useDatabase();
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [fontsLoaded, fontError] = useFonts({
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     Overlock: require('../assets/fonts/Overlock-Black.ttf'),
@@ -95,6 +97,8 @@ function RootLayoutNav() {
       analytics.identify(deviceId);
       analytics.track(EVENTS.APP_OPENED);
       ensurePlanSyncedToBackend();
+      const showOnboarding = await shouldShowOnboarding();
+      setNeedsOnboarding(showOnboarding);
     }
     initServices();
   }, []);
@@ -122,10 +126,17 @@ function RootLayoutNav() {
     hideSplash();
   }, [fontsLoaded, fontError, isDbReady, dbError]);
 
+  // Navigate to onboarding when ready and needed
+  useEffect(() => {
+    if (needsOnboarding === true) {
+      router.replace('/onboarding');
+    }
+  }, [needsOnboarding]);
+
   // Still loading - only if no errors
   const fontsReady = fontsLoaded || fontError;
   const dbReady = isDbReady || dbError;
-  if (!fontsReady || !dbReady) {
+  if (!fontsReady || !dbReady || needsOnboarding === null) {
     return <LoadingScreen />;
   }
 
@@ -143,6 +154,7 @@ function RootLayoutNav() {
           animation: 'slide_from_right',
         }}
       >
+        <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="splash" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ title: '', headerShown: false }} />
         <Stack.Screen name="(modals)" options={{ headerShown: false }} />

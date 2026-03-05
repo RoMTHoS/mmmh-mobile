@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   section: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
   },
   sectionTitle: {
     fontFamily: 'Shanti',
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: 'bold',
     color: colors.text,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   newRecipeRow: {
     gap: spacing.md,

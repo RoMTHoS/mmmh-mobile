@@ -9,6 +9,8 @@ export const EVENTS = {
   APP_OPENED: 'App Opened',
 
   // Onboarding
+  ONBOARDING_STARTED: 'Onboarding Started',
+  ONBOARDING_SLIDE_VIEWED: 'Onboarding Slide Viewed',
   ONBOARDING_COMPLETED: 'Onboarding Completed',
   ONBOARDING_SKIPPED: 'Onboarding Skipped',
 
