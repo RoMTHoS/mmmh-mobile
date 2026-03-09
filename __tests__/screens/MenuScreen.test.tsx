@@ -47,6 +47,7 @@ describe('MenuScreen - Plan & Usage section', () => {
       canUsePremium: false,
       vpsQuotaRemaining: 7,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<MenuScreen />);
@@ -72,6 +73,7 @@ describe('MenuScreen - Plan & Usage section', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 10,
       geminiQuotaRemaining: 1,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<MenuScreen />);
@@ -93,6 +95,7 @@ describe('MenuScreen - Plan & Usage section', () => {
       canUsePremium: true,
       vpsQuotaRemaining: Infinity,
       geminiQuotaRemaining: Infinity,
+      storeSubscription: null,
     });
 
     const { getByTestId, queryByTestId } = render(<MenuScreen />);
@@ -116,6 +119,7 @@ describe('MenuScreen - Plan & Usage section', () => {
       canUsePremium: false,
       vpsQuotaRemaining: 10,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<MenuScreen />);

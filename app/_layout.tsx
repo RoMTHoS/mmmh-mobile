@@ -11,7 +11,12 @@ import { ErrorBoundary } from '../src/components';
 import { useDatabase, useTrialExpiration, useAnalyticsSync } from '../src/hooks';
 import { TrialExpiryModal } from '../src/components/import/TrialExpiryModal';
 import { FeedbackPrompt } from '../src/components/feedback/FeedbackPrompt';
-import { initDeviceId, ensurePlanSyncedToBackend } from '../src/services/planSync';
+import {
+  initDeviceId,
+  ensurePlanSyncedToBackend,
+  handleCustomerInfoUpdate,
+} from '../src/services/planSync';
+import { initRevenueCat, addEntitlementListener } from '../src/services/revenueCat';
 import { analytics } from '../src/services/analytics';
 import { EVENTS } from '../src/utils/analyticsEvents';
 import { LoadingScreen } from '../src/components/ui';
@@ -91,16 +96,38 @@ function RootLayoutNav() {
   });
 
   useEffect(() => {
+    let removeListener: (() => void) | undefined;
+
     async function initServices() {
       const deviceId = await initDeviceId();
+
+      // Initialize RevenueCat SDK (graceful failure — app continues in degraded mode)
+      try {
+        await initRevenueCat(deviceId);
+      } catch {
+        // Logged inside initRevenueCat — continue without RC
+      }
+
       await analytics.initialize();
       analytics.identify(deviceId);
       analytics.track(EVENTS.APP_OPENED);
       ensurePlanSyncedToBackend();
+
+      // Set up RevenueCat listener for real-time entitlement changes
+      removeListener = addEntitlementListener((customerInfo) => {
+        handleCustomerInfoUpdate(customerInfo).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['user-plan'] });
+        });
+      });
+
       const showOnboarding = await shouldShowOnboarding();
       setNeedsOnboarding(showOnboarding);
     }
     initServices();
+
+    return () => {
+      removeListener?.();
+    };
   }, []);
 
   useEffect(() => {

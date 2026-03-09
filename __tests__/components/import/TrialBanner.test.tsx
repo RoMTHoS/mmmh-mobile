@@ -11,6 +11,9 @@ const mockPlan: UserPlan = {
   trialEndsDate: null,
   premiumActivatedDate: null,
   promoCode: null,
+  premiumSource: null,
+  subscriptionStatus: null,
+  expiresAt: null,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
 };
@@ -22,6 +25,7 @@ const freePlanStatus: PlanStatus = {
   canUsePremium: false,
   vpsQuotaRemaining: 10,
   geminiQuotaRemaining: 0,
+  storeSubscription: null,
 };
 
 const mockUseUserPlan = jest.fn();

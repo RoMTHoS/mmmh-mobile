@@ -47,6 +47,18 @@ export function usePlanStatus(): PlanStatus | null {
       geminiPerWeek = QUOTA.FREE_GEMINI_PER_WEEK;
   }
 
+  const storeSubscription =
+    plan.premiumSource === 'store' && plan.subscriptionStatus
+      ? {
+          isActive: plan.tier === 'premium',
+          willRenew: plan.subscriptionStatus === 'active',
+          expirationDate: plan.expiresAt ?? null,
+          store: null as 'app_store' | 'play_store' | null,
+          productIdentifier: null as string | null,
+          subscriptionStatus: plan.subscriptionStatus,
+        }
+      : null;
+
   return {
     tier: plan.tier,
     trialDaysRemaining: getTrialDaysRemaining(plan),
@@ -54,6 +66,7 @@ export function usePlanStatus(): PlanStatus | null {
     canUsePremium: canUsePremiumPipeline(plan),
     vpsQuotaRemaining: Math.max(0, vpsPerWeek - weekVpsUsage),
     geminiQuotaRemaining: Math.max(0, geminiPerWeek - weekGeminiUsage),
+    storeSubscription,
   };
 }
 

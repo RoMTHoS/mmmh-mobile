@@ -36,6 +36,7 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: false,
       vpsQuotaRemaining: 5,
       geminiQuotaRemaining: 2,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();
@@ -52,6 +53,7 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: false,
       vpsQuotaRemaining: 5,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();
@@ -74,6 +76,7 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 50,
       geminiQuotaRemaining: 10,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();
@@ -90,6 +93,7 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 10,
       geminiQuotaRemaining: 1,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();
@@ -106,6 +110,7 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 8,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();
@@ -129,6 +134,7 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 5,
       geminiQuotaRemaining: -1,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();

@@ -30,6 +30,7 @@ describe('TrialStatusBadge', () => {
       canUsePremium: false,
       vpsQuotaRemaining: 10,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const { queryByTestId } = render(<TrialStatusBadge />);
@@ -44,6 +45,7 @@ describe('TrialStatusBadge', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 100,
       geminiQuotaRemaining: 100,
+      storeSubscription: null,
     });
 
     const { queryByTestId } = render(<TrialStatusBadge />);
@@ -58,6 +60,7 @@ describe('TrialStatusBadge', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 10,
       geminiQuotaRemaining: 1,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<TrialStatusBadge />);
@@ -76,6 +79,7 @@ describe('TrialStatusBadge', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 10,
       geminiQuotaRemaining: 1,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<TrialStatusBadge />);
@@ -90,6 +94,7 @@ describe('TrialStatusBadge', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 8,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<TrialStatusBadge />);

@@ -3,7 +3,7 @@ import uuid from 'react-native-uuid';
 import type { Recipe, CreateRecipeInput, UpdateRecipeInput } from '../types';
 
 const DATABASE_NAME = 'mmmh.db';
-const CURRENT_VERSION = 5;
+const CURRENT_VERSION = 6;
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -193,6 +193,16 @@ async function runMigrations(fromVersion: number): Promise<void> {
       ALTER TABLE recipes ADD COLUMN nutritionFats REAL;
 
       UPDATE schema_version SET version = 5;
+    `);
+  }
+
+  if (fromVersion < 6) {
+    database.execSync(`
+      ALTER TABLE user_plan ADD COLUMN premium_source TEXT;
+      ALTER TABLE user_plan ADD COLUMN subscription_status TEXT;
+      ALTER TABLE user_plan ADD COLUMN expires_at TEXT;
+
+      UPDATE schema_version SET version = 6;
     `);
   }
 }

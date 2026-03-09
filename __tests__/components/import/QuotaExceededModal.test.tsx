@@ -27,6 +27,9 @@ const mockPlan: UserPlan = {
   trialEndsDate: null,
   premiumActivatedDate: null,
   promoCode: null,
+  premiumSource: null,
+  subscriptionStatus: null,
+  expiresAt: null,
   createdAt: '2026-01-01',
   updatedAt: '2026-01-01',
 };

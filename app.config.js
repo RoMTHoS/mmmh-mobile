@@ -30,7 +30,7 @@ export default {
       favicon: './assets/favicon.png',
       bundler: 'metro',
     },
-    plugins: ['expo-router', 'expo-font'],
+    plugins: ['expo-router', 'expo-font', 'react-native-purchases'],
     extra: {
       mixpanelToken: process.env.EXPO_PUBLIC_MIXPANEL_TOKEN || '',
       analyticsEnabled: process.env.EXPO_PUBLIC_ANALYTICS_ENABLED !== 'false',

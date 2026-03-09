@@ -41,6 +41,7 @@ let mockPlanStatus: Record<string, unknown> | null = {
   tier: 'free',
   vpsQuotaRemaining: 5,
   geminiQuotaRemaining: 0,
+  storeSubscription: null,
 };
 
 jest.mock('../../src/hooks', () => ({

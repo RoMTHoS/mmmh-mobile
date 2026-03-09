@@ -30,6 +30,7 @@ let mockPlanStatus: Record<string, unknown> | null = {
   canUsePremium: false,
   vpsQuotaRemaining: 5,
   geminiQuotaRemaining: 0,
+  storeSubscription: null,
 };
 
 jest.mock('../../src/hooks', () => ({
@@ -54,6 +55,7 @@ describe('UpgradeScreen', () => {
       canUsePremium: false,
       vpsQuotaRemaining: 5,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     };
   });
 

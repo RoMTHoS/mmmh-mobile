@@ -1,13 +1,17 @@
 /**
- * Plan sync service between local SQLite and backend Redis.
+ * Plan sync service between local SQLite, RevenueCat, and backend Redis.
  *
- * Mobile SQLite is a local cache for offline display.
- * Backend Redis is the source of truth for tier routing and quota enforcement.
+ * Sync priority chain:
+ * 1. RevenueCat SDK → if premium entitlement active → tier = premium (store)
+ * 2. Backend Redis → handles trial/free/promo-premium
+ * 3. Local SQLite cache → offline fallback
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import uuid from 'react-native-uuid';
 import * as planDb from './planDatabase';
+import { getCustomerInfo, isPremiumActive, getSubscriptionStatus } from './revenueCat';
+import type { CustomerInfo } from 'react-native-purchases';
 import type { UserPlan } from '../types';
 
 const AI_PIPELINE_URL = process.env.EXPO_PUBLIC_AI_PIPELINE_URL || 'http://localhost:8001';
@@ -49,10 +53,45 @@ export function getDeviceId(): string | null {
 }
 
 /**
- * Sync plan from backend to local SQLite on app launch.
+ * Sync plan using priority chain:
+ * 1. RevenueCat SDK (store subscriptions)
+ * 2. Backend (trial/free/promo)
+ * 3. Local SQLite (offline fallback)
+ */
+export async function syncPlan(): Promise<UserPlan> {
+  // Step 1: Check RevenueCat for store subscriptions
+  const customerInfo = await getCustomerInfo();
+  if (customerInfo && isPremiumActive(customerInfo)) {
+    const subStatus = getSubscriptionStatus(customerInfo);
+    await planDb.activateStorePremium(subStatus.subscriptionStatus, subStatus.expirationDate);
+    return planDb.getUserPlan();
+  }
+
+  // Step 2: If no RC entitlement, check promo protection before downgrading
+  if (customerInfo) {
+    // RC is reachable but no entitlement — check if user has promo premium
+    const localPlan = await planDb.getUserPlan();
+    if (localPlan.tier === 'premium' && localPlan.premiumSource === 'store') {
+      // Store subscription expired — downgrade
+      await planDb.deactivatePremium();
+    }
+    // If premiumSource === 'promo' or null, keep current tier
+  }
+
+  // Step 3: Fetch from backend for trial/free/promo status
+  return syncFromBackend();
+}
+
+/**
+ * Kept for backward compatibility — renamed from syncPlanFromBackend.
+ */
+export { syncPlan as syncPlanFromBackend };
+
+/**
+ * Sync plan from backend to local SQLite.
  * Falls back to local data if backend is unreachable.
  */
-export async function syncPlanFromBackend(): Promise<UserPlan> {
+async function syncFromBackend(): Promise<UserPlan> {
   if (!deviceId) {
     return planDb.getUserPlan();
   }
@@ -114,7 +153,7 @@ export async function syncActivateTrial(): Promise<UserPlan> {
 }
 
 /**
- * Activate premium on both backend and local.
+ * Activate premium via promo code on both backend and local.
  */
 export async function syncActivatePremium(promoCode: string): Promise<UserPlan> {
   const localPlan = await planDb.activatePremium(promoCode);
@@ -143,6 +182,53 @@ export async function syncActivatePremium(promoCode: string): Promise<UserPlan> 
   }
 
   return localPlan;
+}
+
+/**
+ * Called when RevenueCat confirms a store purchase.
+ * Updates local SQLite and notifies backend.
+ */
+export async function syncActivateFromStore(customerInfo: CustomerInfo): Promise<UserPlan> {
+  const subStatus = getSubscriptionStatus(customerInfo);
+
+  const plan = await planDb.activateStorePremium(
+    subStatus.subscriptionStatus,
+    subStatus.expirationDate
+  );
+
+  // Notify backend (best-effort)
+  if (deviceId) {
+    try {
+      await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'premium', source: 'store' }),
+      });
+    } catch {
+      // Backend will be updated by RevenueCat webhook (Story 7.3)
+    }
+  }
+
+  return plan;
+}
+
+/**
+ * Callback for RevenueCat customer info listener.
+ * Updates local SQLite when entitlement status changes.
+ */
+export async function handleCustomerInfoUpdate(customerInfo: CustomerInfo): Promise<void> {
+  const localPlan = await planDb.getUserPlan();
+
+  if (isPremiumActive(customerInfo)) {
+    if (localPlan.tier !== 'premium' || localPlan.premiumSource !== 'store') {
+      await syncActivateFromStore(customerInfo);
+    }
+  } else {
+    // No RC entitlement — only downgrade if source was store
+    if (localPlan.tier === 'premium' && localPlan.premiumSource === 'store') {
+      await planDb.deactivatePremium();
+    }
+  }
 }
 
 /**
@@ -181,10 +267,15 @@ export async function ensurePlanSyncedToBackend(): Promise<void> {
       // 409 = already active, which is fine
       if (!resp.ok && resp.status !== 409) return;
     } else if (localPlan.tier === 'premium') {
+      const source = localPlan.premiumSource === 'store' ? 'store' : undefined;
       const resp = await fetch(`${AI_PIPELINE_URL}/plan/${deviceId}/activate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'premium', promo_code: localPlan.promoCode || '' }),
+        body: JSON.stringify({
+          action: 'premium',
+          promo_code: localPlan.promoCode || '',
+          ...(source && { source }),
+        }),
       });
       // 409 = already active, which is fine
       if (!resp.ok && resp.status !== 409) return;
@@ -203,7 +294,14 @@ async function updateLocalPlanFromBackend(
   const tier = backendPlan.tier;
 
   if (tier === 'premium' && localPlan.tier !== 'premium') {
-    await planDb.activatePremium(backendPlan.promo_code || '');
+    if (backendPlan.premium_source === 'store') {
+      await planDb.activateStorePremium(
+        backendPlan.subscription_status || 'active',
+        backendPlan.expires_at || null
+      );
+    } else {
+      await planDb.activatePremium(backendPlan.promo_code || '');
+    }
   } else if (tier === 'trial' && localPlan.tier !== 'trial') {
     // Only if trial not already used locally
     if (localPlan.trialStartDate === null) {

@@ -54,6 +54,7 @@ let mockPlanStatus: Record<string, unknown> | null = {
   tier: 'free',
   vpsQuotaRemaining: 5,
   geminiQuotaRemaining: 0,
+  storeSubscription: null,
 };
 const mockActivateTrial = { mutate: jest.fn() };
 
@@ -85,6 +86,7 @@ describe('TextImportScreen', () => {
       tier: 'free',
       vpsQuotaRemaining: 5,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     };
     mockJobs.length = 0;
   });
@@ -255,6 +257,7 @@ describe('TextImportScreen', () => {
         tier: 'free',
         vpsQuotaRemaining: 0,
         geminiQuotaRemaining: 0,
+        storeSubscription: null,
       };
 
       const { getByTestId } = renderScreen();
