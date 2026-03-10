@@ -10,11 +10,13 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../src/components';
 import { useDatabase, useTrialExpiration, useAnalyticsSync } from '../src/hooks';
 import { TrialExpiryModal } from '../src/components/import/TrialExpiryModal';
+import { SubscriptionExpiryModal } from '../src/components/import/SubscriptionExpiryModal';
 import { FeedbackPrompt } from '../src/components/feedback/FeedbackPrompt';
 import {
   initDeviceId,
   ensurePlanSyncedToBackend,
   handleCustomerInfoUpdate,
+  syncPlan,
 } from '../src/services/planSync';
 import { initRevenueCat, addEntitlementListener } from '../src/services/revenueCat';
 import { analytics } from '../src/services/analytics';
@@ -125,8 +127,22 @@ function RootLayoutNav() {
     }
     initServices();
 
+    // Sync plan on every foreground return (lightweight — checks RevenueCat entitlement)
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        syncPlan()
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ['user-plan'] });
+          })
+          .catch(() => {
+            // Silently fail — will retry on next foreground
+          });
+      }
+    });
+
     return () => {
       removeListener?.();
+      appStateSubscription.remove();
     };
   }, []);
 
@@ -173,6 +189,7 @@ function RootLayoutNav() {
       <TrialExpirationWatcher />
       <AnalyticsSyncWatcher />
       <TrialExpiryModal />
+      <SubscriptionExpiryModal />
       <FeedbackPrompt />
       <Stack
         screenOptions={{

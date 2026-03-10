@@ -238,6 +238,18 @@ export async function deactivatePremium(): Promise<UserPlan> {
   }
 }
 
+export async function updatePremiumSource(source: UserPlan['premiumSource']): Promise<void> {
+  const database = getDatabase();
+  const plan = await getUserPlan();
+  const now = new Date().toISOString();
+
+  database.runSync(`UPDATE user_plan SET premium_source = ?, updated_at = ? WHERE id = ?`, [
+    source,
+    now,
+    plan.id,
+  ]);
+}
+
 function checkTrialExpiration(plan: UserPlan): UserPlan {
   if (plan.tier !== 'trial' || !plan.trialEndsDate) {
     return plan;

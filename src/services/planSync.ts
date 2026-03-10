@@ -11,6 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import uuid from 'react-native-uuid';
 import * as planDb from './planDatabase';
 import { getCustomerInfo, isPremiumActive, getSubscriptionStatus } from './revenueCat';
+import { analytics } from './analytics';
+import { EVENTS } from '../utils/analyticsEvents';
 import type { CustomerInfo } from 'react-native-purchases';
 import type { UserPlan } from '../types';
 
@@ -71,6 +73,12 @@ export async function syncPlan(): Promise<UserPlan> {
   if (customerInfo) {
     // RC is reachable but no entitlement — check if user has promo premium
     const localPlan = await planDb.getUserPlan();
+
+    // Self-healing migration: infer premiumSource for legacy promo plans
+    if (localPlan.tier === 'premium' && !localPlan.premiumSource && localPlan.promoCode) {
+      await planDb.updatePremiumSource('promo');
+    }
+
     if (localPlan.tier === 'premium' && localPlan.premiumSource === 'store') {
       // Store subscription expired — downgrade
       await planDb.deactivatePremium();
@@ -215,17 +223,43 @@ export async function syncActivateFromStore(customerInfo: CustomerInfo): Promise
 /**
  * Callback for RevenueCat customer info listener.
  * Updates local SQLite when entitlement status changes.
+ * Tracks lifecycle analytics: renewal, cancellation, billing issues, expiration.
  */
 export async function handleCustomerInfoUpdate(customerInfo: CustomerInfo): Promise<void> {
   const localPlan = await planDb.getUserPlan();
 
   if (isPremiumActive(customerInfo)) {
-    if (localPlan.tier !== 'premium' || localPlan.premiumSource !== 'store') {
+    const subStatus = getSubscriptionStatus(customerInfo);
+    const prevStatus = localPlan.subscriptionStatus;
+
+    // Detect lifecycle transitions and track analytics
+    if (localPlan.tier === 'premium' && localPlan.premiumSource === 'store') {
+      // Renewal: was active/cancelled/grace → back to active with new expiration
+      if (subStatus.subscriptionStatus === 'active' && prevStatus !== 'active') {
+        if (prevStatus === 'grace_period') {
+          analytics.track(EVENTS.BILLING_ISSUE_RESOLVED);
+        }
+        analytics.track(EVENTS.SUBSCRIPTION_RENEWED);
+      }
+      // Cancellation detected
+      if (subStatus.subscriptionStatus === 'cancelled' && prevStatus !== 'cancelled') {
+        analytics.track(EVENTS.SUBSCRIPTION_CANCELLED);
+      }
+      // Billing issue detected
+      if (subStatus.subscriptionStatus === 'grace_period' && prevStatus !== 'grace_period') {
+        analytics.track(EVENTS.BILLING_ISSUE_DETECTED);
+      }
+
+      // Update subscription status in SQLite
+      await planDb.activateStorePremium(subStatus.subscriptionStatus, subStatus.expirationDate);
+    } else {
+      // New store premium activation (from non-premium or non-store)
       await syncActivateFromStore(customerInfo);
     }
   } else {
     // No RC entitlement — only downgrade if source was store
     if (localPlan.tier === 'premium' && localPlan.premiumSource === 'store') {
+      analytics.track(EVENTS.SUBSCRIPTION_EXPIRED);
       await planDb.deactivatePremium();
     }
   }

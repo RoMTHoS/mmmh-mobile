@@ -49,6 +49,22 @@ export const EVENTS = {
   SHARE_APP_TAPPED: 'Share App Tapped',
   CLEAR_DATA_INITIATED: 'Clear Data Initiated',
   CLEAR_DATA_CONFIRMED: 'Clear Data Confirmed',
+
+  // Purchase (Story 7.4)
+  PURCHASE_INITIATED: 'Purchase Initiated',
+  PURCHASE_COMPLETED: 'Purchase Completed',
+  PURCHASE_CANCELLED: 'Purchase Cancelled',
+  PURCHASE_FAILED: 'Purchase Failed',
+  RESTORE_INITIATED: 'Restore Initiated',
+  RESTORE_COMPLETED: 'Restore Completed',
+  RESTORE_NOT_FOUND: 'Restore Not Found',
+
+  // Subscription lifecycle (Story 7.5)
+  SUBSCRIPTION_RENEWED: 'Subscription Renewed',
+  SUBSCRIPTION_CANCELLED: 'Subscription Cancelled',
+  SUBSCRIPTION_EXPIRED: 'Subscription Expired',
+  BILLING_ISSUE_DETECTED: 'Billing Issue Detected',
+  BILLING_ISSUE_RESOLVED: 'Billing Issue Resolved',
 } as const;
 
 export type AnalyticsEventName = (typeof EVENTS)[keyof typeof EVENTS];

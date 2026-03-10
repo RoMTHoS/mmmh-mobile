@@ -7,8 +7,20 @@
 
 import { Platform } from 'react-native';
 import Purchases from 'react-native-purchases';
-import type { CustomerInfo } from 'react-native-purchases';
+import type { CustomerInfo, PurchasesOfferings } from 'react-native-purchases';
 import type { StoreSubscriptionInfo, SubscriptionStatus } from '../types';
+
+export interface PurchaseResult {
+  success: boolean;
+  customerInfo?: CustomerInfo;
+  error?: string;
+  userCancelled?: boolean;
+}
+
+export interface RestoreResult {
+  restored: boolean;
+  customerInfo?: CustomerInfo;
+}
 
 export const REVENUECAT_ENTITLEMENT_ID = 'premium';
 
@@ -115,6 +127,66 @@ export function addEntitlementListener(callback: (customerInfo: CustomerInfo) =>
   const remove = Purchases.addCustomerInfoUpdateListener(callback);
   // SDK returns a remove function or void depending on version
   return typeof remove === 'function' ? remove : () => {};
+}
+
+/**
+ * Fetch available offerings (products with localized pricing) from RevenueCat.
+ */
+export async function getOfferings(): Promise<PurchasesOfferings | null> {
+  if (!isInitialized) return null;
+
+  try {
+    return await Purchases.getOfferings();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Purchase the monthly subscription package.
+ */
+export async function purchaseMonthlySubscription(): Promise<PurchaseResult> {
+  if (!isInitialized) {
+    return { success: false, error: 'SDK non initialisé' };
+  }
+
+  try {
+    const offerings = await Purchases.getOfferings();
+    const monthly = offerings.current?.monthly;
+
+    if (!monthly) {
+      return { success: false, error: 'Offre non disponible' };
+    }
+
+    const { customerInfo } = await Purchases.purchasePackage(monthly);
+    return { success: true, customerInfo };
+  } catch (error: unknown) {
+    const purchasesError = error as { userCancelled?: boolean; message?: string };
+    if (purchasesError.userCancelled) {
+      return { success: false, userCancelled: true };
+    }
+    return {
+      success: false,
+      error: purchasesError.message || 'Erreur de paiement',
+    };
+  }
+}
+
+/**
+ * Restore previous purchases. Returns whether a premium entitlement was found.
+ */
+export async function restorePurchases(): Promise<RestoreResult> {
+  if (!isInitialized) {
+    return { restored: false };
+  }
+
+  try {
+    const customerInfo = await Purchases.restorePurchases();
+    const restored = isPremiumActive(customerInfo);
+    return { restored, customerInfo };
+  } catch {
+    return { restored: false };
+  }
 }
 
 /**

@@ -14,6 +14,16 @@ jest.mock('../../../src/hooks/usePlan', () => ({
   useUserPlan: () => mockUseUserPlan(),
 }));
 
+jest.mock('../../../src/hooks/usePurchase', () => ({
+  useOfferings: () => ({
+    offerings: null,
+    priceString: null,
+    isLoading: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+}));
+
 jest.mock('../../../src/utils/planStateMachine', () => ({
   canActivateTrial: (plan: UserPlan) => mockCanActivateTrial(plan),
 }));

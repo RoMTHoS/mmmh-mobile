@@ -1,5 +1,15 @@
 import { useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert, Share, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  Alert,
+  Share,
+  Linking,
+  Platform,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -51,6 +61,14 @@ const TIER_BADGE_CONFIG = {
 function PlanUsageSection() {
   const planStatus = usePlanStatus();
   const { data: userPlan } = useUserPlan();
+
+  const handleManageSubscription = () => {
+    const url =
+      Platform.OS === 'ios'
+        ? 'https://apps.apple.com/account/subscriptions'
+        : 'https://play.google.com/store/account/subscriptions';
+    Linking.openURL(url);
+  };
 
   if (!planStatus) return null;
 
@@ -116,22 +134,104 @@ function PlanUsageSection() {
             )}
             {planStatus.tier === 'premium' && (
               <>
-                <View style={planStyles.premiumActiveRow}>
-                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                  <Text
-                    style={[rowStyles.itemSubtitle, { color: colors.success }]}
-                    testID="plan-premium-active"
-                  >
-                    Premium actif
-                  </Text>
-                </View>
-                {userPlan?.premiumActivatedDate && (
-                  <Text style={rowStyles.itemSubtitle}>
-                    Active le {new Date(userPlan.premiumActivatedDate).toLocaleDateString('fr-FR')}
-                  </Text>
-                )}
-                {userPlan?.promoCode && (
-                  <Text style={rowStyles.itemSubtitle}>Code : {userPlan.promoCode}</Text>
+                {/* Store subscription: show status-specific info */}
+                {planStatus.storeSubscription ? (
+                  <>
+                    {planStatus.storeSubscription.subscriptionStatus === 'active' && (
+                      <View style={planStyles.premiumActiveRow}>
+                        <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                        <Text
+                          style={[rowStyles.itemSubtitle, { color: colors.success }]}
+                          testID="plan-premium-active"
+                        >
+                          Premium actif
+                        </Text>
+                      </View>
+                    )}
+                    {planStatus.storeSubscription.subscriptionStatus === 'active' &&
+                      planStatus.storeSubscription.expirationDate && (
+                        <Text style={rowStyles.itemSubtitle} testID="plan-renewal-date">
+                          Renouvellement le{' '}
+                          {new Date(planStatus.storeSubscription.expirationDate).toLocaleDateString(
+                            'fr-FR'
+                          )}
+                        </Text>
+                      )}
+                    {planStatus.storeSubscription.subscriptionStatus === 'cancelled' && (
+                      <>
+                        <View style={planStyles.premiumActiveRow}>
+                          <Ionicons name="time-outline" size={16} color={colors.warning} />
+                          <Text
+                            style={[rowStyles.itemSubtitle, { color: colors.warning }]}
+                            testID="plan-premium-cancelled"
+                          >
+                            Premium
+                          </Text>
+                        </View>
+                        {planStatus.storeSubscription.expirationDate && (
+                          <Text style={rowStyles.itemSubtitle} testID="plan-expiry-date">
+                            Expire le{' '}
+                            {new Date(
+                              planStatus.storeSubscription.expirationDate
+                            ).toLocaleDateString('fr-FR')}
+                          </Text>
+                        )}
+                        <Pressable
+                          style={planStyles.upgradeButton}
+                          onPress={() => router.push('/upgrade')}
+                          testID="plan-resubscribe-button"
+                        >
+                          <Text style={planStyles.upgradeButtonText}>Se réabonner</Text>
+                        </Pressable>
+                      </>
+                    )}
+                    {planStatus.storeSubscription.subscriptionStatus === 'grace_period' && (
+                      <>
+                        <View style={planStyles.premiumActiveRow}>
+                          <Ionicons name="warning-outline" size={16} color={colors.warning} />
+                          <Text
+                            style={[rowStyles.itemSubtitle, { color: colors.warning }]}
+                            testID="plan-premium-grace"
+                          >
+                            Problème de paiement
+                          </Text>
+                        </View>
+                        <Text style={rowStyles.itemSubtitle}>Vérifiez vos moyens de paiement</Text>
+                      </>
+                    )}
+                    <Pressable
+                      style={planStyles.manageButton}
+                      onPress={handleManageSubscription}
+                      testID="plan-manage-subscription"
+                    >
+                      <Ionicons name="settings-outline" size={14} color={colors.info} />
+                      <Text style={planStyles.manageButtonText}>Gérer mon abonnement</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <>
+                    {/* Promo premium: unchanged from Story 5.6 */}
+                    <View style={planStyles.premiumActiveRow}>
+                      <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                      <Text
+                        style={[rowStyles.itemSubtitle, { color: colors.success }]}
+                        testID="plan-premium-active"
+                      >
+                        Premium actif
+                      </Text>
+                    </View>
+                    {userPlan?.premiumActivatedDate && (
+                      <Text style={rowStyles.itemSubtitle}>
+                        Activé le{' '}
+                        {new Date(userPlan.premiumActivatedDate).toLocaleDateString('fr-FR')}
+                      </Text>
+                    )}
+                    {userPlan?.promoCode && (
+                      <Text style={rowStyles.itemSubtitle} testID="plan-promo-code">
+                        Code : {userPlan.promoCode}
+                      </Text>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -621,5 +721,15 @@ const planStyles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
     color: '#DAA520',
+  },
+  manageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing.xs,
+  },
+  manageButtonText: {
+    ...typography.caption,
+    color: colors.info,
   },
 });

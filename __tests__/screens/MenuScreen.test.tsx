@@ -132,4 +132,115 @@ describe('MenuScreen - Plan & Usage section', () => {
     const { queryByTestId } = render(<MenuScreen />);
     expect(queryByTestId('plan-usage-section')).toBeNull();
   });
+
+  describe('store subscription states', () => {
+    it('shows active store subscription with renewal date', () => {
+      mockUsePlanStatus.mockReturnValue({
+        tier: 'premium',
+        trialDaysRemaining: null,
+        isTrialExpired: false,
+        canUsePremium: true,
+        vpsQuotaRemaining: Infinity,
+        geminiQuotaRemaining: Infinity,
+        storeSubscription: {
+          isActive: true,
+          willRenew: true,
+          expirationDate: '2026-04-10T00:00:00Z',
+          store: 'app_store',
+          productIdentifier: 'mmmh_premium_monthly',
+          subscriptionStatus: 'active',
+        },
+      });
+
+      const { getByTestId, getByText } = render(<MenuScreen />);
+
+      expect(getByTestId('plan-premium-active')).toBeTruthy();
+      expect(getByTestId('plan-renewal-date')).toBeTruthy();
+      expect(getByText(/Renouvellement le/)).toBeTruthy();
+      expect(getByTestId('plan-manage-subscription')).toBeTruthy();
+    });
+
+    it('shows cancelled subscription with expiry date and resubscribe', () => {
+      mockUsePlanStatus.mockReturnValue({
+        tier: 'premium',
+        trialDaysRemaining: null,
+        isTrialExpired: false,
+        canUsePremium: true,
+        vpsQuotaRemaining: Infinity,
+        geminiQuotaRemaining: Infinity,
+        storeSubscription: {
+          isActive: true,
+          willRenew: false,
+          expirationDate: '2026-04-10T00:00:00Z',
+          store: 'app_store',
+          productIdentifier: 'mmmh_premium_monthly',
+          subscriptionStatus: 'cancelled',
+        },
+      });
+
+      const { getByTestId, getByText } = render(<MenuScreen />);
+
+      expect(getByTestId('plan-premium-cancelled')).toBeTruthy();
+      expect(getByTestId('plan-expiry-date')).toBeTruthy();
+      expect(getByText(/Expire le/)).toBeTruthy();
+      expect(getByTestId('plan-resubscribe-button')).toBeTruthy();
+    });
+
+    it('shows billing issue warning for grace period', () => {
+      mockUsePlanStatus.mockReturnValue({
+        tier: 'premium',
+        trialDaysRemaining: null,
+        isTrialExpired: false,
+        canUsePremium: true,
+        vpsQuotaRemaining: Infinity,
+        geminiQuotaRemaining: Infinity,
+        storeSubscription: {
+          isActive: true,
+          willRenew: true,
+          expirationDate: '2026-04-10T00:00:00Z',
+          store: 'app_store',
+          productIdentifier: 'mmmh_premium_monthly',
+          subscriptionStatus: 'grace_period',
+        },
+      });
+
+      const { getByTestId, getByText } = render(<MenuScreen />);
+
+      expect(getByTestId('plan-premium-grace')).toBeTruthy();
+      expect(getByText(/Problème de paiement/)).toBeTruthy();
+    });
+
+    it('shows promo code info for promo premium (no store sub)', () => {
+      mockUsePlanStatus.mockReturnValue({
+        tier: 'premium',
+        trialDaysRemaining: null,
+        isTrialExpired: false,
+        canUsePremium: true,
+        vpsQuotaRemaining: Infinity,
+        geminiQuotaRemaining: Infinity,
+        storeSubscription: null,
+      });
+      mockUseUserPlan.mockReturnValue({
+        data: {
+          id: '1',
+          tier: 'premium',
+          trialStartDate: null,
+          trialEndsDate: null,
+          premiumActivatedDate: '2026-02-01T00:00:00Z',
+          promoCode: 'MMMH-BETA',
+          premiumSource: 'promo',
+          subscriptionStatus: null,
+          expiresAt: null,
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        },
+      });
+
+      const { getByTestId, getByText } = render(<MenuScreen />);
+
+      expect(getByTestId('plan-premium-active')).toBeTruthy();
+      expect(getByTestId('plan-promo-code')).toBeTruthy();
+      expect(getByText(/Code : MMMH-BETA/)).toBeTruthy();
+    });
+  });
 });
