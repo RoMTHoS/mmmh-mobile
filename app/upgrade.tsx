@@ -286,9 +286,6 @@ export default function UpgradeScreen() {
       >
         <Pressable style={styles.modalOverlay} onPress={() => setShowOffersModal(false)}>
           <Pressable style={styles.modalSheet} onPress={() => {}}>
-            {/* Header */}
-            <Text style={styles.modalHeader}>Essai gratuit de 3 jours</Text>
-
             {/* Annual plan card */}
             <Pressable
               style={[styles.planCard, selectedPlan === 'annual' && styles.planCardSelected]}
@@ -297,9 +294,8 @@ export default function UpgradeScreen() {
             >
               <View style={styles.planCardLeft}>
                 <Text style={styles.planCardLabel}>Annuel</Text>
-                <Text style={styles.planCardSubLabel}>{annualPriceString ?? '...'} / an</Text>
               </View>
-              <Text style={styles.planCardPrice}>{monthlyPriceString ?? '...'} / mois</Text>
+              <Text style={styles.planCardPrice}>{annualPriceString ?? '...'} / an</Text>
             </Pressable>
 
             {/* Monthly plan card */}
@@ -482,15 +478,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
 
-  // Modal header
-  modalHeader: {
-    fontFamily: fonts.script,
-    fontSize: 15,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: spacing.xs,
-  },
-
   // Plan cards (inside modal)
   planCard: {
     flexDirection: 'row',
@@ -499,13 +486,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     borderRadius: radius.lg,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
   planCardSelected: {
+    borderWidth: 2,
     borderColor: colors.accent,
-    backgroundColor: colors.surfaceAlt,
   },
   planCardLeft: {
     gap: 2,

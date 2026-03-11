@@ -156,13 +156,8 @@ describe('UpgradeScreen', () => {
       fireEvent.press(getByTestId('subscribe-button'));
       expect(getByText('Annuel')).toBeDefined();
       expect(getByText('Mensuel')).toBeDefined();
-      expect(getByText(/49,99 €/)).toBeDefined();
-    });
-
-    it('displays free trial header', () => {
-      const { getByTestId, getByText } = render(React.createElement(UpgradeScreen));
-      fireEvent.press(getByTestId('subscribe-button'));
-      expect(getByText('Essai gratuit de 3 jours')).toBeDefined();
+      expect(getByText(/49,99 € \/ an/)).toBeDefined();
+      expect(getByText(/4,99 € \/ mois/)).toBeDefined();
     });
 
     it('triggers purchase on Continuer press', () => {
