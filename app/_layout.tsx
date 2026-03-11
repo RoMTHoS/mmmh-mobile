@@ -10,8 +10,15 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../src/components';
 import { useDatabase, useTrialExpiration, useAnalyticsSync } from '../src/hooks';
 import { TrialExpiryModal } from '../src/components/import/TrialExpiryModal';
+import { SubscriptionExpiryModal } from '../src/components/import/SubscriptionExpiryModal';
 import { FeedbackPrompt } from '../src/components/feedback/FeedbackPrompt';
-import { initDeviceId, ensurePlanSyncedToBackend } from '../src/services/planSync';
+import {
+  initDeviceId,
+  ensurePlanSyncedToBackend,
+  handleCustomerInfoUpdate,
+  syncPlan,
+} from '../src/services/planSync';
+import { initRevenueCat, addEntitlementListener } from '../src/services/revenueCat';
 import { analytics } from '../src/services/analytics';
 import { EVENTS } from '../src/utils/analyticsEvents';
 import { LoadingScreen } from '../src/components/ui';
@@ -91,16 +98,52 @@ function RootLayoutNav() {
   });
 
   useEffect(() => {
+    let removeListener: (() => void) | undefined;
+
     async function initServices() {
       const deviceId = await initDeviceId();
+
+      // Initialize RevenueCat SDK (graceful failure — app continues in degraded mode)
+      try {
+        await initRevenueCat(deviceId);
+      } catch {
+        // Logged inside initRevenueCat — continue without RC
+      }
+
       await analytics.initialize();
       analytics.identify(deviceId);
       analytics.track(EVENTS.APP_OPENED);
       ensurePlanSyncedToBackend();
+
+      // Set up RevenueCat listener for real-time entitlement changes
+      removeListener = addEntitlementListener((customerInfo) => {
+        handleCustomerInfoUpdate(customerInfo).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['user-plan'] });
+        });
+      });
+
       const showOnboarding = await shouldShowOnboarding();
       setNeedsOnboarding(showOnboarding);
     }
     initServices();
+
+    // Sync plan on every foreground return (lightweight — checks RevenueCat entitlement)
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        syncPlan()
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ['user-plan'] });
+          })
+          .catch(() => {
+            // Silently fail — will retry on next foreground
+          });
+      }
+    });
+
+    return () => {
+      removeListener?.();
+      appStateSubscription.remove();
+    };
   }, []);
 
   useEffect(() => {
@@ -146,6 +189,7 @@ function RootLayoutNav() {
       <TrialExpirationWatcher />
       <AnalyticsSyncWatcher />
       <TrialExpiryModal />
+      <SubscriptionExpiryModal />
       <FeedbackPrompt />
       <Stack
         screenOptions={{

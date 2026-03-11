@@ -57,6 +57,9 @@ describe('useTrialExpiration', () => {
       trialEndsDate: null,
       premiumActivatedDate: null,
       promoCode: null,
+      premiumSource: null,
+      subscriptionStatus: null,
+      expiresAt: null,
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
     };
@@ -75,6 +78,9 @@ describe('useTrialExpiration', () => {
       trialEndsDate: '2026-02-17T00:00:00Z',
       premiumActivatedDate: null,
       promoCode: null,
+      premiumSource: null,
+      subscriptionStatus: null,
+      expiresAt: null,
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
     };
@@ -93,6 +99,9 @@ describe('useTrialExpiration', () => {
       trialEndsDate: '2026-02-17T00:00:00Z',
       premiumActivatedDate: null,
       promoCode: null,
+      premiumSource: null,
+      subscriptionStatus: null,
+      expiresAt: null,
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
     };
@@ -126,6 +135,9 @@ describe('useTrialExpiration', () => {
       trialEndsDate: '2026-02-17T00:00:00Z',
       premiumActivatedDate: null,
       promoCode: null,
+      premiumSource: null,
+      subscriptionStatus: null,
+      expiresAt: null,
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
     };

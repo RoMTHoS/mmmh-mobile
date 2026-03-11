@@ -2,6 +2,7 @@ import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { colors, typography, spacing, radius } from '../../theme';
 import { canActivateTrial } from '../../utils/planStateMachine';
 import { useUserPlan } from '../../hooks/usePlan';
+import { useOfferings } from '../../hooks/usePurchase';
 
 interface QuotaExceededModalProps {
   visible: boolean;
@@ -17,6 +18,7 @@ export function QuotaExceededModal({
   onStartTrial,
 }: QuotaExceededModalProps) {
   const { data: plan } = useUserPlan();
+  const { priceString } = useOfferings();
   const showTrialOption = plan ? canActivateTrial(plan) : false;
 
   return (
@@ -38,7 +40,9 @@ export function QuotaExceededModal({
               onPress={onUpgrade}
               testID="quota-exceeded-upgrade"
             >
-              <Text style={styles.primaryButtonText}>Passer à Premium</Text>
+              <Text style={styles.primaryButtonText}>
+                {priceString ? `Passer à Premium (${priceString}/mois)` : 'Passer à Premium'}
+              </Text>
             </Pressable>
             {showTrialOption && onStartTrial && (
               <Pressable

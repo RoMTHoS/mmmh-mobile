@@ -66,6 +66,7 @@ function setFreePlan() {
     canUsePremium: false,
     vpsQuotaRemaining: 7,
     geminiQuotaRemaining: 0,
+    storeSubscription: null,
   });
   mockUseUserPlan.mockReturnValue({ data: null });
 }
@@ -78,6 +79,7 @@ function setTrialPlan() {
     canUsePremium: true,
     vpsQuotaRemaining: 10,
     geminiQuotaRemaining: 1,
+    storeSubscription: null,
   });
   mockUseUserPlan.mockReturnValue({ data: { trialStartDate: '2026-01-01' } });
 }
@@ -90,6 +92,7 @@ function setPremiumPlan() {
     canUsePremium: true,
     vpsQuotaRemaining: Infinity,
     geminiQuotaRemaining: Infinity,
+    storeSubscription: null,
   });
   mockUseUserPlan.mockReturnValue({ data: null });
 }

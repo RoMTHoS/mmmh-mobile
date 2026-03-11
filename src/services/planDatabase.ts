@@ -11,6 +11,9 @@ interface UserPlanRow {
   trial_ends_date: string | null;
   premium_activated_date: string | null;
   promo_code: string | null;
+  premium_source: string | null;
+  subscription_status: string | null;
+  expires_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -34,6 +37,9 @@ function deserializePlan(row: UserPlanRow): UserPlan {
     trialEndsDate: row.trial_ends_date,
     premiumActivatedDate: row.premium_activated_date,
     promoCode: row.promo_code,
+    premiumSource: row.premium_source as UserPlan['premiumSource'],
+    subscriptionStatus: row.subscription_status as UserPlan['subscriptionStatus'],
+    expiresAt: row.expires_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -96,6 +102,9 @@ export async function getUserPlan(): Promise<UserPlan> {
         trialEndsDate: null,
         premiumActivatedDate: null,
         promoCode: null,
+        premiumSource: null,
+        subscriptionStatus: null,
+        expiresAt: null,
         createdAt: now,
         updatedAt: now,
       };
@@ -172,6 +181,36 @@ export async function activatePremium(promoCode: string): Promise<UserPlan> {
   }
 }
 
+export async function activateStorePremium(
+  subscriptionStatus: string,
+  expiresAt: string | null
+): Promise<UserPlan> {
+  const database = getDatabase();
+
+  try {
+    const plan = await getUserPlan();
+    const now = new Date().toISOString();
+
+    database.runSync(
+      `UPDATE user_plan SET tier = 'premium', premium_activated_date = ?, premium_source = 'store', subscription_status = ?, expires_at = ?, updated_at = ? WHERE id = ?`,
+      [now, subscriptionStatus, expiresAt, now, plan.id]
+    );
+
+    return {
+      ...plan,
+      tier: 'premium',
+      premiumActivatedDate: now,
+      premiumSource: 'store',
+      subscriptionStatus: subscriptionStatus as UserPlan['subscriptionStatus'],
+      expiresAt,
+      updatedAt: now,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible d'activer le premium store. ${message}`);
+  }
+}
+
 export async function deactivatePremium(): Promise<UserPlan> {
   const database = getDatabase();
 
@@ -180,7 +219,7 @@ export async function deactivatePremium(): Promise<UserPlan> {
     const now = new Date().toISOString();
 
     database.runSync(
-      `UPDATE user_plan SET tier = 'free', premium_activated_date = NULL, updated_at = ? WHERE id = ?`,
+      `UPDATE user_plan SET tier = 'free', premium_activated_date = NULL, premium_source = NULL, subscription_status = NULL, expires_at = NULL, updated_at = ? WHERE id = ?`,
       [now, plan.id]
     );
 
@@ -188,12 +227,27 @@ export async function deactivatePremium(): Promise<UserPlan> {
       ...plan,
       tier: 'free',
       premiumActivatedDate: null,
+      premiumSource: null,
+      subscriptionStatus: null,
+      expiresAt: null,
       updatedAt: now,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue';
     throw new Error(`Impossible de désactiver le premium. ${message}`);
   }
+}
+
+export async function updatePremiumSource(source: UserPlan['premiumSource']): Promise<void> {
+  const database = getDatabase();
+  const plan = await getUserPlan();
+  const now = new Date().toISOString();
+
+  database.runSync(`UPDATE user_plan SET premium_source = ?, updated_at = ? WHERE id = ?`, [
+    source,
+    now,
+    plan.id,
+  ]);
 }
 
 function checkTrialExpiration(plan: UserPlan): UserPlan {

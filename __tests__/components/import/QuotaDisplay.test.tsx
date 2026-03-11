@@ -30,6 +30,7 @@ describe('QuotaDisplay', () => {
       canUsePremium: true,
       vpsQuotaRemaining: Infinity,
       geminiQuotaRemaining: Infinity,
+      storeSubscription: null,
     });
 
     const { queryByTestId } = render(<QuotaDisplay />);
@@ -44,6 +45,7 @@ describe('QuotaDisplay', () => {
       canUsePremium: false,
       vpsQuotaRemaining: 3,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<QuotaDisplay />);
@@ -62,6 +64,7 @@ describe('QuotaDisplay', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 8,
       geminiQuotaRemaining: 1,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<QuotaDisplay />);
@@ -80,6 +83,7 @@ describe('QuotaDisplay', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 10,
       geminiQuotaRemaining: 2,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<QuotaDisplay />);
@@ -98,6 +102,7 @@ describe('QuotaDisplay', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 7,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<QuotaDisplay />);
@@ -116,6 +121,7 @@ describe('QuotaDisplay', () => {
       canUsePremium: false,
       vpsQuotaRemaining: 5,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<QuotaDisplay />);
@@ -130,6 +136,7 @@ describe('QuotaDisplay', () => {
       canUsePremium: false,
       vpsQuotaRemaining: 0,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const { getByTestId } = render(<QuotaDisplay />);

@@ -30,7 +30,7 @@ describe('Database Service', () => {
 
       await db.initializeDatabase();
 
-      expect(mockDatabase.execSync).toHaveBeenCalledTimes(5);
+      expect(mockDatabase.execSync).toHaveBeenCalledTimes(6);
       expect(mockDatabase.execSync.mock.calls[0][0]).toContain(
         'CREATE TABLE IF NOT EXISTS recipes'
       );
@@ -52,7 +52,7 @@ describe('Database Service', () => {
     });
 
     it('should skip migrations when database is current version', async () => {
-      mockDatabase.getFirstSync.mockReturnValue({ version: 5 });
+      mockDatabase.getFirstSync.mockReturnValue({ version: 6 });
 
       await db.initializeDatabase();
 
