@@ -9,12 +9,12 @@ import React from 'react';
 
 // Mock revenueCat service
 const mockGetOfferings = jest.fn();
-const mockPurchaseMonthly = jest.fn();
+const mockPurchaseSubscription = jest.fn();
 const mockRestorePurchases = jest.fn();
 
 jest.mock('../../src/services/revenueCat', () => ({
   getOfferings: (...args: unknown[]) => mockGetOfferings(...args),
-  purchaseMonthlySubscription: (...args: unknown[]) => mockPurchaseMonthly(...args),
+  purchaseSubscription: (...args: unknown[]) => mockPurchaseSubscription(...args),
   restorePurchases: (...args: unknown[]) => mockRestorePurchases(...args),
   isPremiumActive: jest.fn(),
 }));
@@ -89,39 +89,39 @@ describe('usePurchaseSubscription', () => {
         },
       },
     };
-    mockPurchaseMonthly.mockResolvedValue({ success: true, customerInfo });
+    mockPurchaseSubscription.mockResolvedValue({ success: true, customerInfo });
 
     const { result } = renderHook(() => usePurchaseSubscription(), { wrapper: createWrapper() });
 
     let purchaseResult: unknown;
     await act(async () => {
-      purchaseResult = await result.current.purchase();
+      purchaseResult = await result.current.purchase('monthly');
     });
 
     expect((purchaseResult as { success: boolean }).success).toBe(true);
   });
 
   it('handles user cancellation', async () => {
-    mockPurchaseMonthly.mockResolvedValue({ success: false, userCancelled: true });
+    mockPurchaseSubscription.mockResolvedValue({ success: false, userCancelled: true });
 
     const { result } = renderHook(() => usePurchaseSubscription(), { wrapper: createWrapper() });
 
     let purchaseResult: unknown;
     await act(async () => {
-      purchaseResult = await result.current.purchase();
+      purchaseResult = await result.current.purchase('monthly');
     });
 
     expect((purchaseResult as { userCancelled: boolean }).userCancelled).toBe(true);
   });
 
   it('handles payment failure', async () => {
-    mockPurchaseMonthly.mockResolvedValue({ success: false, error: 'Payment declined' });
+    mockPurchaseSubscription.mockResolvedValue({ success: false, error: 'Payment declined' });
 
     const { result } = renderHook(() => usePurchaseSubscription(), { wrapper: createWrapper() });
 
     let purchaseResult: unknown;
     await act(async () => {
-      purchaseResult = await result.current.purchase();
+      purchaseResult = await result.current.purchase('monthly');
     });
 
     expect((purchaseResult as { error: string }).error).toBe('Payment declined');

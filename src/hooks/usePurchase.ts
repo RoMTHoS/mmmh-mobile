@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  getOfferings,
-  purchaseMonthlySubscription,
-  restorePurchases,
-} from '../services/revenueCat';
+import { getOfferings, purchaseSubscription, restorePurchases } from '../services/revenueCat';
+import type { PackageType } from '../services/revenueCat';
 import { syncActivateFromStore } from '../services/planSync';
 import { analytics } from '../services/analytics';
 import { EVENTS } from '../utils/analyticsEvents';
@@ -18,11 +15,14 @@ export function useOfferings() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const priceString = query.data?.current?.monthly?.product.priceString ?? null;
+  const monthlyPriceString = query.data?.current?.monthly?.product.priceString ?? null;
+  const annualPriceString = query.data?.current?.annual?.product.priceString ?? null;
 
   return {
     offerings: query.data,
-    priceString,
+    priceString: monthlyPriceString,
+    monthlyPriceString,
+    annualPriceString,
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
@@ -33,7 +33,7 @@ export function usePurchaseSubscription() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: purchaseMonthlySubscription,
+    mutationFn: (packageType?: PackageType) => purchaseSubscription(packageType ?? 'monthly'),
     onSuccess: async (result) => {
       if (result.success && result.customerInfo) {
         await syncActivateFromStore(result.customerInfo);

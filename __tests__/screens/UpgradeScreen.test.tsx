@@ -36,7 +36,8 @@ let mockPlanStatus: Record<string, unknown> | null = {
   storeSubscription: null,
 };
 
-let mockPriceString: string | null = '4,99 €';
+let mockMonthlyPriceString: string | null = '4,99 €';
+let mockAnnualPriceString: string | null = '49,99 €';
 let mockOfferingsLoading = false;
 let mockOfferingsError: Error | null = null;
 
@@ -47,10 +48,17 @@ jest.mock('../../src/hooks', () => ({
     isPending: false,
   }),
   useOfferings: () => ({
-    offerings: mockPriceString
-      ? { current: { monthly: { product: { priceString: mockPriceString } } } }
+    offerings: mockMonthlyPriceString
+      ? {
+          current: {
+            monthly: { product: { priceString: mockMonthlyPriceString } },
+            annual: { product: { priceString: mockAnnualPriceString } },
+          },
+        }
       : null,
-    priceString: mockPriceString,
+    priceString: mockMonthlyPriceString,
+    monthlyPriceString: mockMonthlyPriceString,
+    annualPriceString: mockAnnualPriceString,
     isLoading: mockOfferingsLoading,
     error: mockOfferingsError,
     refetch: jest.fn(),
@@ -100,7 +108,8 @@ describe('UpgradeScreen', () => {
       geminiQuotaRemaining: 0,
       storeSubscription: null,
     };
-    mockPriceString = '4,99 €';
+    mockMonthlyPriceString = '4,99 €';
+    mockAnnualPriceString = '49,99 €';
     mockOfferingsLoading = false;
     mockOfferingsError = null;
   });
@@ -126,13 +135,15 @@ describe('UpgradeScreen', () => {
       expect(button).toBeDefined();
     });
 
-    it('displays localized price from offerings', () => {
-      const { getByText } = render(React.createElement(UpgradeScreen));
-      expect(getByText("S'abonner — 4,99 €/mois")).toBeDefined();
+    it('displays monthly and annual plan cards with prices', () => {
+      const { getByText, getByTestId } = render(React.createElement(UpgradeScreen));
+      expect(getByTestId('plan-card-monthly')).toBeDefined();
+      expect(getByTestId('plan-card-annual')).toBeDefined();
+      expect(getByText('4,99 €')).toBeDefined();
+      expect(getByText('49,99 €')).toBeDefined();
     });
 
-    it('shows fallback text when no price available', () => {
-      mockPriceString = null;
+    it('shows subscribe button', () => {
       const { getByText } = render(React.createElement(UpgradeScreen));
       expect(getByText("S'abonner")).toBeDefined();
     });
@@ -226,7 +237,7 @@ describe('UpgradeScreen', () => {
   describe('subscription terms', () => {
     it('displays terms text', () => {
       const { getByText } = render(React.createElement(UpgradeScreen));
-      expect(getByText(/Abonnement mensuel/)).toBeDefined();
+      expect(getByText(/Abonnement annuel/)).toBeDefined();
     });
   });
 });

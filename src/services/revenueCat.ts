@@ -142,23 +142,27 @@ export async function getOfferings(): Promise<PurchasesOfferings | null> {
   }
 }
 
+export type PackageType = 'monthly' | 'annual';
+
 /**
- * Purchase the monthly subscription package.
+ * Purchase a subscription package by type (monthly or annual).
  */
-export async function purchaseMonthlySubscription(): Promise<PurchaseResult> {
+export async function purchaseSubscription(
+  packageType: PackageType = 'monthly'
+): Promise<PurchaseResult> {
   if (!isInitialized) {
     return { success: false, error: 'SDK non initialisé' };
   }
 
   try {
     const offerings = await Purchases.getOfferings();
-    const monthly = offerings.current?.monthly;
+    const pkg = packageType === 'annual' ? offerings.current?.annual : offerings.current?.monthly;
 
-    if (!monthly) {
+    if (!pkg) {
       return { success: false, error: 'Offre non disponible' };
     }
 
-    const { customerInfo } = await Purchases.purchasePackage(monthly);
+    const { customerInfo } = await Purchases.purchasePackage(pkg);
     return { success: true, customerInfo };
   } catch (error: unknown) {
     const purchasesError = error as { userCancelled?: boolean; message?: string };
@@ -171,6 +175,11 @@ export async function purchaseMonthlySubscription(): Promise<PurchaseResult> {
     };
   }
 }
+
+/**
+ * @deprecated Use purchaseSubscription('monthly') instead.
+ */
+export const purchaseMonthlySubscription = () => purchaseSubscription('monthly');
 
 /**
  * Restore previous purchases. Returns whether a premium entitlement was found.

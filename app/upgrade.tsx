@@ -29,7 +29,8 @@ export default function UpgradeScreen() {
   const planStatus = usePlanStatus();
   const activatePremium = useActivatePremium();
   const {
-    priceString,
+    monthlyPriceString,
+    annualPriceString,
     isLoading: offeringsLoading,
     error: offeringsError,
     refetch,
@@ -37,6 +38,7 @@ export default function UpgradeScreen() {
   const { purchase, isPurchasing } = usePurchaseSubscription();
   const { restore, isRestoring } = useRestorePurchases();
 
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual');
   const [showPromoInput, setShowPromoInput] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -44,8 +46,8 @@ export default function UpgradeScreen() {
   const isPremium = planStatus?.tier === 'premium';
 
   const handlePurchase = useCallback(async () => {
-    analytics.track(EVENTS.PURCHASE_INITIATED);
-    const result = await purchase();
+    analytics.track(EVENTS.PURCHASE_INITIATED, { plan: selectedPlan });
+    const result = await purchase(selectedPlan);
 
     if (result.success) {
       Toast.show({
@@ -65,7 +67,7 @@ export default function UpgradeScreen() {
         visibilityTime: 4000,
       });
     }
-  }, [purchase]);
+  }, [purchase, selectedPlan]);
 
   const handleRestore = useCallback(async () => {
     analytics.track(EVENTS.RESTORE_INITIATED);
@@ -205,20 +207,49 @@ export default function UpgradeScreen() {
               </Pressable>
             </View>
           ) : (
-            <Pressable
-              style={styles.subscribeButton}
-              onPress={handlePurchase}
-              disabled={isPurchasing || offeringsLoading}
-              testID="subscribe-button"
-            >
-              {isPurchasing ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.subscribeButtonText}>
-                  {priceString ? `S'abonner — ${priceString}/mois` : "S'abonner"}
-                </Text>
-              )}
-            </Pressable>
+            <>
+              {/* Plan selection cards */}
+              <View style={styles.planCardsRow}>
+                <Pressable
+                  style={[styles.planCard, selectedPlan === 'annual' && styles.planCardSelected]}
+                  onPress={() => setSelectedPlan('annual')}
+                  testID="plan-card-annual"
+                >
+                  {selectedPlan === 'annual' && (
+                    <View style={styles.bestValueBadge}>
+                      <Text style={styles.bestValueText}>Meilleur prix</Text>
+                    </View>
+                  )}
+                  <Text style={styles.planCardPeriod}>Annuel</Text>
+                  <Text style={styles.planCardPrice}>{annualPriceString ?? '...'}</Text>
+                  <Text style={styles.planCardUnit}>/an</Text>
+                </Pressable>
+
+                <Pressable
+                  style={[styles.planCard, selectedPlan === 'monthly' && styles.planCardSelected]}
+                  onPress={() => setSelectedPlan('monthly')}
+                  testID="plan-card-monthly"
+                >
+                  <Text style={styles.planCardPeriod}>Mensuel</Text>
+                  <Text style={styles.planCardPrice}>{monthlyPriceString ?? '...'}</Text>
+                  <Text style={styles.planCardUnit}>/mois</Text>
+                </Pressable>
+              </View>
+
+              {/* Subscribe button */}
+              <Pressable
+                style={styles.subscribeButton}
+                onPress={handlePurchase}
+                disabled={isPurchasing || offeringsLoading}
+                testID="subscribe-button"
+              >
+                {isPurchasing ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.subscribeButtonText}>S'abonner</Text>
+                )}
+              </Pressable>
+            </>
           )}
 
           {/* Restore purchases */}
@@ -237,8 +268,9 @@ export default function UpgradeScreen() {
 
           {/* Subscription terms */}
           <Text style={styles.termsText}>
-            Abonnement mensuel. Renouvelable automatiquement. Annulable à tout moment depuis les
-            réglages de votre appareil.
+            {selectedPlan === 'annual'
+              ? 'Abonnement annuel. Renouvelable automatiquement. Annulable à tout moment depuis les réglages de votre appareil.'
+              : 'Abonnement mensuel. Renouvelable automatiquement. Annulable à tout moment depuis les réglages de votre appareil.'}
           </Text>
 
           {/* Promo code collapsible section */}
@@ -382,6 +414,61 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: 'center',
     gap: spacing.sm,
+  },
+
+  // Plan selection cards
+  planCardsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    width: '100%',
+  },
+  planCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  planCardSelected: {
+    borderColor: colors.accent,
+    backgroundColor: colors.surfaceAlt,
+  },
+  bestValueBadge: {
+    position: 'absolute',
+    top: -10,
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+  },
+  bestValueText: {
+    fontFamily: fonts.script,
+    fontSize: 11,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  planCardPeriod: {
+    fontFamily: fonts.script,
+    fontSize: 14,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
+  planCardPrice: {
+    fontFamily: fonts.script,
+    fontSize: 22,
+    color: colors.text,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  planCardUnit: {
+    fontFamily: fonts.script,
+    fontSize: 13,
+    color: colors.textMuted,
   },
 
   // Subscribe button
