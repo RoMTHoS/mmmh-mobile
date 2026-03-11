@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 
@@ -38,6 +39,7 @@ export default function UpgradeScreen() {
   const { purchase, isPurchasing } = usePurchaseSubscription();
   const { restore, isRestoring } = useRestorePurchases();
 
+  const [showOffersModal, setShowOffersModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual');
   const [showPromoInput, setShowPromoInput] = useState(false);
   const [promoCode, setPromoCode] = useState('');
@@ -45,11 +47,20 @@ export default function UpgradeScreen() {
 
   const isPremium = planStatus?.tier === 'premium';
 
+  const handleOpenOffers = useCallback(() => {
+    if (offeringsError && !offeringsLoading) {
+      refetch();
+      return;
+    }
+    setShowOffersModal(true);
+  }, [offeringsError, offeringsLoading, refetch]);
+
   const handlePurchase = useCallback(async () => {
     analytics.track(EVENTS.PURCHASE_INITIATED, { plan: selectedPlan });
     const result = await purchase(selectedPlan);
 
     if (result.success) {
+      setShowOffersModal(false);
       Toast.show({
         type: 'success',
         text1: 'Premium activé !',
@@ -74,6 +85,7 @@ export default function UpgradeScreen() {
     const result = await restore();
 
     if (result.restored) {
+      setShowOffersModal(false);
       Toast.show({
         type: 'success',
         text1: 'Premium restauré avec succès !',
@@ -148,7 +160,7 @@ export default function UpgradeScreen() {
               </Text>
             ) : (
               <Text style={styles.activeSubtext}>
-                Vous bénéficiez d'imports illimités en haute qualité.
+                {"Vous bénéficiez d'imports illimités en haute qualité."}
               </Text>
             )}
           </View>
@@ -166,24 +178,24 @@ export default function UpgradeScreen() {
             {/* Benefits list */}
             <View style={styles.benefitsSection}>
               <View style={styles.benefitRow}>
-                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.bullet}>{'•'}</Text>
                 <Text style={styles.benefitText}>Importe tes recettes en illimité</Text>
               </View>
 
               <View style={styles.benefitRow}>
-                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.bullet}>{'•'}</Text>
                 <Text style={styles.benefitText}>Sauvegarde tes recettes dans le cloud</Text>
               </View>
 
               <View style={styles.benefitRow}>
-                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.bullet}>{'•'}</Text>
                 <View>
                   <Text style={styles.benefitText}>IA plus performante</Text>
                   <View style={styles.subBenefits}>
-                    <Text style={styles.subBenefitText}>• Harder : Recette plus complette</Text>
-                    <Text style={styles.subBenefitText}>• Better : Recette plus précise</Text>
-                    <Text style={styles.subBenefitText}>• Faster : Génération plus rapide</Text>
-                    <Text style={styles.subBenefitText}>• Stronger : Résultat garantie</Text>
+                    <Text style={styles.subBenefitText}>{'•'} Harder : Recette plus complette</Text>
+                    <Text style={styles.subBenefitText}>{'•'} Better : Recette plus précise</Text>
+                    <Text style={styles.subBenefitText}>{'•'} Faster : Génération plus rapide</Text>
+                    <Text style={styles.subBenefitText}>{'•'} Stronger : Résultat garantie</Text>
                   </View>
                 </View>
               </View>
@@ -194,9 +206,9 @@ export default function UpgradeScreen() {
         <View style={styles.bottomPadding} />
       </ScrollView>
 
+      {/* Bottom fixed area — main screen */}
       {!isPremium && (
         <View style={styles.bottomButtonContainer}>
-          {/* Primary CTA: Store subscription */}
           {offeringsError && !offeringsLoading ? (
             <View style={styles.offeringsError}>
               <Text style={styles.offeringsErrorText}>
@@ -207,71 +219,19 @@ export default function UpgradeScreen() {
               </Pressable>
             </View>
           ) : (
-            <>
-              {/* Plan selection cards */}
-              <View style={styles.planCardsRow}>
-                <Pressable
-                  style={[styles.planCard, selectedPlan === 'annual' && styles.planCardSelected]}
-                  onPress={() => setSelectedPlan('annual')}
-                  testID="plan-card-annual"
-                >
-                  {selectedPlan === 'annual' && (
-                    <View style={styles.bestValueBadge}>
-                      <Text style={styles.bestValueText}>Meilleur prix</Text>
-                    </View>
-                  )}
-                  <Text style={styles.planCardPeriod}>Annuel</Text>
-                  <Text style={styles.planCardPrice}>{annualPriceString ?? '...'}</Text>
-                  <Text style={styles.planCardUnit}>/an</Text>
-                </Pressable>
-
-                <Pressable
-                  style={[styles.planCard, selectedPlan === 'monthly' && styles.planCardSelected]}
-                  onPress={() => setSelectedPlan('monthly')}
-                  testID="plan-card-monthly"
-                >
-                  <Text style={styles.planCardPeriod}>Mensuel</Text>
-                  <Text style={styles.planCardPrice}>{monthlyPriceString ?? '...'}</Text>
-                  <Text style={styles.planCardUnit}>/mois</Text>
-                </Pressable>
-              </View>
-
-              {/* Subscribe button */}
-              <Pressable
-                style={styles.subscribeButton}
-                onPress={handlePurchase}
-                disabled={isPurchasing || offeringsLoading}
-                testID="subscribe-button"
-              >
-                {isPurchasing ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.subscribeButtonText}>S'abonner</Text>
-                )}
-              </Pressable>
-            </>
+            <Pressable
+              style={styles.seeOffersButton}
+              onPress={handleOpenOffers}
+              disabled={offeringsLoading}
+              testID="subscribe-button"
+            >
+              {offeringsLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.seeOffersButtonText}>Voir les offres</Text>
+              )}
+            </Pressable>
           )}
-
-          {/* Restore purchases */}
-          <Pressable
-            style={styles.restoreButton}
-            onPress={handleRestore}
-            disabled={isRestoring}
-            testID="restore-button"
-          >
-            {isRestoring ? (
-              <ActivityIndicator size="small" color={colors.textMuted} />
-            ) : (
-              <Text style={styles.restoreButtonText}>Restaurer mes achats</Text>
-            )}
-          </Pressable>
-
-          {/* Subscription terms */}
-          <Text style={styles.termsText}>
-            {selectedPlan === 'annual'
-              ? 'Abonnement annuel. Renouvelable automatiquement. Annulable à tout moment depuis les réglages de votre appareil.'
-              : 'Abonnement mensuel. Renouvelable automatiquement. Annulable à tout moment depuis les réglages de votre appareil.'}
-          </Text>
 
           {/* Promo code collapsible section */}
           {!showPromoInput ? (
@@ -315,6 +275,82 @@ export default function UpgradeScreen() {
           )}
         </View>
       )}
+
+      {/* Offers bottom sheet modal */}
+      <Modal
+        visible={showOffersModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowOffersModal(false)}
+        testID="offers-modal"
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowOffersModal(false)}>
+          <Pressable style={styles.modalSheet} onPress={() => {}}>
+            {/* Header */}
+            <Text style={styles.modalHeader}>Essai gratuit de 3 jours</Text>
+
+            {/* Annual plan card */}
+            <Pressable
+              style={[styles.planCard, selectedPlan === 'annual' && styles.planCardSelected]}
+              onPress={() => setSelectedPlan('annual')}
+              testID="plan-card-annual"
+            >
+              <View style={styles.planCardLeft}>
+                <Text style={styles.planCardLabel}>Annuel</Text>
+                <Text style={styles.planCardSubLabel}>{annualPriceString ?? '...'} / an</Text>
+              </View>
+              <Text style={styles.planCardPrice}>{monthlyPriceString ?? '...'} / mois</Text>
+            </Pressable>
+
+            {/* Monthly plan card */}
+            <Pressable
+              style={[styles.planCard, selectedPlan === 'monthly' && styles.planCardSelected]}
+              onPress={() => setSelectedPlan('monthly')}
+              testID="plan-card-monthly"
+            >
+              <View style={styles.planCardLeft}>
+                <Text style={styles.planCardLabel}>Mensuel</Text>
+              </View>
+              <Text style={styles.planCardPrice}>{monthlyPriceString ?? '...'} / mois</Text>
+            </Pressable>
+
+            {/* Continue button */}
+            <Pressable
+              style={styles.continueButton}
+              onPress={handlePurchase}
+              disabled={isPurchasing}
+              testID="continue-purchase-button"
+            >
+              {isPurchasing ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.continueButtonText}>Continuer</Text>
+              )}
+            </Pressable>
+
+            {/* Restore purchases */}
+            <Pressable
+              style={styles.restoreButton}
+              onPress={handleRestore}
+              disabled={isRestoring}
+              testID="restore-button"
+            >
+              {isRestoring ? (
+                <ActivityIndicator size="small" color={colors.textMuted} />
+              ) : (
+                <Text style={styles.restoreButtonText}>Restaurer mes achats</Text>
+              )}
+            </Pressable>
+
+            {/* Subscription terms */}
+            <Text style={styles.termsText}>
+              {selectedPlan === 'annual'
+                ? 'Abonnement annuel. Renouvelable automatiquement. Annulable à tout moment depuis les réglages de votre appareil.'
+                : 'Abonnement mensuel. Renouvelable automatiquement. Annulable à tout moment depuis les réglages de votre appareil.'}
+            </Text>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </>
   );
 }
@@ -406,7 +442,7 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
 
-  // Bottom fixed area
+  // Bottom fixed area (main screen)
   bottomButtonContainer: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.xl,
@@ -416,70 +452,91 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
 
-  // Plan selection cards
-  planCardsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    width: '100%',
-  },
-  planCard: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.lg,
-    borderWidth: 2,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    position: 'relative',
-    overflow: 'visible',
-  },
-  planCardSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.surfaceAlt,
-  },
-  bestValueBadge: {
-    position: 'absolute',
-    top: -10,
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  bestValueText: {
-    fontFamily: fonts.script,
-    fontSize: 11,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  planCardPeriod: {
-    fontFamily: fonts.script,
-    fontSize: 14,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  planCardPrice: {
-    fontFamily: fonts.script,
-    fontSize: 22,
-    color: colors.text,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  planCardUnit: {
-    fontFamily: fonts.script,
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-
-  // Subscribe button
-  subscribeButton: {
+  // "Voir les offres" button
+  seeOffersButton: {
     width: '100%',
     paddingVertical: spacing.md + 2,
     borderRadius: radius.full,
     backgroundColor: colors.accent,
     alignItems: 'center',
   },
-  subscribeButtonText: {
+  seeOffersButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 18,
+    color: '#FFFFFF',
+  },
+
+  // Modal overlay
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl + spacing.md,
+    gap: spacing.sm,
+  },
+
+  // Modal header
+  modalHeader: {
+    fontFamily: fonts.script,
+    fontSize: 15,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+
+  // Plan cards (inside modal)
+  planCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  planCardSelected: {
+    borderColor: colors.accent,
+    backgroundColor: colors.surfaceAlt,
+  },
+  planCardLeft: {
+    gap: 2,
+  },
+  planCardLabel: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  planCardSubLabel: {
+    fontFamily: fonts.script,
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  planCardPrice: {
+    fontFamily: fonts.script,
+    fontSize: 15,
+    color: colors.text,
+  },
+
+  // Continue button
+  continueButton: {
+    width: '100%',
+    paddingVertical: spacing.md + 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  continueButtonText: {
     fontFamily: fonts.script,
     fontSize: 18,
     color: '#FFFFFF',
@@ -488,6 +545,7 @@ const styles = StyleSheet.create({
   // Restore
   restoreButton: {
     padding: spacing.xs,
+    alignSelf: 'center',
   },
   restoreButtonText: {
     fontFamily: fonts.script,

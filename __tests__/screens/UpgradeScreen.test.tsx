@@ -128,30 +128,11 @@ describe('UpgradeScreen', () => {
     });
   });
 
-  describe('store subscription', () => {
-    it('renders subscribe button with price', () => {
-      const { getByTestId } = render(React.createElement(UpgradeScreen));
-      const button = getByTestId('subscribe-button');
-      expect(button).toBeDefined();
-    });
-
-    it('displays monthly and annual plan cards with prices', () => {
-      const { getByText, getByTestId } = render(React.createElement(UpgradeScreen));
-      expect(getByTestId('plan-card-monthly')).toBeDefined();
-      expect(getByTestId('plan-card-annual')).toBeDefined();
-      expect(getByText('4,99 €')).toBeDefined();
-      expect(getByText('49,99 €')).toBeDefined();
-    });
-
-    it('shows subscribe button', () => {
-      const { getByText } = render(React.createElement(UpgradeScreen));
-      expect(getByText("S'abonner")).toBeDefined();
-    });
-
-    it('triggers purchase on subscribe press', () => {
-      const { getByTestId } = render(React.createElement(UpgradeScreen));
-      fireEvent.press(getByTestId('subscribe-button'));
-      expect(mockPurchase).toHaveBeenCalled();
+  describe('main screen CTA', () => {
+    it('renders "Voir les offres" button', () => {
+      const { getByTestId, getByText } = render(React.createElement(UpgradeScreen));
+      expect(getByTestId('subscribe-button')).toBeDefined();
+      expect(getByText('Voir les offres')).toBeDefined();
     });
 
     it('shows offerings error with retry', () => {
@@ -162,16 +143,52 @@ describe('UpgradeScreen', () => {
     });
   });
 
-  describe('restore purchases', () => {
-    it('renders restore button', () => {
+  describe('offers modal', () => {
+    it('opens modal on "Voir les offres" press', () => {
       const { getByTestId } = render(React.createElement(UpgradeScreen));
+      fireEvent.press(getByTestId('subscribe-button'));
+      expect(getByTestId('plan-card-annual')).toBeDefined();
+      expect(getByTestId('plan-card-monthly')).toBeDefined();
+    });
+
+    it('displays plan cards with prices in modal', () => {
+      const { getByTestId, getByText } = render(React.createElement(UpgradeScreen));
+      fireEvent.press(getByTestId('subscribe-button'));
+      expect(getByText('Annuel')).toBeDefined();
+      expect(getByText('Mensuel')).toBeDefined();
+      expect(getByText(/49,99 €/)).toBeDefined();
+    });
+
+    it('displays free trial header', () => {
+      const { getByTestId, getByText } = render(React.createElement(UpgradeScreen));
+      fireEvent.press(getByTestId('subscribe-button'));
+      expect(getByText('Essai gratuit de 3 jours')).toBeDefined();
+    });
+
+    it('triggers purchase on Continuer press', () => {
+      const { getByTestId } = render(React.createElement(UpgradeScreen));
+      fireEvent.press(getByTestId('subscribe-button'));
+      fireEvent.press(getByTestId('continue-purchase-button'));
+      expect(mockPurchase).toHaveBeenCalled();
+    });
+
+    it('renders restore button in modal', () => {
+      const { getByTestId } = render(React.createElement(UpgradeScreen));
+      fireEvent.press(getByTestId('subscribe-button'));
       expect(getByTestId('restore-button')).toBeDefined();
     });
 
     it('triggers restore on press', () => {
       const { getByTestId } = render(React.createElement(UpgradeScreen));
+      fireEvent.press(getByTestId('subscribe-button'));
       fireEvent.press(getByTestId('restore-button'));
       expect(mockRestore).toHaveBeenCalled();
+    });
+
+    it('displays terms text in modal', () => {
+      const { getByTestId, getByText } = render(React.createElement(UpgradeScreen));
+      fireEvent.press(getByTestId('subscribe-button'));
+      expect(getByText(/Abonnement annuel/)).toBeDefined();
     });
   });
 
@@ -231,13 +248,6 @@ describe('UpgradeScreen', () => {
       const { queryByTestId } = render(React.createElement(UpgradeScreen));
       expect(queryByTestId('subscribe-button')).toBeNull();
       expect(queryByTestId('promo-toggle')).toBeNull();
-    });
-  });
-
-  describe('subscription terms', () => {
-    it('displays terms text', () => {
-      const { getByText } = render(React.createElement(UpgradeScreen));
-      expect(getByText(/Abonnement annuel/)).toBeDefined();
     });
   });
 });
