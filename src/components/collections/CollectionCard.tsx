@@ -1,8 +1,5 @@
-import { View, Text, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { colors, fonts, spacing, radius } from '../../theme';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const COLLECTION_CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 2 - spacing.md) / 2.3;
 import { Icon } from '../ui';
 
 interface CollectionCardProps {
@@ -10,9 +7,10 @@ interface CollectionCardProps {
   name: string;
   images: string[];
   onPress: (id: string) => void;
+  cardHeight?: number;
 }
 
-export function CollectionCard({ id, name, images, onPress }: CollectionCardProps) {
+export function CollectionCard({ id, name, images, onPress, cardHeight }: CollectionCardProps) {
   const displayImages = images.slice(0, 3);
 
   const renderSlot = (index: number, style: object) => {
@@ -29,7 +27,11 @@ export function CollectionCard({ id, name, images, onPress }: CollectionCardProp
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.container,
+        cardHeight ? { height: cardHeight, aspectRatio: 1 } : {},
+        pressed && styles.pressed,
+      ]}
       onPress={() => onPress(id)}
       accessibilityRole="button"
       accessibilityLabel={`Collection ${name}`}
@@ -56,12 +58,17 @@ export function CollectionCard({ id, name, images, onPress }: CollectionCardProp
 
 interface NewCollectionCardProps {
   onPress: () => void;
+  cardHeight?: number;
 }
 
-export function NewCollectionCard({ onPress }: NewCollectionCardProps) {
+export function NewCollectionCard({ onPress, cardHeight }: NewCollectionCardProps) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.container,
+        cardHeight ? { height: cardHeight, aspectRatio: 1 } : {},
+        pressed && styles.pressed,
+      ]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="Créer une nouvelle collection"
@@ -78,7 +85,6 @@ export function NewCollectionCard({ onPress }: NewCollectionCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    width: COLLECTION_CARD_WIDTH,
     shadowColor: '#000',
     shadowOffset: { width: 2, height: 3 },
     shadowOpacity: 0.25,
@@ -90,7 +96,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   imageGrid: {
-    aspectRatio: 1,
+    flex: 1,
     borderRadius: radius.lg,
     overflow: 'hidden',
     borderWidth: 1,

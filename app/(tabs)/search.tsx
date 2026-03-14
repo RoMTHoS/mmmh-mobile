@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
 import { SearchBar, Icon, EmptyState } from '../../src/components/ui';
+import { ImportStatusList } from '../../src/components/import';
 import { RecipeGridSkeleton } from '../../src/components/recipes/RecipeGridSkeleton';
 import { useUIStore } from '../../src/stores/uiStore';
 import { colors, spacing, radius, fonts } from '../../src/theme';
@@ -100,6 +101,8 @@ export default function SearchScreen() {
         placeholder="Rechercher"
         style={styles.searchBar}
       />
+
+      <ImportStatusList />
 
       {filteredRecipes.length === 0 ? (
         <EmptyState

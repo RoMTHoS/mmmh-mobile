@@ -5,18 +5,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
 import { Icon, MmmhLogo } from '../../src/components/ui';
 import { CollectionSection } from '../../src/components/collections';
-import { ImportStatusList } from '../../src/components/import';
+
 import { RecipeGridSkeleton } from '../../src/components/recipes/RecipeGridSkeleton';
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
 import type { Recipe } from '../../src/types';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const NEW_RECIPE_CARD_WIDTH = SCREEN_WIDTH * 0.5;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+// Logo area ~70, tab bar ~85, 3 section titles (24+margins) ~100, padding ~30
+const FIXED_OVERHEAD = 285;
 
-function NewRecipeCard({ recipe }: { recipe: Recipe }) {
+function NewRecipeCard({ recipe, cardHeight }: { recipe: Recipe; cardHeight: number }) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.newRecipeCard, pressed && { opacity: 0.85 }]}
+      style={({ pressed }) => [
+        { height: cardHeight, aspectRatio: 1 },
+        styles.newRecipeCard,
+        pressed && { opacity: 0.85 },
+      ]}
       onPress={() => router.push(`/recipe/${recipe.id}`)}
       accessibilityLabel={recipe.title}
     >
@@ -90,6 +95,11 @@ export default function HomeScreen() {
     // TODO: Open create collection modal
   };
 
+  // Compute card heights based on available screen space
+  const availableHeight = SCREEN_HEIGHT - FIXED_OVERHEAD - insets.top - insets.bottom;
+  const recipeCardHeight = availableHeight * 0.45;
+  const collectionCardHeight = availableHeight * 0.33;
+
   if (isLoading) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -117,13 +127,7 @@ export default function HomeScreen() {
         <MmmhLogo width={140} />
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <ImportStatusList />
-
+      <View style={styles.sectionsContainer}>
         {/* Nouvelle recette section */}
         {latestRecipes.length > 0 && (
           <View style={styles.section}>
@@ -134,7 +138,7 @@ export default function HomeScreen() {
               contentContainerStyle={styles.newRecipeRow}
             >
               {latestRecipes.map((recipe) => (
-                <NewRecipeCard key={recipe.id} recipe={recipe} />
+                <NewRecipeCard key={recipe.id} recipe={recipe} cardHeight={recipeCardHeight} />
               ))}
             </ScrollView>
           </View>
@@ -146,6 +150,7 @@ export default function HomeScreen() {
           onCollectionPress={handleCollectionPress}
           onNewPress={handleNewCollection}
           showNewButton
+          cardHeight={collectionCardHeight}
         />
 
         <CollectionSection
@@ -154,8 +159,9 @@ export default function HomeScreen() {
           onCollectionPress={handleCollectionPress}
           onNewPress={handleNewCollection}
           showNewButton
+          cardHeight={collectionCardHeight}
         />
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -168,14 +174,11 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     paddingTop: spacing.xs,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.sm,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
+  sectionsContainer: {
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   section: {
     marginBottom: spacing.md,
@@ -193,7 +196,6 @@ const styles = StyleSheet.create({
     paddingRight: spacing.xl,
   },
   newRecipeCard: {
-    width: NEW_RECIPE_CARD_WIDTH,
     shadowColor: '#000',
     shadowOffset: { width: 2, height: 3 },
     shadowOpacity: 0.25,
@@ -201,6 +203,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   newRecipeImageContainer: {
+    flex: 1,
     borderRadius: radius.md,
     overflow: 'hidden',
     borderWidth: 1,
@@ -208,7 +211,7 @@ const styles = StyleSheet.create({
   },
   newRecipeImage: {
     width: '100%',
-    aspectRatio: 1,
+    flex: 1,
     backgroundColor: colors.surfaceAlt,
   },
   newRecipePlaceholder: {

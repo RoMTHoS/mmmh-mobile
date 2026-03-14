@@ -14,6 +14,8 @@ interface CollectionSectionProps {
   onCollectionPress: (id: string) => void;
   onNewPress?: () => void;
   showNewButton?: boolean;
+  style?: object;
+  cardHeight?: number;
 }
 
 export function CollectionSection({
@@ -22,9 +24,11 @@ export function CollectionSection({
   onCollectionPress,
   onNewPress,
   showNewButton = false,
+  style,
+  cardHeight,
 }: CollectionSectionProps) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <Text style={styles.title}>{title}</Text>
       <ScrollView
         horizontal
@@ -38,9 +42,12 @@ export function CollectionSection({
             name={collection.name}
             images={collection.images}
             onPress={onCollectionPress}
+            cardHeight={cardHeight}
           />
         ))}
-        {showNewButton && onNewPress && <NewCollectionCard onPress={onNewPress} />}
+        {showNewButton && onNewPress && (
+          <NewCollectionCard onPress={onNewPress} cardHeight={cardHeight} />
+        )}
       </ScrollView>
     </View>
   );
