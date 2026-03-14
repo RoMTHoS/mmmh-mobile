@@ -27,7 +27,6 @@ import { getDatabase } from '../../src/services/database';
 import { analytics } from '../../src/services/analytics';
 import { EVENTS } from '../../src/utils/analyticsEvents';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
-import { useSettingsStore, type ThemeMode } from '../../src/stores/settingsStore';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const BUILD_NUMBER =
@@ -36,7 +35,6 @@ const BUILD_NUMBER =
   '1';
 
 const URLS = {
-  faq: 'https://mymealmatehelper.com/faq',
   privacy: 'https://mymealmatehelper.com/privacy',
   terms: 'https://mymealmatehelper.com/terms',
   download: 'https://mymealmatehelper.com/download',
@@ -44,16 +42,8 @@ const URLS = {
 
 const SUPPORT_EMAIL = 'support@mymealmatehelper.com';
 
-const THEME_LABELS: Record<ThemeMode, string> = {
-  light: 'Clair',
-  dark: 'Sombre',
-  system: 'Système',
-};
-
-const THEME_OPTIONS: ThemeMode[] = ['light', 'dark', 'system'];
-
 const TIER_BADGE_CONFIG = {
-  free: { label: 'Gratuit', bg: colors.surface, border: colors.textMuted, text: colors.textMuted },
+  free: { label: 'Standard', bg: colors.surface, border: colors.textMuted, text: colors.textMuted },
   trial: { label: 'Essai', bg: '#EFF6FF', border: colors.info, text: colors.info },
   premium: { label: 'Premium', bg: '#FEF3C7', border: '#D4A017', text: '#D4A017' },
 } as const;
@@ -90,7 +80,7 @@ function PlanUsageSection() {
           <View style={rowStyles.itemIcon}>
             <PremiumIcon width={22} />
           </View>
-          <View style={[rowStyles.itemContent, { gap: 6 }]}>
+          <View style={[rowStyles.itemContent, { gap: spacing.md }]}>
             {/* Tier badge */}
             <View style={planStyles.tierRow}>
               <Text style={rowStyles.itemTitle}>Plan actuel</Text>
@@ -110,10 +100,7 @@ function PlanUsageSection() {
             </View>
 
             {planStatus.tier !== 'premium' && (
-              <>
-                <Text style={rowStyles.itemSubtitle} testID="plan-vps-usage">
-                  Premium import utilisé : {premiumUsed}/{geminiPerWeek}
-                </Text>
+              <View style={planStyles.progressGroup}>
                 <View style={planStyles.progressTrack}>
                   <View
                     style={[
@@ -125,7 +112,13 @@ function PlanUsageSection() {
                     ]}
                   />
                 </View>
-              </>
+                <View style={planStyles.usageRow}>
+                  <Text style={rowStyles.itemSubtitle} testID="plan-vps-usage">
+                    Premium import utilisé {premiumUsed}/{geminiPerWeek}
+                  </Text>
+                  <Text style={rowStyles.itemSubtitle}>Réinitialisation : lundi</Text>
+                </View>
+              </View>
             )}
             {planStatus.tier === 'trial' && (
               <Text style={rowStyles.itemSubtitle} testID="plan-gemini-usage">
@@ -235,12 +228,6 @@ function PlanUsageSection() {
                 )}
               </>
             )}
-            {planStatus.tier !== 'premium' && (
-              <Text style={[rowStyles.itemSubtitle, { marginTop: 2 }]}>
-                Réinitialisation : lundi
-              </Text>
-            )}
-
             {/* Trial expired message */}
             {isTrialExpired && (
               <Text
@@ -258,7 +245,11 @@ function PlanUsageSection() {
                 onPress={() => router.push('/upgrade')}
                 testID="plan-upgrade-button"
               >
-                <Text style={planStyles.upgradeButtonText}>Passer Premium</Text>
+                <View style={planStyles.upgradeButtonInner}>
+                  <PremiumIcon width={14} color="#FFFFFF" />
+                  <Text style={planStyles.upgradeButtonText}>Passer Premium</Text>
+                  <PremiumIcon width={14} color="#FFFFFF" />
+                </View>
               </Pressable>
             )}
           </View>
@@ -269,21 +260,13 @@ function PlanUsageSection() {
 }
 
 function ThemeSelector() {
-  const theme = useSettingsStore((s) => s.theme);
-  const setTheme = useSettingsStore((s) => s.setTheme);
-
-  const handleCycleTheme = () => {
-    const currentIndex = THEME_OPTIONS.indexOf(theme);
-    const nextIndex = (currentIndex + 1) % THEME_OPTIONS.length;
-    setTheme(THEME_OPTIONS[nextIndex]);
-  };
-
   return (
     <SettingsRow
       icon="color-palette-outline"
       title="Apparence"
-      value={THEME_LABELS[theme]}
-      onPress={handleCycleTheme}
+      value="Clair"
+      disabled
+      subtitle="Dark mode bientôt disponible"
       testID="theme-toggle"
     />
   );
@@ -313,11 +296,6 @@ export default function MenuScreen() {
   const handleSendFeedback = () => {
     trackHelpResource('feedback');
     router.push('/feedback');
-  };
-
-  const handleFAQ = () => {
-    trackHelpResource('faq');
-    openUrl(URLS.faq);
   };
 
   const handleContactSupport = () => {
@@ -521,7 +499,6 @@ export default function MenuScreen() {
           onPress={handleSendFeedback}
           testID="help-feedback"
         />
-        <SettingsRow icon="help-circle-outline" title="FAQ" onPress={handleFAQ} testID="help-faq" />
         <SettingsRow
           icon="mail-outline"
           title="Contacter le support"
@@ -551,12 +528,6 @@ export default function MenuScreen() {
           title="Conditions d'utilisation"
           onPress={() => openUrl(URLS.terms)}
           testID="about-terms"
-        />
-        <SettingsRow
-          icon="code-slash-outline"
-          title="Licences open source"
-          onPress={() => router.push('/licenses')}
-          testID="about-licenses"
         />
         <SettingsRow
           icon="share-social-outline"
@@ -699,6 +670,14 @@ const planStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  progressGroup: {
+    gap: spacing.xs,
+  },
+  usageRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   progressTrack: {
     height: 6,
     borderRadius: 3,
@@ -714,13 +693,17 @@ const planStyles = StyleSheet.create({
     borderRadius: borderRadius.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    alignSelf: 'flex-start',
-    marginTop: spacing.xs,
+    alignItems: 'center',
+  },
+  upgradeButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   upgradeButtonText: {
     ...typography.caption,
     fontWeight: '600',
-    color: '#DAA520',
+    color: '#FFFFFF',
   },
   manageButton: {
     flexDirection: 'row',

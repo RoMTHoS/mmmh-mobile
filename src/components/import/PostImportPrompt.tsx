@@ -1,8 +1,12 @@
-import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
-import { Icon } from '../ui';
+import { PremiumIcon } from '../ui';
 import { colors, fonts, spacing, radius } from '../../theme';
+import { submitImport } from '../../services/import';
+import { useImportStore } from '../../stores/importStore';
+import { Toast } from '../../utils/toast';
+
+const GOLD = '#D4A017';
 import type { PlanTier } from '../../types';
 
 interface PostImportPromptProps {
@@ -12,6 +16,12 @@ interface PostImportPromptProps {
   tier: PlanTier;
   /** Whether user can still activate a trial */
   canActivateTrial: boolean;
+  /** Remaining free Gemini imports available */
+  geminiQuotaRemaining: number;
+  /** Source URL of the imported recipe */
+  sourceUrl: string;
+  /** Import type used */
+  importType: 'video' | 'website' | 'photo' | 'text';
 }
 
 /**
@@ -19,47 +29,103 @@ interface PostImportPromptProps {
  * - Free (VPS): trial CTA if eligible
  * - Trial/Premium (Gemini): "Premium quality" success badge
  */
-export function PostImportPrompt({ pipeline, tier, canActivateTrial }: PostImportPromptProps) {
-  const [dismissed, setDismissed] = useState(false);
+export function PostImportPrompt({
+  pipeline,
+  tier,
+  canActivateTrial,
+  geminiQuotaRemaining,
+  sourceUrl,
+  importType,
+}: PostImportPromptProps) {
+  const addJob = useImportStore.getState().addJob;
 
-  if (dismissed) return null;
+  const handlePremiumImport = () => {
+    Alert.alert(
+      'Import Premium',
+      'Reimporter cette recette avec le pipeline Premium pour de meilleurs resultats ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Confirmer',
+          onPress: async () => {
+            try {
+              const response = await submitImport({
+                importType,
+                sourceUrl,
+                forcePremium: true,
+              });
 
-  // After premium/trial import with Gemini → success badge
-  if (pipeline === 'gemini') {
-    return (
-      <View style={[styles.container, styles.successContainer]} testID="post-import-prompt-success">
-        <View style={styles.row}>
-          <Icon name="check" size="sm" color={colors.success} />
-          <Text style={styles.successText}>Importe avec la qualite Premium</Text>
-          <Pressable onPress={() => setDismissed(true)} hitSlop={8} testID="post-import-dismiss">
-            <Icon name="close" size="sm" color={colors.textMuted} />
-          </Pressable>
-        </View>
-      </View>
+              addJob({
+                jobId: response.jobId,
+                status: response.status,
+                sourceUrl,
+                importType,
+                platform: null,
+                pipeline: 'gemini',
+                progress: 0,
+                createdAt: response.createdAt || new Date().toISOString(),
+              });
+
+              Toast.show({
+                type: 'success',
+                text1: 'Import Premium lance',
+                text2: 'Retrouvez la recette dans vos imports',
+              });
+
+              router.back();
+            } catch {
+              Toast.show({
+                type: 'error',
+                text1: 'Erreur',
+                text2: "Impossible de lancer l'import Premium",
+              });
+            }
+          },
+        },
+      ]
     );
+  };
+
+  // After premium/trial import with Gemini → no CTA needed
+  if (pipeline === 'gemini') {
+    return null;
   }
 
-  // After free import with VPS → trial CTA (only if eligible)
-  if (tier === 'free' && canActivateTrial) {
+  // After free import with VPS → CTA buttons
+  if (tier === 'free') {
+    const hasFreePremium = geminiQuotaRemaining > 0;
+
+    if (!hasFreePremium && !canActivateTrial) return null;
+
     return (
-      <View style={[styles.container, styles.ctaContainer]} testID="post-import-prompt-cta">
-        <View style={styles.ctaContent}>
-          <Text style={styles.ctaText}>
-            Envie de meilleurs resultats ? Essayez Premium gratuitement pendant 7 jours
-          </Text>
-          <View style={styles.ctaActions}>
-            <Pressable
-              style={styles.ctaButton}
-              onPress={() => router.push('/upgrade')}
-              testID="post-import-try-premium"
-            >
-              <Text style={styles.ctaButtonText}>Essayer</Text>
-            </Pressable>
-            <Pressable onPress={() => setDismissed(true)} hitSlop={8} testID="post-import-dismiss">
-              <Icon name="close" size="sm" color={colors.textMuted} />
-            </Pressable>
+      <View style={styles.ctaContent} testID="post-import-prompt-cta">
+        <Text style={styles.ctaText}>Envie de meilleurs resultats ?</Text>
+        {hasFreePremium && (
+          <Pressable
+            style={styles.ctaButton}
+            onPress={handlePremiumImport}
+            testID="post-import-premium-import"
+          >
+            <View style={styles.ctaButtonInner}>
+              <PremiumIcon width={16} color="#FFFFFF" />
+              <Text style={styles.ctaButtonText}>Import premium</Text>
+              <PremiumIcon width={16} color="#FFFFFF" />
+            </View>
+          </Pressable>
+        )}
+        <Pressable
+          style={[styles.ctaButton, styles.ctaButtonSecondary]}
+          onPress={() => router.push('/upgrade')}
+          testID="post-import-upgrade"
+        >
+          <View style={styles.ctaButtonInner}>
+            <PremiumIcon width={16} color="#FFFFFF" />
+            <Text style={[styles.ctaButtonText, styles.ctaButtonSecondaryText]}>
+              Passer premium
+            </Text>
+            <PremiumIcon width={16} color="#FFFFFF" />
           </View>
-        </View>
+        </Pressable>
       </View>
     );
   }
@@ -68,54 +134,36 @@ export function PostImportPrompt({ pipeline, tier, canActivateTrial }: PostImpor
 }
 
 const styles = StyleSheet.create({
-  container: {
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  successContainer: {
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1,
-    borderColor: colors.success,
-  },
-  ctaContainer: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  successText: {
-    flex: 1,
-    fontFamily: fonts.script,
-    fontSize: 14,
-    color: colors.success,
-  },
   ctaContent: {
     gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   ctaText: {
     fontFamily: fonts.script,
     fontSize: 14,
     color: colors.text,
   },
-  ctaActions: {
+  ctaButton: {
+    backgroundColor: GOLD,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    alignItems: 'center',
+  },
+  ctaButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  ctaButton: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.md,
+  ctaButtonSecondary: {
+    backgroundColor: '#000000',
   },
   ctaButtonText: {
     fontFamily: fonts.script,
     fontSize: 14,
+    color: '#FFFFFF',
+  },
+  ctaButtonSecondaryText: {
     color: '#FFFFFF',
   },
 });

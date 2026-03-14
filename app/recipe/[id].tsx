@@ -17,7 +17,7 @@ import { EVENTS } from '../../src/utils/analyticsEvents';
 import { LoadingScreen, Badge, Icon } from '../../src/components/ui';
 import { IngredientList, StepList } from '../../src/components/recipes';
 import { ServingsSelector } from '../../src/components/shopping';
-import { colors, typography, spacing, fonts, radius } from '../../src/theme';
+import { colors, typography, spacing, fonts } from '../../src/theme';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PLACEHOLDER_IMAGE: ImageSourcePropType = require('../../assets/placeholder-food.png');
@@ -89,6 +89,7 @@ export default function RecipeDetailScreen() {
       <Stack.Screen
         options={{
           title: '',
+          headerShadowVisible: false,
           headerBackVisible: false,
           headerLeft: () => (
             <Pressable
@@ -100,11 +101,7 @@ export default function RecipeDetailScreen() {
               <Icon name="arrow-left" size="lg" color={colors.text} />
             </Pressable>
           ),
-          headerTitle: () => (
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {recipe.title}
-            </Text>
-          ),
+          headerTitle: () => null,
           headerRight: () => (
             <Pressable
               onPress={() => router.push(`/recipe/${id}/edit`)}
@@ -118,6 +115,9 @@ export default function RecipeDetailScreen() {
         }}
       />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Title */}
+        <Text style={styles.recipeTitle}>{recipe.title}</Text>
+
         {/* Hero Image */}
         <Image
           source={recipe.photoUri ? { uri: recipe.photoUri } : PLACEHOLDER_IMAGE}
@@ -161,7 +161,7 @@ export default function RecipeDetailScreen() {
             <View style={styles.ingredientsHeader}>
               <Text style={styles.sectionTitle}>Ingrédients</Text>
               <View style={styles.servingsStepper}>
-                <Icon name="servings" size="sm" color={colors.text} />
+                <Icon name="servings" size="md" color={colors.text} />
                 <Pressable
                   onPress={() => setDisplayServings(Math.max(1, servings - 1))}
                   style={styles.stepperButton}
@@ -221,15 +221,9 @@ export default function RecipeDetailScreen() {
             size="lg"
             color={isInList ? colors.accent : colors.text}
           />
-          <Text style={[styles.actionText, isInList && styles.actionTextActive]}>Courses</Text>
-        </Pressable>
-        <Pressable
-          style={styles.actionButton}
-          onPress={() => {}}
-          accessibilityLabel="Partager la recette"
-        >
-          <Icon name="share" size="lg" color={colors.text} />
-          <Text style={styles.actionText}>Partager</Text>
+          <Text style={[styles.actionText, isInList && styles.actionTextActive]}>
+            Ajouter à une liste de course
+          </Text>
         </Pressable>
       </View>
     </>
@@ -247,11 +241,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
+  recipeTitle: {
     fontFamily: fonts.script,
-    fontSize: 18,
+    fontSize: 24,
     color: colors.text,
-    maxWidth: 200,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   heroImage: {
     width: '100%',
@@ -304,31 +299,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.full,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
   },
   stepperButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepperButtonText: {
     fontFamily: fonts.sans,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   servingsCount: {
     fontFamily: fonts.sans,
-    fontSize: 16,
+    fontSize: 20,
     color: colors.text,
-    minWidth: 20,
+    minWidth: 24,
     textAlign: 'center',
   },
   notes: {
@@ -338,7 +332,7 @@ const styles = StyleSheet.create({
   },
   actionBar: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,

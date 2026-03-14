@@ -1,17 +1,20 @@
-import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, PanResponder, Dimensions } from 'react-native';
+import { useEffect, useRef, useMemo } from 'react';
 import { router } from 'expo-router';
-import { Icon, Button } from '../ui';
+import { Button } from '../ui';
 import { PlatformBadge } from './PlatformBadge';
 import { PipelineBadge } from './PipelineBadge';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
 import { extractHostname } from '../../utils/validation';
 import type { ImportJob } from '../../stores/importStore';
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+
 interface ImportStatusCardProps {
   job: ImportJob;
-  onDismiss: () => void;
   onRetry: () => void;
+  onDismiss: () => void;
 }
 
 const STEP_LABELS: Record<string, string> = {
@@ -31,8 +34,37 @@ const STEP_LABELS: Record<string, string> = {
   complete: 'Termine!',
 };
 
-export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardProps) {
+export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardProps) {
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+
+  const isDismissable = job.status === 'failed' || job.status === 'completed';
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, g) =>
+          isDismissable && Math.abs(g.dx) > 5 && Math.abs(g.dx) > Math.abs(g.dy * 1.5),
+        onMoveShouldSetPanResponderCapture: (_, g) =>
+          isDismissable && Math.abs(g.dx) > 15 && Math.abs(g.dx) > Math.abs(g.dy * 2),
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderMove: Animated.event([null, { dx: translateX }], { useNativeDriver: false }),
+        onPanResponderRelease: (_, g) => {
+          if (Math.abs(g.dx) > SWIPE_THRESHOLD || Math.abs(g.vx) > 0.5) {
+            const direction = g.dx > 0 ? SCREEN_WIDTH : -SCREEN_WIDTH;
+            Animated.timing(translateX, {
+              toValue: direction,
+              duration: 200,
+              useNativeDriver: true,
+            }).start(() => onDismiss());
+          } else {
+            Animated.spring(translateX, { toValue: 0, friction: 8, useNativeDriver: true }).start();
+          }
+        },
+      }),
+    [isDismissable, translateX, onDismiss]
+  );
 
   useEffect(() => {
     Animated.timing(progressAnim, {
@@ -83,21 +115,26 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
     outputRange: ['0%', '100%'],
   });
 
+  const cardOpacity = translateX.interpolate({
+    inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+    outputRange: [0, 1, 0],
+  });
+
   return (
-    <View style={styles.card}>
+    <Animated.View
+      style={[styles.card, { transform: [{ translateX }], opacity: cardOpacity }]}
+      {...panResponder.panHandlers}
+    >
       <View style={styles.header}>
-        <PlatformBadge platform={job.platform} size="md" />
-        <Text style={styles.url} numberOfLines={1}>
-          {extractHostname(job.sourceUrl)}
-        </Text>
-        {job.pipeline && <PipelineBadge pipeline={job.pipeline} />}
-        <Pressable
-          onPress={onDismiss}
-          style={({ pressed }) => [styles.dismissButton, pressed && styles.dismissButtonPressed]}
-          hitSlop={8}
-        >
-          <Icon name="close" size="sm" color={colors.textMuted} />
-        </Pressable>
+        <View style={styles.headerLeft}>
+          <PlatformBadge platform={job.platform} size="sm" />
+          <Text style={styles.url} numberOfLines={1}>
+            {extractHostname(job.sourceUrl)}
+          </Text>
+        </View>
+        <View style={styles.badgeWrapper}>
+          <PipelineBadge pipeline={job.pipeline ?? 'vps'} />
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -161,7 +198,7 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
           />
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -176,21 +213,23 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     marginBottom: spacing.sm,
+  },
+  headerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: -spacing.xs,
+  },
+  badgeWrapper: {
+    alignSelf: 'center',
   },
   url: {
     flex: 1,
-    marginLeft: spacing.sm,
+    marginLeft: spacing.xs,
     color: colors.textMuted,
     fontSize: 14,
-  },
-  dismissButton: {
-    padding: spacing.xs,
-    borderRadius: radius.sm,
-  },
-  dismissButtonPressed: {
-    backgroundColor: colors.surface,
   },
   content: {},
   statusRow: {

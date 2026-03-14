@@ -9,7 +9,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Toast } from '../../src/utils/toast';
 import { UrlInput } from '../../src/components/import/UrlInput';
@@ -24,7 +24,7 @@ import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
 import { usePlanStatus, useActivateTrial } from '../../src/hooks';
 import { trackEvent } from '../../src/utils/analytics';
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
-import { PremiumIcon } from '../../src/components/ui';
+import { PremiumIcon, Icon } from '../../src/components/ui';
 import { PlatformBadge } from '../../src/components/import/PlatformBadge';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -75,6 +75,7 @@ export default function UrlInputScreen() {
           status: response.status,
           progress: 0,
           createdAt: response.createdAt || new Date().toISOString(),
+          ...(forcePremium ? { pipeline: 'gemini' as const } : {}),
         });
 
         // Refresh quota display after successful import
@@ -226,93 +227,114 @@ export default function UrlInputScreen() {
   }, [activateTrial]);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
-        keyboardShouldPersistTaps="handled"
+    <>
+      <Stack.Screen
+        options={{
+          title: '',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colors.background },
+          headerBackVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} style={styles.headerButton}>
+              <Icon name="arrow-left" size="lg" color={colors.text} />
+            </Pressable>
+          ),
+        }}
+      />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Importer depuis un lien</Text>
-          <Text style={styles.subtitle}>
-            Collez le lien d'une video (Instagram, TikTok, YouTube) ou d'un site de recette
-          </Text>
-          <View style={styles.platformHints}>
-            <Text style={styles.hintsLabel}>Videos supportees :</Text>
-            <View style={styles.platformList}>
-              <PlatformBadge platform="instagram" size="sm" showLabel />
-              <PlatformBadge platform="tiktok" size="sm" showLabel />
-              <PlatformBadge platform="youtube" size="sm" showLabel />
-            </View>
-            <Text style={[styles.hintsLabel, { marginTop: spacing.sm }]}>
-              + tout site de recette
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Importer depuis un lien</Text>
+            <Text style={styles.subtitle}>
+              Collez le lien d'une video (Instagram, TikTok, YouTube) ou d'un site de recette
             </Text>
+            <View style={styles.platformHints}>
+              <Text style={styles.hintsLabel}>Videos supportees :</Text>
+              <View style={styles.platformList}>
+                <PlatformBadge platform="instagram" size="sm" showLabel />
+                <PlatformBadge platform="tiktok" size="sm" showLabel />
+                <PlatformBadge platform="youtube" size="sm" showLabel />
+              </View>
+              <Text style={[styles.hintsLabel, { marginTop: spacing.sm }]}>
+                + tout site de recette
+              </Text>
+            </View>
           </View>
-        </View>
 
-        {planStatus?.tier === 'trial' && <TrialStatusBadge />}
+          {planStatus?.tier === 'trial' && <TrialStatusBadge />}
 
-        <View style={styles.quotaSection}>
-          <QuotaDisplay />
-        </View>
+          <View style={styles.quotaSection}>
+            <QuotaDisplay />
+          </View>
 
-        <UrlInput
-          importType="link"
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
-          onUrlChange={setCurrentUrl}
-        />
-      </ScrollView>
+          <UrlInput
+            importType="link"
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            onUrlChange={setCurrentUrl}
+          />
+        </ScrollView>
 
-      <View style={[styles.bottomButtons, { paddingBottom: insets.bottom + spacing.md }]}>
-        {planStatus?.tier !== 'premium' && (
+        <View style={[styles.bottomButtons, { paddingBottom: insets.bottom + spacing.md }]}>
+          {planStatus?.tier !== 'premium' && (
+            <Pressable
+              onPress={() => currentUrl.trim() && handleSubmit(currentUrl.trim())}
+              style={({ pressed }) => [
+                styles.standardButton,
+                !isLoading ? {} : styles.standardButtonDisabled,
+                pressed && { opacity: 0.85 },
+              ]}
+              disabled={isLoading}
+            >
+              <Text style={styles.standardButtonText}>Import standard</Text>
+            </Pressable>
+          )}
           <Pressable
-            onPress={() => currentUrl.trim() && handleSubmit(currentUrl.trim())}
-            style={({ pressed }) => [
-              styles.standardButton,
-              !isLoading ? {} : styles.standardButtonDisabled,
-              pressed && { opacity: 0.85 },
-            ]}
+            style={({ pressed }) => [styles.premiumButton, pressed && { opacity: 0.85 }]}
+            onPress={handlePremiumImport}
             disabled={isLoading}
           >
-            <Text style={styles.standardButtonText}>Import standard</Text>
+            <PremiumIcon width={24} color="#FFFFFF" />
+            <Text style={styles.premiumButtonText}>
+              {planStatus && planStatus.geminiQuotaRemaining <= 0
+                ? 'Passer premium'
+                : 'Import premium'}
+            </Text>
+            <PremiumIcon width={24} color="#FFFFFF" />
           </Pressable>
-        )}
-        <Pressable
-          style={({ pressed }) => [styles.premiumButton, pressed && { opacity: 0.85 }]}
-          onPress={handlePremiumImport}
-          disabled={isLoading}
-        >
-          <PremiumIcon width={24} color="#DAA520" />
-          <Text style={styles.premiumButtonText}>
-            {planStatus && planStatus.geminiQuotaRemaining <= 0
-              ? 'Passer premium'
-              : 'Import premium'}
-          </Text>
-          <PremiumIcon width={24} color="#DAA520" />
-        </Pressable>
-      </View>
+        </View>
 
-      <QuotaExceededModal
-        visible={showQuotaExceeded}
-        onClose={() => setShowQuotaExceeded(false)}
-        onUpgrade={handleUpgrade}
-        onStartTrial={handleStartTrial}
-      />
+        <QuotaExceededModal
+          visible={showQuotaExceeded}
+          onClose={() => setShowQuotaExceeded(false)}
+          onUpgrade={handleUpgrade}
+          onStartTrial={handleStartTrial}
+        />
 
-      <GeminiFallbackDialog
-        visible={showGeminiFallback}
-        onAccept={handleFallbackAccept}
-        onDecline={handleFallbackDecline}
-      />
-    </KeyboardAvoidingView>
+        <GeminiFallbackDialog
+          visible={showGeminiFallback}
+          onAccept={handleFallbackAccept}
+          onDecline={handleFallbackDecline}
+        />
+      </KeyboardAvoidingView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  headerButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -389,6 +411,6 @@ const styles = StyleSheet.create({
   premiumButtonText: {
     fontFamily: fonts.script,
     fontSize: 16,
-    color: '#DAA520',
+    color: '#FFFFFF',
   },
 });

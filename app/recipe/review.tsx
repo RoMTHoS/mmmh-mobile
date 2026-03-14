@@ -9,7 +9,6 @@ import { useImportStore } from '../../src/stores/importStore';
 import { useCreateRecipe } from '../../src/hooks';
 import { reviewRecipeSchema, type ReviewRecipeFormData } from '../../src/schemas/review.schema';
 import { ReviewRecipeForm, ConfidenceIndicator } from '../../src/components/review';
-import { PipelineBadge } from '../../src/components/import/PipelineBadge';
 import { PostImportPrompt } from '../../src/components/import/PostImportPrompt';
 import { markFirstImportCompleted } from '../../src/components/feedback/FeedbackPrompt';
 import { Text, Button, Icon } from '../../src/components/ui';
@@ -214,13 +213,8 @@ export default function RecipeReviewScreen() {
           ),
           headerTitle: () => (
             <Text style={styles.headerTitle} numberOfLines={1}>
-              {methods.getValues('title') || 'Vérifier la recette'}
+              Vérifier la recette
             </Text>
-          ),
-          headerRight: () => (
-            <Pressable hitSlop={8} style={styles.headerButtonContainer}>
-              <Icon name="pencil" size="lg" color={colors.text} />
-            </Pressable>
           ),
         }}
       />
@@ -232,18 +226,16 @@ export default function RecipeReviewScreen() {
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets
         >
-          <Text style={styles.title}>Verifier la recette</Text>
-
-          <View style={styles.indicatorRow}>
-            <ConfidenceIndicator confidence={recipe.aiConfidence ?? 0.5} />
-            {job?.pipeline && <PipelineBadge pipeline={job.pipeline} size="md" />}
-          </View>
+          <ConfidenceIndicator confidence={recipe.aiConfidence ?? 0.5} pipeline={job?.pipeline} />
 
           {job?.pipeline && planStatus && (
             <PostImportPrompt
               pipeline={job.pipeline}
               tier={planStatus.tier}
               canActivateTrial={userPlan ? canActivateTrial(userPlan) : false}
+              geminiQuotaRemaining={planStatus.geminiQuotaRemaining}
+              sourceUrl={job.sourceUrl}
+              importType={job.importType}
             />
           )}
 
@@ -260,7 +252,7 @@ export default function RecipeReviewScreen() {
       {/* Sticky Bottom Buttons */}
       <View style={styles.stickyBottom}>
         <Pressable style={styles.modifyButton} onPress={handleDiscard}>
-          <Text style={styles.modifyButtonText}>Modifier</Text>
+          <Text style={styles.modifyButtonText}>Supprimer</Text>
         </Pressable>
         <Pressable
           style={[styles.saveButton, createRecipe.isPending && styles.saveButtonDisabled]}
@@ -307,13 +299,6 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.md,
   },
-  title: {
-    fontFamily: fonts.script,
-    fontSize: 28,
-    lineHeight: 44,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
   headerButtonContainer: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
@@ -322,18 +307,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: fonts.script,
-    fontSize: 18,
+    fontSize: 22,
     color: colors.text,
-    maxWidth: 200,
-  },
-  indicatorRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'space-between' as const,
-    marginBottom: spacing.md,
+    maxWidth: 250,
   },
   bottomPadding: {
-    height: 120,
+    height: 180,
   },
   stickyBottom: {
     position: 'absolute',

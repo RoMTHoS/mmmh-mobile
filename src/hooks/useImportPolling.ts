@@ -41,8 +41,10 @@ export function useImportPolling() {
           estimatedTimeRemaining: status.estimatedTimeRemaining,
           error: status.error,
           result: status.result,
-          pipeline: status.pipelineInfo?.pipeline,
-          fallbackUsed: status.pipelineInfo?.fallbackUsed,
+          ...(status.pipelineInfo?.pipeline ? { pipeline: status.pipelineInfo.pipeline } : {}),
+          ...(status.pipelineInfo?.fallbackUsed != null
+            ? { fallbackUsed: status.pipelineInfo.fallbackUsed }
+            : {}),
         });
 
         if (status.status === 'failed' && !trackedJobsRef.current.has(job.jobId)) {

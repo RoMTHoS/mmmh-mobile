@@ -14,10 +14,6 @@ export function ImportStatusList() {
   // Start polling for active jobs
   useImportPolling();
 
-  const handleDismiss = (jobId: string) => {
-    removeJob(jobId);
-  };
-
   const handleRetry = async (jobId: string) => {
     const job = jobs.find((j) => j.jobId === jobId);
     if (!job) return;
@@ -79,8 +75,8 @@ export function ImportStatusList() {
         <ImportStatusCard
           key={job.jobId}
           job={job}
-          onDismiss={() => handleDismiss(job.jobId)}
           onRetry={() => handleRetry(job.jobId)}
+          onDismiss={() => removeJob(job.jobId)}
         />
       ))}
     </View>
