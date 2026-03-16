@@ -13,6 +13,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 
 import { TextInput, Button, Text, Icon } from '../ui';
+import { SwipeToDelete } from '../ui/SwipeToDelete';
+import { IngredientEditor, parseIngredientsText, ingredientsToText } from './IngredientEditor';
+import type { ParsedIngredient } from './IngredientEditor';
 import type { CreateRecipeFormData } from '../../schemas/recipe.schema';
 import { colors, spacing, radius, fonts, typography } from '../../theme';
 import { persistImage } from '../../utils/imageCompression';
@@ -25,36 +28,7 @@ interface RecipeFormProps {
   onPhotoChange: (uri: string | null) => void;
   autoFocusTitle?: boolean;
   onDelete?: () => void;
-}
-
-interface ParsedIngredient {
-  name: string;
-  quantity: string;
-  unit: string;
-}
-
-function parseIngredientsText(text: string): ParsedIngredient[] {
-  if (!text.trim()) return [];
-  return text
-    .split('\n')
-    .filter((line) => line.trim())
-    .map((line) => ({
-      name: line.trim(),
-      quantity: '',
-      unit: '',
-    }));
-}
-
-function ingredientsToText(ingredients: ParsedIngredient[]): string {
-  return ingredients
-    .map((i) => {
-      const parts: string[] = [];
-      if (i.quantity) parts.push(i.quantity);
-      if (i.unit) parts.push(i.unit);
-      parts.push(i.name);
-      return parts.join(' ');
-    })
-    .join('\n');
+  onIngredientsChange?: (ingredients: ParsedIngredient[]) => void;
 }
 
 export function RecipeForm({
@@ -64,12 +38,10 @@ export function RecipeForm({
   onPhotoChange,
   autoFocusTitle = false,
   onDelete,
+  onIngredientsChange,
 }: RecipeFormProps) {
   // Ingredient form state
   const [ingredients, setIngredients] = useState<ParsedIngredient[]>([]);
-  const [ingName, setIngName] = useState('');
-  const [ingQuantity, setIngQuantity] = useState('');
-  const [ingUnit, setIngUnit] = useState('');
   const [ingredientsInitialized, setIngredientsInitialized] = useState(false);
 
   // Steps form state
@@ -111,43 +83,12 @@ export function RecipeForm({
   // Initialize ingredients from existing text (edit mode)
   useEffect(() => {
     if (!ingredientsInitialized && ingredientsText) {
-      setIngredients(parseIngredientsText(ingredientsText));
+      const parsed = parseIngredientsText(ingredientsText);
+      setIngredients(parsed);
       setIngredientsInitialized(true);
-    } else if (!ingredientsInitialized && ingredientsText === '') {
-      setIngredientsInitialized(true);
+      onIngredientsChange?.(parsed);
     }
   }, [ingredientsText, ingredientsInitialized]);
-
-  const handleAddIngredient = useCallback(
-    (onChange: (value: string) => void) => {
-      const trimmedName = ingName.trim();
-      if (!trimmedName) return;
-
-      const newIngredient: ParsedIngredient = {
-        name: trimmedName,
-        quantity: ingQuantity.trim(),
-        unit: ingUnit.trim(),
-      };
-
-      const updated = [...ingredients, newIngredient];
-      setIngredients(updated);
-      onChange(ingredientsToText(updated));
-
-      setIngName('');
-      setIngQuantity('');
-      setIngUnit('');
-    },
-    [ingName, ingQuantity, ingUnit, ingredients]
-  );
-
-  const handleRemoveIngredient = useCallback(
-    (index: number, onChange: (value: string) => void) => {
-      const updated = ingredients.filter((_, i) => i !== index);
-      setIngredients(updated);
-      onChange(ingredientsToText(updated));
-    },
-    [ingredients]
-  );
 
   // Initialize steps from existing text (edit mode)
   useEffect(() => {
@@ -158,8 +99,6 @@ export function RecipeForm({
           .filter((line) => line.trim())
           .map((line) => line.trim())
       );
-      setStepsInitialized(true);
-    } else if (!stepsInitialized && stepsText === '') {
       setStepsInitialized(true);
     }
   }, [stepsText, stepsInitialized]);
@@ -186,6 +125,15 @@ export function RecipeForm({
     [steps]
   );
 
+  const handleEditStep = useCallback(
+    (index: number, value: string, onChange: (value: string) => void) => {
+      const updated = steps.map((s, i) => (i === index ? value : s));
+      setSteps(updated);
+      onChange(updated.join('\n'));
+    },
+    [steps]
+  );
+
   // Initialize notes from existing text (edit mode)
   useEffect(() => {
     if (!notesInitialized && notesValue) {
@@ -195,8 +143,6 @@ export function RecipeForm({
           .filter((line) => line.trim())
           .map((line) => line.trim())
       );
-      setNotesInitialized(true);
-    } else if (!notesInitialized && (notesValue === '' || notesValue === null)) {
       setNotesInitialized(true);
     }
   }, [notesValue, notesInitialized]);
@@ -587,57 +533,14 @@ export function RecipeForm({
         control={control}
         name="ingredientsText"
         render={({ field: { onChange } }) => (
-          <View style={styles.ingredientsSection}>
-            {/* Ingredient list */}
-            {ingredients.map((ing, index) => (
-              <View key={`${ing.name}-${index}`} style={styles.ingredientRow}>
-                <Text style={styles.ingredientName}>{ing.name}</Text>
-                <View style={styles.ingredientRight}>
-                  {(ing.quantity || ing.unit) && (
-                    <Text style={styles.ingredientQty}>
-                      {[ing.quantity, ing.unit].filter(Boolean).join(' ')}
-                    </Text>
-                  )}
-                  <Pressable onPress={() => handleRemoveIngredient(index, onChange)} hitSlop={8}>
-                    <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-                  </Pressable>
-                </View>
-              </View>
-            ))}
-
-            {/* Add ingredient form */}
-            <RNTextInput
-              style={styles.ingredientInput}
-              placeholder="Nom de l'ingrédient"
-              placeholderTextColor={colors.textLight}
-              value={ingName}
-              onChangeText={setIngName}
-            />
-            <View style={styles.ingredientFormRow}>
-              <RNTextInput
-                style={[styles.ingredientInput, styles.ingredientSmallInput]}
-                placeholder="Qté"
-                placeholderTextColor={colors.textLight}
-                value={ingQuantity}
-                onChangeText={setIngQuantity}
-                keyboardType="numeric"
-              />
-              <RNTextInput
-                style={[styles.ingredientInput, styles.ingredientSmallInput]}
-                placeholder="Unité"
-                placeholderTextColor={colors.textLight}
-                value={ingUnit}
-                onChangeText={setIngUnit}
-              />
-            </View>
-            <Pressable
-              style={[styles.ingredientAddButton, !ingName.trim() && styles.ingredientAddDisabled]}
-              onPress={() => handleAddIngredient(onChange)}
-              disabled={!ingName.trim()}
-            >
-              <Text style={styles.ingredientAddText}>Ajouter</Text>
-            </Pressable>
-          </View>
+          <IngredientEditor
+            ingredients={ingredients}
+            onIngredientsChange={(updated) => {
+              setIngredients(updated);
+              onChange(ingredientsToText(updated));
+              onIngredientsChange?.(updated);
+            }}
+          />
         )}
       />
 
@@ -646,37 +549,52 @@ export function RecipeForm({
       <Controller
         control={control}
         name="stepsText"
-        render={({ field: { onChange } }) => (
-          <View style={styles.stepsSection}>
-            {/* Steps list */}
-            {steps.map((step, index) => (
-              <View key={`step-${index}`} style={styles.stepRow}>
-                <Text style={styles.stepNumber}>{index + 1}.</Text>
-                <Text style={styles.stepText}>{step}</Text>
-                <Pressable onPress={() => handleRemoveStep(index, onChange)} hitSlop={8}>
-                  <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-                </Pressable>
-              </View>
-            ))}
+        render={({ field: { onChange } }) => {
+          return (
+            <View style={styles.stepsSection}>
+              {steps.map((step, index) => (
+                <SwipeToDelete
+                  key={`step-${index}`}
+                  onDelete={() => handleRemoveStep(index, onChange)}
+                  confirmMessage={`Supprimer l'étape ${index + 1} ?`}
+                >
+                  <View style={styles.stepRow}>
+                    <Text style={styles.stepNumber}>{index + 1}.</Text>
+                    <RNTextInput
+                      style={styles.stepInput}
+                      value={step}
+                      onChangeText={(v) => handleEditStep(index, v, onChange)}
+                      placeholder="Instruction"
+                      placeholderTextColor={colors.textLight}
+                      multiline
+                      scrollEnabled={false}
+                    />
+                  </View>
+                </SwipeToDelete>
+              ))}
 
-            {/* Add step form */}
-            <RNTextInput
-              style={styles.ingredientInput}
-              placeholder="Ajouter une étape"
-              placeholderTextColor={colors.textLight}
-              value={stepText}
-              onChangeText={setStepText}
-              multiline
-            />
-            <Pressable
-              style={[styles.ingredientAddButton, !stepText.trim() && styles.ingredientAddDisabled]}
-              onPress={() => handleAddStep(onChange)}
-              disabled={!stepText.trim()}
-            >
-              <Text style={styles.ingredientAddText}>Ajouter</Text>
-            </Pressable>
-          </View>
-        )}
+              {/* Add step form */}
+              <RNTextInput
+                style={styles.ingredientInput}
+                placeholder="Ajouter une étape"
+                placeholderTextColor={colors.textLight}
+                value={stepText}
+                onChangeText={setStepText}
+                multiline
+              />
+              <Pressable
+                style={[
+                  styles.ingredientAddButton,
+                  !stepText.trim() && styles.ingredientAddDisabled,
+                ]}
+                onPress={() => handleAddStep(onChange)}
+                disabled={!stepText.trim()}
+              >
+                <Text style={styles.ingredientAddText}>Ajouter</Text>
+              </Pressable>
+            </View>
+          );
+        }}
       />
 
       {/* Notes */}
@@ -688,12 +606,15 @@ export function RecipeForm({
           <View style={styles.stepsSection}>
             {/* Notes list */}
             {notes.map((note, index) => (
-              <View key={`note-${index}`} style={styles.noteRow}>
-                <Text style={styles.stepText}>{note}</Text>
-                <Pressable onPress={() => handleRemoveNote(index, onChange)} hitSlop={8}>
-                  <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-                </Pressable>
-              </View>
+              <SwipeToDelete
+                key={`note-${index}`}
+                onDelete={() => handleRemoveNote(index, onChange)}
+                confirmMessage="Supprimer cette note ?"
+              >
+                <View style={styles.noteRow}>
+                  <Text style={styles.stepText}>{note}</Text>
+                </View>
+              </SwipeToDelete>
             ))}
 
             {/* Add note form */}
@@ -900,36 +821,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
-  // Ingredients
-  ingredientsSection: {
-    gap: spacing.sm,
-  },
-  ingredientRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  ingredientName: {
-    fontFamily: fonts.sans,
-    fontSize: 15,
-    color: colors.text,
-    flex: 1,
-  },
-  ingredientRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  ingredientQty: {
-    fontFamily: fonts.sans,
-    fontSize: 14,
-    color: colors.textMuted,
-  },
+  // Ingredients & shared add-form styles
   ingredientInput: {
     ...typography.body,
     borderWidth: 1,
@@ -939,13 +831,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     backgroundColor: '#FFFFFF',
     color: colors.text,
-  },
-  ingredientFormRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  ingredientSmallInput: {
-    flex: 1,
   },
   ingredientAddButton: {
     backgroundColor: colors.accent,
@@ -969,7 +854,7 @@ const styles = StyleSheet.create({
   },
   stepRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,
     borderWidth: 1,
@@ -983,6 +868,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.accent,
+    marginTop: 2,
+  },
+  stepInput: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+    paddingVertical: 0,
+    textAlignVertical: 'top',
+    minHeight: 20,
   },
   stepText: {
     fontFamily: fonts.sans,

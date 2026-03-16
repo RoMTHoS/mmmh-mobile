@@ -4,6 +4,8 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { TextInput, Button, Text, Icon } from '../ui';
 import { AIBadge } from './AIBadge';
+import { IngredientEditor } from '../recipes/IngredientEditor';
+import type { ParsedIngredient } from '../recipes/IngredientEditor';
 import type { ReviewRecipeFormData } from '../../schemas/review.schema';
 import { colors, spacing, radius, fonts } from '../../theme';
 import { persistImage } from '../../utils/imageCompression';
@@ -12,9 +14,17 @@ interface Props {
   photoUri: string | null;
   onPhotoChange: (uri: string | null) => void;
   hasAiPhoto: boolean;
+  ingredients: ParsedIngredient[];
+  onIngredientsChange: (ingredients: ParsedIngredient[]) => void;
 }
 
-export function ReviewRecipeForm({ photoUri, onPhotoChange, hasAiPhoto }: Props) {
+export function ReviewRecipeForm({
+  photoUri,
+  onPhotoChange,
+  hasAiPhoto,
+  ingredients,
+  onIngredientsChange,
+}: Props) {
   const {
     control,
     formState: { errors },
@@ -216,21 +226,10 @@ export function ReviewRecipeForm({ photoUri, onPhotoChange, hasAiPhoto }: Props)
           <Text style={styles.sectionLabel}>Ingredients *</Text>
           <AIBadge />
         </View>
-        <Controller
-          control={control}
-          name="ingredientsText"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Un ingredient par ligne"
-              multiline
-              style={styles.multiline}
-              error={errors.ingredientsText?.message}
-            />
-          )}
-        />
+        {errors.ingredientsText?.message && (
+          <Text style={styles.errorText}>{errors.ingredientsText.message}</Text>
+        )}
+        <IngredientEditor ingredients={ingredients} onIngredientsChange={onIngredientsChange} />
       </View>
 
       {/* Instructions */}
@@ -317,5 +316,11 @@ const styles = StyleSheet.create({
   },
   multiline: {
     minHeight: 120,
+  },
+  errorText: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: colors.error,
+    marginBottom: spacing.xs,
   },
 });

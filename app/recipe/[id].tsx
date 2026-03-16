@@ -88,6 +88,24 @@ export default function RecipeDetailScreen() {
     if (id) analytics.track(EVENTS.RECIPE_VIEWED, { recipe_id: id });
   }, [id]);
 
+  const baseServings = recipe?.servings ?? null;
+  const servings = displayServings ?? baseServings;
+
+  const scaledIngredients = useMemo(() => {
+    if (!recipe) return [];
+    if (!baseServings || !servings || servings === baseServings) return recipe.ingredients;
+    const multiplier = servings / baseServings;
+    return recipe.ingredients.map((ing) => {
+      if (!ing.quantity) return ing;
+      const parsed = parseFloat(ing.quantity.replace(',', '.'));
+      if (isNaN(parsed)) return ing;
+      const scaled = parsed * multiplier;
+      const formatted =
+        scaled % 1 === 0 ? String(scaled) : scaled.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+      return { ...ing, quantity: formatted };
+    });
+  }, [recipe?.ingredients, servings, baseServings]);
+
   if (isLoading) {
     return (
       <>
@@ -109,8 +127,6 @@ export default function RecipeDetailScreen() {
       </>
     );
   }
-
-  const servings = displayServings ?? recipe.servings ?? 4;
 
   return (
     <>
@@ -179,37 +195,36 @@ export default function RecipeDetailScreen() {
               />
             )}
             {recipe.kcal && <Badge icon="calories" value={`${recipe.kcal} kcal`} />}
-            {!recipe.priceMin && !recipe.priceMax && !recipe.kcal && recipe.servings && (
-              <Badge icon="servings" value={`${recipe.servings} portions`} />
-            )}
           </View>
 
           {/* Ingredients Section */}
           <View style={styles.section}>
             <View style={styles.ingredientsHeader}>
               <Text style={styles.sectionTitle}>Ingrédients</Text>
-              <View style={styles.servingsStepper}>
-                <Pressable
-                  onPress={() => setDisplayServings(Math.max(1, servings - 1))}
-                  accessibilityLabel="Diminuer les portions"
-                  hitSlop={4}
-                >
-                  <Text style={styles.stepperButtonText}>-</Text>
-                </Pressable>
-                <View style={styles.servingsCenter}>
-                  <Ionicons name="person-outline" size={15} color={colors.text} />
-                  <Text style={styles.servingsCount}>{servings}</Text>
+              {baseServings && servings && (
+                <View style={styles.servingsStepper}>
+                  <Pressable
+                    onPress={() => setDisplayServings(Math.max(1, servings - 1))}
+                    accessibilityLabel="Diminuer les portions"
+                    hitSlop={4}
+                  >
+                    <Text style={styles.stepperButtonText}>-</Text>
+                  </Pressable>
+                  <View style={styles.servingsCenter}>
+                    <Ionicons name="person-outline" size={15} color={colors.text} />
+                    <Text style={styles.servingsCount}>{servings}</Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setDisplayServings(servings + 1)}
+                    accessibilityLabel="Augmenter les portions"
+                    hitSlop={4}
+                  >
+                    <Text style={styles.stepperButtonText}>+</Text>
+                  </Pressable>
                 </View>
-                <Pressable
-                  onPress={() => setDisplayServings(servings + 1)}
-                  accessibilityLabel="Augmenter les portions"
-                  hitSlop={4}
-                >
-                  <Text style={styles.stepperButtonText}>+</Text>
-                </Pressable>
-              </View>
+              )}
             </View>
-            <IngredientList ingredients={recipe.ingredients} />
+            <IngredientList ingredients={scaledIngredients} />
           </View>
 
           {/* Instructions Section */}

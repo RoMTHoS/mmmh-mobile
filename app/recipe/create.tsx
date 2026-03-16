@@ -9,12 +9,14 @@ import { useToastStore } from '../../src/stores/toastStore';
 import { useCreateRecipe } from '../../src/hooks';
 import { Text } from '../../src/components/ui';
 import { RecipeForm } from '../../src/components/recipes';
+import type { ParsedIngredient } from '../../src/components/recipes/IngredientEditor';
 import { createRecipeSchema, type CreateRecipeFormData } from '../../src/schemas/recipe.schema';
 import type { Ingredient, Step } from '../../src/types';
 import { colors, spacing, fonts } from '../../src/theme';
 
 export default function CreateRecipeScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [structuredIngredients, setStructuredIngredients] = useState<ParsedIngredient[]>([]);
   const createRecipe = useCreateRecipe();
   const showToast = useToastStore((s) => s.showToast);
 
@@ -43,14 +45,13 @@ export default function CreateRecipeScreen() {
     },
   });
 
-  const parseIngredients = (text: string): Ingredient[] => {
-    return text
-      .split('\n')
-      .filter((line) => line.trim())
-      .map((line) => ({
-        name: line.trim(),
-        quantity: null,
-        unit: null,
+  const ingredientsFromStructured = (): Ingredient[] => {
+    return structuredIngredients
+      .filter((i) => i.name.trim())
+      .map((i) => ({
+        name: i.name.trim(),
+        quantity: i.quantity.trim() || null,
+        unit: i.unit.trim() || null,
       }));
   };
 
@@ -68,7 +69,7 @@ export default function CreateRecipeScreen() {
     try {
       const recipe = await createRecipe.mutateAsync({
         title: data.title,
-        ingredients: parseIngredients(data.ingredientsText || ''),
+        ingredients: ingredientsFromStructured(),
         steps: parseSteps(data.stepsText || ''),
         cookingTime: data.cookingTime ?? null,
         servings: data.servings ?? null,
@@ -141,6 +142,7 @@ export default function CreateRecipeScreen() {
         photoUri={photoUri}
         onPhotoChange={setPhotoUri}
         autoFocusTitle
+        onIngredientsChange={setStructuredIngredients}
       />
     </>
   );

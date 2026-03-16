@@ -8,6 +8,7 @@ import { useToastStore } from '../../../src/stores/toastStore';
 import { useRecipe, useUpdateRecipe, useDeleteRecipe } from '../../../src/hooks';
 import { LoadingScreen, Text } from '../../../src/components/ui';
 import { RecipeForm } from '../../../src/components/recipes';
+import type { ParsedIngredient } from '../../../src/components/recipes/IngredientEditor';
 import { createRecipeSchema, type CreateRecipeFormData } from '../../../src/schemas/recipe.schema';
 import type { Ingredient, Step } from '../../../src/types';
 import { colors, spacing, fonts } from '../../../src/theme';
@@ -22,6 +23,7 @@ export default function EditRecipeScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoRemoved, setPhotoRemoved] = useState(false);
   const [originalPhotoUri, setOriginalPhotoUri] = useState<string | null>(null);
+  const [structuredIngredients, setStructuredIngredients] = useState<ParsedIngredient[]>([]);
 
   const {
     control,
@@ -86,14 +88,13 @@ export default function EditRecipeScreen() {
     }
   };
 
-  const parseIngredients = (text: string): Ingredient[] => {
-    return text
-      .split('\n')
-      .filter((line) => line.trim())
-      .map((line) => ({
-        name: line.trim(),
-        quantity: null,
-        unit: null,
+  const ingredientsFromStructured = (): Ingredient[] => {
+    return structuredIngredients
+      .filter((i) => i.name.trim())
+      .map((i) => ({
+        name: i.name.trim(),
+        quantity: i.quantity.trim() || null,
+        unit: i.unit.trim() || null,
       }));
   };
 
@@ -113,7 +114,7 @@ export default function EditRecipeScreen() {
         id,
         input: {
           title: data.title,
-          ingredients: parseIngredients(data.ingredientsText || ''),
+          ingredients: ingredientsFromStructured(),
           steps: parseSteps(data.stepsText || ''),
           cookingTime: data.cookingTime ?? null,
           servings: data.servings ?? null,
@@ -223,6 +224,7 @@ export default function EditRecipeScreen() {
         photoUri={photoUri}
         onPhotoChange={handlePhotoChange}
         onDelete={handleDelete}
+        onIngredientsChange={setStructuredIngredients}
       />
     </>
   );

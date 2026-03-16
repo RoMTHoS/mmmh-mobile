@@ -27,6 +27,8 @@ import { colors, typography, spacing, fonts, radius } from '../../src/theme';
 import { useCollectionStore } from '../../src/stores/collectionStore';
 import { Ionicons } from '@expo/vector-icons';
 import type { Ingredient, Step } from '../../src/types';
+import type { ParsedIngredient } from '../../src/components/recipes/IngredientEditor';
+import { ingredientsToText } from '../../src/components/recipes/IngredientEditor';
 
 interface ExtractedRecipe {
   title?: string;
@@ -63,6 +65,7 @@ export default function RecipeReviewScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [hasAiPhoto, setHasAiPhoto] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [structuredIngredients, setStructuredIngredients] = useState<ParsedIngredient[]>([]);
 
   const collections = useCollectionStore((s) => s.collections);
   const addRecipeToCollection = useCollectionStore((s) => s.addRecipeToCollection);
@@ -113,6 +116,7 @@ export default function RecipeReviewScreen() {
   useEffect(() => {
     if (recipe && !isHydrated) {
       methods.reset(mapRecipeToForm(recipe));
+      setStructuredIngredients(extractStructuredIngredients(recipe));
       setPhotoUri(recipe.thumbnailUrl || null);
       setHasAiPhoto(!!recipe.thumbnailUrl);
       setIsHydrated(true);
@@ -137,14 +141,21 @@ export default function RecipeReviewScreen() {
     );
   }
 
-  const parseIngredients = (text: string): Ingredient[] => {
-    return text
-      .split('\n')
-      .filter((line) => line.trim())
-      .map((line) => ({
-        name: line.trim(),
-        quantity: null,
-        unit: null,
+  const handleIngredientsChange = (updated: ParsedIngredient[]) => {
+    setStructuredIngredients(updated);
+    methods.setValue('ingredientsText', ingredientsToText(updated), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const ingredientsFromStructured = (): Ingredient[] => {
+    return structuredIngredients
+      .filter((i) => i.name.trim())
+      .map((i) => ({
+        name: i.name.trim(),
+        quantity: i.quantity.trim() || null,
+        unit: i.unit.trim() || null,
       }));
   };
 
@@ -162,7 +173,7 @@ export default function RecipeReviewScreen() {
     try {
       const newRecipe = await createRecipe.mutateAsync({
         title: data.title,
-        ingredients: parseIngredients(data.ingredientsText),
+        ingredients: ingredientsFromStructured(),
         steps: parseSteps(data.stepsText),
         cookingTime: data.cookTime ?? data.prepTime ?? null,
         servings: data.servings ?? null,
@@ -285,6 +296,8 @@ export default function RecipeReviewScreen() {
             photoUri={photoUri}
             onPhotoChange={setPhotoUri}
             hasAiPhoto={hasAiPhoto}
+            ingredients={structuredIngredients}
+            onIngredientsChange={handleIngredientsChange}
           />
 
           {/* Collection selectors */}
@@ -515,21 +528,30 @@ export default function RecipeReviewScreen() {
   );
 }
 
+function extractStructuredIngredients(recipe: ExtractedRecipe): ParsedIngredient[] {
+  if (!recipe.ingredients) return [];
+  return recipe.ingredients.map((i) => ({
+    name: i.notes ? `${i.name} (${i.notes})` : i.name,
+    quantity: i.quantity ? String(i.quantity) : '',
+    unit: i.unit || '',
+  }));
+}
+
 function mapRecipeToForm(recipe: ExtractedRecipe): ReviewRecipeFormData {
+  const ingredientsText = extractStructuredIngredients(recipe)
+    .map((i) => {
+      const parts: string[] = [];
+      if (i.quantity) parts.push(i.quantity);
+      if (i.unit) parts.push(i.unit);
+      parts.push(i.name);
+      return parts.join(' ');
+    })
+    .join('\n');
+
   return {
     title: recipe.title || '',
     description: recipe.description || '',
-    ingredientsText:
-      recipe.ingredients
-        ?.map((i) => {
-          const parts: string[] = [];
-          if (i.quantity) parts.push(String(i.quantity));
-          if (i.unit) parts.push(i.unit);
-          parts.push(i.name);
-          if (i.notes) parts.push(`(${i.notes})`);
-          return parts.join(' ');
-        })
-        .join('\n') || '',
+    ingredientsText,
     stepsText: recipe.instructions?.map((s) => s.text || '').join('\n') || '',
     prepTime: recipe.prepTime || null,
     cookTime: recipe.cookTime || null,

@@ -13,3 +13,5 @@ export { Skeleton } from './Skeleton';
 export { EmptyState } from './EmptyState';
 export { MmmhLogo } from './MmmhLogo';
 export { PremiumIcon } from './PremiumIcon';
+// SwipeToDelete is NOT re-exported here to avoid eager loading
+// of gesture-handler at startup. Import directly: '../ui/SwipeToDelete'
