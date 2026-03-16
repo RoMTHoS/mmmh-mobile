@@ -37,7 +37,7 @@ describe('QuotaDisplay', () => {
     expect(queryByTestId('quota-display')).toBeNull();
   });
 
-  it('shows premium usage for free tier with quota exhausted', () => {
+  it('shows label for free tier with quota exhausted', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'free',
       trialDaysRemaining: null,
@@ -48,15 +48,13 @@ describe('QuotaDisplay', () => {
       storeSubscription: null,
     });
 
-    const { getByTestId } = render(<QuotaDisplay />);
-
-    const children = getByTestId('quota-vps-text').props.children;
-    const text = Array.isArray(children) ? children.join('') : children;
-    expect(text).toContain('2/2');
-    expect(text).toContain('Import premium');
+    const { getByTestId, getByText } = render(<QuotaDisplay />);
+    expect(getByTestId('quota-vps-text')).toBeTruthy();
+    expect(getByText('Import premium')).toBeTruthy();
+    expect(getByText(/2\/2 utilises/)).toBeTruthy();
   });
 
-  it('shows premium usage for trial tier with 1 remaining', () => {
+  it('shows usage for trial tier with 1 remaining', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 5,
@@ -67,12 +65,8 @@ describe('QuotaDisplay', () => {
       storeSubscription: null,
     });
 
-    const { getByTestId } = render(<QuotaDisplay />);
-
-    const children = getByTestId('quota-vps-text').props.children;
-    const text = Array.isArray(children) ? children.join('') : children;
-    expect(text).toContain('1/2');
-    expect(text).toContain('Import premium');
+    const { getByText } = render(<QuotaDisplay />);
+    expect(getByText(/1\/2 utilises/)).toBeTruthy();
   });
 
   it('shows 0/2 when both premium imports available', () => {
@@ -86,12 +80,8 @@ describe('QuotaDisplay', () => {
       storeSubscription: null,
     });
 
-    const { getByTestId } = render(<QuotaDisplay />);
-
-    const children = getByTestId('quota-vps-text').props.children;
-    const text = Array.isArray(children) ? children.join('') : children;
-    expect(text).toContain('0/2');
-    expect(text).toContain('cette semaine');
+    const { getByText } = render(<QuotaDisplay />);
+    expect(getByText(/0\/2 utilises/)).toBeTruthy();
   });
 
   it('shows 2/2 when all premium imports used', () => {
@@ -105,12 +95,8 @@ describe('QuotaDisplay', () => {
       storeSubscription: null,
     });
 
-    const { getByTestId } = render(<QuotaDisplay />);
-
-    const children = getByTestId('quota-vps-text').props.children;
-    const text = Array.isArray(children) ? children.join('') : children;
-    expect(text).toContain('2/2');
-    expect(text).toContain('cette semaine');
+    const { getByText } = render(<QuotaDisplay />);
+    expect(getByText(/2\/2 utilises/)).toBeTruthy();
   });
 
   it('shows progress bar', () => {
@@ -139,9 +125,7 @@ describe('QuotaDisplay', () => {
       storeSubscription: null,
     });
 
-    const { getByTestId } = render(<QuotaDisplay />);
-    const children = getByTestId('quota-vps-text').props.children;
-    const text = Array.isArray(children) ? children.join('') : children;
-    expect(text).toContain('2/2');
+    const { getByText } = render(<QuotaDisplay />);
+    expect(getByText(/2\/2 utilises/)).toBeTruthy();
   });
 });

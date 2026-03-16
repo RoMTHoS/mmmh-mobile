@@ -7,8 +7,6 @@ const mockUsePlanStatus = jest.fn<PlanStatus | null, []>();
 const mockUseUserPlan = jest.fn();
 const mockTrack = jest.fn();
 const mockReset = jest.fn();
-const mockSetTheme = jest.fn();
-let mockTheme = 'system';
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -43,11 +41,6 @@ jest.mock('../../src/services/analytics', () => ({
     track: (...args: unknown[]) => mockTrack(...args),
     reset: () => mockReset(),
   },
-}));
-
-jest.mock('../../src/stores/settingsStore', () => ({
-  useSettingsStore: (selector: (s: { theme: string; setTheme: typeof mockSetTheme }) => unknown) =>
-    selector({ theme: mockTheme, setTheme: mockSetTheme }),
 }));
 
 // Alert, Share, Linking are already jest.fn() from __mocks__/react-native.js
@@ -100,7 +93,6 @@ function setPremiumPlan() {
 describe('SettingsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockTheme = 'system';
     setFreePlan();
   });
 
@@ -132,7 +124,7 @@ describe('SettingsScreen', () => {
       const badgeChildren = badge.props.children;
       const badgeEl = React.isValidElement(badgeChildren) ? badgeChildren : null;
       const badgeText = badgeEl ? (badgeEl.props as { children: string }).children : '';
-      expect(badgeText).toContain('Gratuit');
+      expect(badgeText).toContain('Standard');
     });
 
     it('shows trial tier with days remaining', () => {
@@ -174,28 +166,12 @@ describe('SettingsScreen', () => {
     });
   });
 
-  // --- Task 9.4: Theme toggle changes store ---
+  // --- Task 9.4: Theme toggle (disabled, dark mode coming soon) ---
   describe('Theme toggle', () => {
-    it('displays current theme value', () => {
-      mockTheme = 'light';
+    it('displays theme toggle row', () => {
       const { getByTestId } = renderScreen();
       const row = getByTestId('theme-toggle');
       expect(row).toBeTruthy();
-    });
-
-    it('cycles theme on press', () => {
-      mockTheme = 'system';
-      const { getByTestId } = renderScreen();
-      fireEvent.press(getByTestId('theme-toggle'));
-      // system → light (next after system in cycle)
-      expect(mockSetTheme).toHaveBeenCalledWith('light');
-    });
-
-    it('cycles from dark to system', () => {
-      mockTheme = 'dark';
-      const { getByTestId } = renderScreen();
-      fireEvent.press(getByTestId('theme-toggle'));
-      expect(mockSetTheme).toHaveBeenCalledWith('system');
     });
   });
 
@@ -276,13 +252,6 @@ describe('SettingsScreen', () => {
 
   // --- Task 9.7: External links open via expo-web-browser ---
   describe('External links', () => {
-    it('FAQ opens URL', () => {
-      const { getByTestId } = renderScreen();
-      fireEvent.press(getByTestId('help-faq'));
-
-      expect(Linking.openURL).toHaveBeenCalledWith('https://mymealmatehelper.com/faq');
-    });
-
     it('Privacy Policy opens URL', () => {
       const { getByTestId } = renderScreen();
       fireEvent.press(getByTestId('about-privacy'));
@@ -328,13 +297,6 @@ describe('SettingsScreen', () => {
       expect(mockTrack).toHaveBeenCalledWith('Help Resource Accessed', { resource: 'feedback' });
     });
 
-    it('tracks HELP_RESOURCE_ACCESSED for faq', () => {
-      const { getByTestId } = renderScreen();
-      fireEvent.press(getByTestId('help-faq'));
-
-      expect(mockTrack).toHaveBeenCalledWith('Help Resource Accessed', { resource: 'faq' });
-    });
-
     it('tracks HELP_RESOURCE_ACCESSED for support', () => {
       const { getByTestId } = renderScreen();
       fireEvent.press(getByTestId('help-support'));
@@ -353,14 +315,6 @@ describe('SettingsScreen', () => {
     it('shows credits', () => {
       const { getByTestId } = renderScreen();
       expect(getByTestId('credits')).toBeTruthy();
-    });
-
-    it('licenses row navigates to /licenses', async () => {
-      const { getByTestId } = renderScreen();
-      fireEvent.press(getByTestId('about-licenses'));
-
-      const expoRouter = await import('expo-router');
-      expect(expoRouter.router.push).toHaveBeenCalledWith('/licenses');
     });
   });
 

@@ -33,11 +33,14 @@ describe('RecipeCarousel', () => {
     expect(element.props.testID).toBe('recipe-carousel');
   });
 
-  it('renders section title', () => {
+  it('renders with FlatList', () => {
     const element = RecipeCarousel({ recipes: [] });
     const children = element.props.children;
-    // First child is the section title Text
-    expect(children[0].props.children).toBe('Recettes dans la liste');
+    // FlatList is the child
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const flatList = Array.isArray(children) ? children.find((c: any) => c?.props?.data) : children;
+    expect(flatList).toBeDefined();
+    expect(flatList.props.data).toEqual([]);
   });
 
   it('passes recipes data to FlatList', () => {
@@ -47,7 +50,9 @@ describe('RecipeCarousel', () => {
     ];
 
     const element = RecipeCarousel({ recipes });
-    const flatList = element.props.children[1];
+    const children = element.props.children;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const flatList = Array.isArray(children) ? children.find((c: any) => c?.props?.data) : children;
     expect(flatList.props.data).toHaveLength(2);
     expect(flatList.props.horizontal).toBe(true);
     expect(flatList.props.showsHorizontalScrollIndicator).toBe(false);
@@ -55,7 +60,9 @@ describe('RecipeCarousel', () => {
 
   it('handles empty recipes array', () => {
     const element = RecipeCarousel({ recipes: [] });
-    const flatList = element.props.children[1];
+    const children = element.props.children;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const flatList = Array.isArray(children) ? children.find((c: any) => c?.props?.data) : children;
     expect(flatList.props.data).toEqual([]);
   });
 

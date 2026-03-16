@@ -57,7 +57,7 @@ describe('MenuScreen - Plan & Usage section', () => {
     const badgeChildren = badge.props.children;
     const badgeEl = React.isValidElement(badgeChildren) ? badgeChildren : null;
     const badgeText = badgeEl ? (badgeEl.props as { children: string }).children : '';
-    expect(badgeText).toContain('Gratuit');
+    expect(badgeText).toContain('Standard');
 
     const usageChildren = getByTestId('plan-vps-usage').props.children;
     const usageText = Array.isArray(usageChildren) ? usageChildren.join('') : usageChildren;

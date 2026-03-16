@@ -31,6 +31,16 @@ jest.mock('../../src/stores/shoppingStore', () => ({
     selector({ activeListId: 'list-1' }),
 }));
 
+jest.mock('../../src/stores/collectionStore', () => ({
+  useCollectionStore: (selector: (s: Record<string, unknown>) => unknown) =>
+    selector({
+      collections: [],
+      addRecipeToCollection: jest.fn(),
+      removeRecipeFromCollection: jest.fn(),
+      addCollection: jest.fn(),
+    }),
+}));
+
 jest.mock('../../src/services/analytics', () => ({
   analytics: { track: jest.fn() },
 }));

@@ -19,6 +19,7 @@ jest.mock('../../../src/hooks/useShoppingList', () => ({
   useAddRecipeToList: () => ({ mutate: jest.fn(), isPending: false }),
   useRemoveRecipeFromList: () => ({ mutate: jest.fn(), isPending: false }),
   useShoppingLists: () => ({ data: [], isLoading: false }),
+  useShoppingListRecipes: () => ({ data: [], isLoading: false }),
   useCreateShoppingList: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 

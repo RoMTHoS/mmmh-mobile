@@ -143,14 +143,13 @@ describe('ImportStatusCard', () => {
       expect(getByText(/Premium/)).toBeDefined();
     });
 
-    it('renders no pipeline badge when pipeline is not set', () => {
+    it('defaults to Standard badge when pipeline is not set', () => {
       const job: ImportJob = { ...baseJob, pipeline: undefined };
-      const { queryByText } = render(
+      const { getByText } = render(
         React.createElement(ImportStatusCard, { job, onDismiss: noop, onRetry: noop })
       );
 
-      expect(queryByText('Standard')).toBeNull();
-      expect(queryByText(/Premium/)).toBeNull();
+      expect(getByText('Standard')).toBeDefined();
     });
   });
 
