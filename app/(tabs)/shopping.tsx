@@ -7,7 +7,6 @@ import { colors, typography, spacing } from '../../src/theme';
 import { LoadingScreen } from '../../src/components/ui/LoadingScreen';
 import {
   RecipeCarousel,
-  SummaryBadges,
   ListViewTabs,
   CategoryView,
   RecipeView,
@@ -55,8 +54,6 @@ export default function ShoppingScreen() {
       setActiveListId(defaultList.id);
     }
   }, [activeListId, defaultList?.id, setActiveListId]);
-
-  const list = defaultList;
 
   const recipesQuery = useShoppingListRecipes(effectiveListId);
   const itemsQuery = useShoppingListItems(effectiveListId);
@@ -263,7 +260,6 @@ export default function ShoppingScreen() {
         highlightRecipeId={highlightRecipe}
         onRemoveRecipe={handleRemoveRecipe}
       />
-      <SummaryBadges list={list!} />
       <ListViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
       <View style={styles.listContainer}>
         {activeTab === 'categories' && (

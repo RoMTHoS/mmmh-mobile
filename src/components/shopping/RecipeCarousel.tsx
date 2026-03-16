@@ -70,6 +70,10 @@ function RecipeCard({
         <Text style={styles.cardTitle} numberOfLines={1}>
           {recipe.recipeTitle ?? 'Sans titre'}
         </Text>
+        <View style={styles.portionBadge}>
+          <Ionicons name="person-outline" size={12} color={colors.text} />
+          <Text style={styles.portionText}>{Math.round(recipe.servingsMultiplier)}</Text>
+        </View>
       </Animated.View>
     </Pressable>
   );
@@ -101,7 +105,6 @@ export function RecipeCarousel({
 
   return (
     <View style={styles.container} testID="recipe-carousel">
-      <Text style={styles.sectionTitle}>Recettes dans la liste</Text>
       <FlatList
         ref={flatListRef}
         data={recipes}
@@ -126,13 +129,6 @@ export function RecipeCarousel({
 const styles = StyleSheet.create({
   container: {
     paddingTop: spacing.md,
-  },
-  sectionTitle: {
-    ...typography.label,
-    color: colors.text,
-    fontWeight: '600',
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
   },
   listContent: {
     paddingHorizontal: spacing.md,
@@ -164,8 +160,8 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     position: 'absolute',
-    top: -4,
-    right: -4,
+    top: 0,
+    right: 0,
     padding: 2,
   },
   cardTitle: {
@@ -174,5 +170,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.xs,
     width: CARD_SIZE,
+  },
+  portionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    marginTop: spacing.xs,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+  },
+  portionText: {
+    ...typography.caption,
+    color: colors.text,
+    fontSize: 11,
   },
 });
