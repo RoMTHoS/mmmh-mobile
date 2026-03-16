@@ -189,19 +189,21 @@ export default function RecipeDetailScreen() {
             <View style={styles.ingredientsHeader}>
               <Text style={styles.sectionTitle}>Ingrédients</Text>
               <View style={styles.servingsStepper}>
-                <Icon name="servings" size="md" color={colors.text} />
                 <Pressable
                   onPress={() => setDisplayServings(Math.max(1, servings - 1))}
-                  style={styles.stepperButton}
                   accessibilityLabel="Diminuer les portions"
+                  hitSlop={4}
                 >
                   <Text style={styles.stepperButtonText}>-</Text>
                 </Pressable>
-                <Text style={styles.servingsCount}>{servings}</Text>
+                <View style={styles.servingsCenter}>
+                  <Ionicons name="person-outline" size={15} color={colors.text} />
+                  <Text style={styles.servingsCount}>{servings}</Text>
+                </View>
                 <Pressable
                   onPress={() => setDisplayServings(servings + 1)}
-                  style={styles.stepperButton}
                   accessibilityLabel="Augmenter les portions"
+                  hitSlop={4}
                 >
                   <Text style={styles.stepperButtonText}>+</Text>
                 </Pressable>
@@ -425,31 +427,30 @@ const styles = StyleSheet.create({
   servingsStepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  stepperButton: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FFFFFF',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    minWidth: 100,
   },
   stepperButtonText: {
     fontFamily: fonts.sans,
-    fontSize: 16,
+    fontSize: 20,
     color: colors.text,
-    lineHeight: 18,
+    lineHeight: 22,
+  },
+  servingsCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   servingsCount: {
     fontFamily: fonts.sans,
-    fontSize: 20,
+    fontSize: 16,
     color: colors.text,
-    minWidth: 24,
     textAlign: 'center',
   },
   notes: {

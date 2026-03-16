@@ -1,11 +1,22 @@
-import { View, ScrollView, StyleSheet, Alert, Image, Pressable } from 'react-native';
-import { Controller, Control, FieldErrors } from 'react-hook-form';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Alert,
+  Image,
+  Pressable,
+  TextInput as RNTextInput,
+} from 'react-native';
+import { Controller, Control, FieldErrors, useWatch } from 'react-hook-form';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 
 import { TextInput, Button, Text, Icon } from '../ui';
 import type { CreateRecipeFormData } from '../../schemas/recipe.schema';
-import { colors, spacing, radius, fonts } from '../../theme';
+import { colors, spacing, radius, fonts, typography } from '../../theme';
 import { persistImage } from '../../utils/imageCompression';
+import { useCollectionStore } from '../../stores/collectionStore';
 
 interface RecipeFormProps {
   control: Control<CreateRecipeFormData>;
@@ -16,6 +27,36 @@ interface RecipeFormProps {
   onDelete?: () => void;
 }
 
+interface ParsedIngredient {
+  name: string;
+  quantity: string;
+  unit: string;
+}
+
+function parseIngredientsText(text: string): ParsedIngredient[] {
+  if (!text.trim()) return [];
+  return text
+    .split('\n')
+    .filter((line) => line.trim())
+    .map((line) => ({
+      name: line.trim(),
+      quantity: '',
+      unit: '',
+    }));
+}
+
+function ingredientsToText(ingredients: ParsedIngredient[]): string {
+  return ingredients
+    .map((i) => {
+      const parts: string[] = [];
+      if (i.quantity) parts.push(i.quantity);
+      if (i.unit) parts.push(i.unit);
+      parts.push(i.name);
+      return parts.join(' ');
+    })
+    .join('\n');
+}
+
 export function RecipeForm({
   control,
   errors,
@@ -24,6 +65,164 @@ export function RecipeForm({
   autoFocusTitle = false,
   onDelete,
 }: RecipeFormProps) {
+  // Ingredient form state
+  const [ingredients, setIngredients] = useState<ParsedIngredient[]>([]);
+  const [ingName, setIngName] = useState('');
+  const [ingQuantity, setIngQuantity] = useState('');
+  const [ingUnit, setIngUnit] = useState('');
+  const [ingredientsInitialized, setIngredientsInitialized] = useState(false);
+
+  // Steps form state
+  const [steps, setSteps] = useState<string[]>([]);
+  const [stepText, setStepText] = useState('');
+  const [stepsInitialized, setStepsInitialized] = useState(false);
+
+  // Notes form state
+  const [notes, setNotes] = useState<string[]>([]);
+  const [noteText, setNoteText] = useState('');
+  const [notesInitialized, setNotesInitialized] = useState(false);
+
+  // Collection store
+  const collections = useCollectionStore((s) => s.collections);
+  const recipeBooks = collections.filter((c) => c.type === 'recipeBook');
+  const menus = collections.filter((c) => c.type === 'menu');
+  const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
+  const [menuDropdownOpen, setMenuDropdownOpen] = useState(false);
+  const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
+  const [selectedMenuIds, setSelectedMenuIds] = useState<string[]>([]);
+  const [collectionsInitialized, setCollectionsInitialized] = useState(false);
+
+  // Watch form fields to initialize from existing data (edit mode)
+  const ingredientsText = useWatch({ control, name: 'ingredientsText' });
+  const stepsText = useWatch({ control, name: 'stepsText' });
+  const notesValue = useWatch({ control, name: 'notes' });
+  const catalogueValue = useWatch({ control, name: 'catalogue' });
+  const regimeValue = useWatch({ control, name: 'regime' });
+
+  // Initialize collection selections from existing data (edit mode)
+  useEffect(() => {
+    if (!collectionsInitialized) {
+      if (catalogueValue) setSelectedBookIds(catalogueValue.split(',').filter(Boolean));
+      if (regimeValue) setSelectedMenuIds(regimeValue.split(',').filter(Boolean));
+      setCollectionsInitialized(true);
+    }
+  }, [catalogueValue, regimeValue, collectionsInitialized]);
+
+  // Initialize ingredients from existing text (edit mode)
+  useEffect(() => {
+    if (!ingredientsInitialized && ingredientsText) {
+      setIngredients(parseIngredientsText(ingredientsText));
+      setIngredientsInitialized(true);
+    } else if (!ingredientsInitialized && ingredientsText === '') {
+      setIngredientsInitialized(true);
+    }
+  }, [ingredientsText, ingredientsInitialized]);
+
+  const handleAddIngredient = useCallback(
+    (onChange: (value: string) => void) => {
+      const trimmedName = ingName.trim();
+      if (!trimmedName) return;
+
+      const newIngredient: ParsedIngredient = {
+        name: trimmedName,
+        quantity: ingQuantity.trim(),
+        unit: ingUnit.trim(),
+      };
+
+      const updated = [...ingredients, newIngredient];
+      setIngredients(updated);
+      onChange(ingredientsToText(updated));
+
+      setIngName('');
+      setIngQuantity('');
+      setIngUnit('');
+    },
+    [ingName, ingQuantity, ingUnit, ingredients]
+  );
+
+  const handleRemoveIngredient = useCallback(
+    (index: number, onChange: (value: string) => void) => {
+      const updated = ingredients.filter((_, i) => i !== index);
+      setIngredients(updated);
+      onChange(ingredientsToText(updated));
+    },
+    [ingredients]
+  );
+
+  // Initialize steps from existing text (edit mode)
+  useEffect(() => {
+    if (!stepsInitialized && stepsText) {
+      setSteps(
+        stepsText
+          .split('\n')
+          .filter((line) => line.trim())
+          .map((line) => line.trim())
+      );
+      setStepsInitialized(true);
+    } else if (!stepsInitialized && stepsText === '') {
+      setStepsInitialized(true);
+    }
+  }, [stepsText, stepsInitialized]);
+
+  const handleAddStep = useCallback(
+    (onChange: (value: string) => void) => {
+      const trimmed = stepText.trim();
+      if (!trimmed) return;
+
+      const updated = [...steps, trimmed];
+      setSteps(updated);
+      onChange(updated.join('\n'));
+      setStepText('');
+    },
+    [stepText, steps]
+  );
+
+  const handleRemoveStep = useCallback(
+    (index: number, onChange: (value: string) => void) => {
+      const updated = steps.filter((_, i) => i !== index);
+      setSteps(updated);
+      onChange(updated.join('\n'));
+    },
+    [steps]
+  );
+
+  // Initialize notes from existing text (edit mode)
+  useEffect(() => {
+    if (!notesInitialized && notesValue) {
+      setNotes(
+        notesValue
+          .split('\n')
+          .filter((line) => line.trim())
+          .map((line) => line.trim())
+      );
+      setNotesInitialized(true);
+    } else if (!notesInitialized && (notesValue === '' || notesValue === null)) {
+      setNotesInitialized(true);
+    }
+  }, [notesValue, notesInitialized]);
+
+  const handleAddNote = useCallback(
+    (onChange: (value: string) => void) => {
+      const trimmed = noteText.trim();
+      if (!trimmed) return;
+
+      const updated = [...notes, trimmed];
+      setNotes(updated);
+      onChange(updated.join('\n'));
+      setNoteText('');
+    },
+    [noteText, notes]
+  );
+
+  const handleRemoveNote = useCallback(
+    (index: number, onChange: (value: string) => void) => {
+      const updated = notes.filter((_, i) => i !== index);
+      setNotes(updated);
+      onChange(updated.join('\n'));
+    },
+    [notes]
+  );
+
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -111,46 +310,138 @@ export function RecipeForm({
           </Pressable>
         </View>
 
-        {/* Catalogue Row */}
+        {/* Livre de recette Row */}
         <Controller
           control={control}
           name="catalogue"
-          render={({ field: { onChange, value } }) => (
-            <Pressable
-              style={styles.cardRowBordered}
-              onPress={() => {
-                if (Alert.prompt) {
-                  Alert.prompt('Catalogue', 'Entrez le catalogue', (text) => onChange(text));
-                } else {
-                  onChange(value ? null : 'Général');
-                }
-              }}
-            >
-              <Text style={styles.cardLabel}>Catalogue</Text>
-              <Text style={styles.cardChevron}>{value || 'selectionner >'}</Text>
-            </Pressable>
-          )}
+          render={({ field: { onChange } }) => {
+            const selectedNames = recipeBooks
+              .filter((b) => selectedBookIds.includes(b.id))
+              .map((b) => b.name);
+            const toggleBook = (id: string) => {
+              const updated = selectedBookIds.includes(id)
+                ? selectedBookIds.filter((x) => x !== id)
+                : [...selectedBookIds, id];
+              setSelectedBookIds(updated);
+              onChange(updated.join(',') || null);
+            };
+            return (
+              <View>
+                <Pressable
+                  style={styles.cardRowBordered}
+                  onPress={() => {
+                    setBookDropdownOpen(!bookDropdownOpen);
+                    setMenuDropdownOpen(false);
+                  }}
+                >
+                  <Text style={styles.cardLabel}>Livre de recette</Text>
+                  <View style={styles.cardChevronRow}>
+                    <Text style={styles.cardChevron}>
+                      {selectedNames.length > 0 ? selectedNames.join(', ') : 'sélectionner'}
+                    </Text>
+                    <Ionicons
+                      name={bookDropdownOpen ? 'chevron-down' : 'chevron-forward'}
+                      size={16}
+                      color={colors.textMuted}
+                    />
+                  </View>
+                </Pressable>
+                {bookDropdownOpen && (
+                  <View style={styles.dropdownList}>
+                    {recipeBooks.map((book) => (
+                      <Pressable
+                        key={book.id}
+                        style={styles.dropdownItem}
+                        onPress={() => toggleBook(book.id)}
+                      >
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            selectedBookIds.includes(book.id) && styles.dropdownItemSelected,
+                          ]}
+                        >
+                          {book.name}
+                        </Text>
+                        {selectedBookIds.includes(book.id) && (
+                          <Ionicons name="checkmark" size={18} color={colors.accent} />
+                        )}
+                      </Pressable>
+                    ))}
+                    {recipeBooks.length === 0 && (
+                      <Text style={styles.dropdownEmpty}>Aucun livre créé</Text>
+                    )}
+                  </View>
+                )}
+              </View>
+            );
+          }}
         />
 
-        {/* Régime Row */}
+        {/* Regime & Menu Row */}
         <Controller
           control={control}
           name="regime"
-          render={({ field: { onChange, value } }) => (
-            <Pressable
-              style={styles.cardRowBordered}
-              onPress={() => {
-                if (Alert.prompt) {
-                  Alert.prompt('Régime', 'Entrez le régime', (text) => onChange(text));
-                } else {
-                  onChange(value ? null : 'Standard');
-                }
-              }}
-            >
-              <Text style={styles.cardLabel}>Régime</Text>
-              <Text style={styles.cardChevron}>{value || 'selectionner >'}</Text>
-            </Pressable>
-          )}
+          render={({ field: { onChange } }) => {
+            const selectedNames = menus
+              .filter((m) => selectedMenuIds.includes(m.id))
+              .map((m) => m.name);
+            const toggleMenu = (id: string) => {
+              const updated = selectedMenuIds.includes(id)
+                ? selectedMenuIds.filter((x) => x !== id)
+                : [...selectedMenuIds, id];
+              setSelectedMenuIds(updated);
+              onChange(updated.join(',') || null);
+            };
+            return (
+              <View>
+                <Pressable
+                  style={styles.cardRowBordered}
+                  onPress={() => {
+                    setMenuDropdownOpen(!menuDropdownOpen);
+                    setBookDropdownOpen(false);
+                  }}
+                >
+                  <Text style={styles.cardLabel}>Regime & Menu</Text>
+                  <View style={styles.cardChevronRow}>
+                    <Text style={styles.cardChevron}>
+                      {selectedNames.length > 0 ? selectedNames.join(', ') : 'sélectionner'}
+                    </Text>
+                    <Ionicons
+                      name={menuDropdownOpen ? 'chevron-down' : 'chevron-forward'}
+                      size={16}
+                      color={colors.textMuted}
+                    />
+                  </View>
+                </Pressable>
+                {menuDropdownOpen && (
+                  <View style={styles.dropdownList}>
+                    {menus.map((menu) => (
+                      <Pressable
+                        key={menu.id}
+                        style={styles.dropdownItem}
+                        onPress={() => toggleMenu(menu.id)}
+                      >
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            selectedMenuIds.includes(menu.id) && styles.dropdownItemSelected,
+                          ]}
+                        >
+                          {menu.name}
+                        </Text>
+                        {selectedMenuIds.includes(menu.id) && (
+                          <Ionicons name="checkmark" size={18} color={colors.accent} />
+                        )}
+                      </Pressable>
+                    ))}
+                    {menus.length === 0 && (
+                      <Text style={styles.dropdownEmpty}>Aucun menu créé</Text>
+                    )}
+                  </View>
+                )}
+              </View>
+            );
+          }}
         />
 
         {/* Nombre de portions */}
@@ -290,40 +581,100 @@ export function RecipeForm({
         />
       </View>
 
-      {/* Ingrédients — navigable row */}
+      {/* Ingrédients */}
       <Text style={styles.sectionTitle}>Ingrédients</Text>
       <Controller
         control={control}
         name="ingredientsText"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.navSection}>
-            <TextInput
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Ajouter les ingrédients"
-              multiline
-              style={styles.multiline}
+        render={({ field: { onChange } }) => (
+          <View style={styles.ingredientsSection}>
+            {/* Ingredient list */}
+            {ingredients.map((ing, index) => (
+              <View key={`${ing.name}-${index}`} style={styles.ingredientRow}>
+                <Text style={styles.ingredientName}>{ing.name}</Text>
+                <View style={styles.ingredientRight}>
+                  {(ing.quantity || ing.unit) && (
+                    <Text style={styles.ingredientQty}>
+                      {[ing.quantity, ing.unit].filter(Boolean).join(' ')}
+                    </Text>
+                  )}
+                  <Pressable onPress={() => handleRemoveIngredient(index, onChange)} hitSlop={8}>
+                    <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+
+            {/* Add ingredient form */}
+            <RNTextInput
+              style={styles.ingredientInput}
+              placeholder="Nom de l'ingrédient"
+              placeholderTextColor={colors.textLight}
+              value={ingName}
+              onChangeText={setIngName}
             />
+            <View style={styles.ingredientFormRow}>
+              <RNTextInput
+                style={[styles.ingredientInput, styles.ingredientSmallInput]}
+                placeholder="Qté"
+                placeholderTextColor={colors.textLight}
+                value={ingQuantity}
+                onChangeText={setIngQuantity}
+                keyboardType="numeric"
+              />
+              <RNTextInput
+                style={[styles.ingredientInput, styles.ingredientSmallInput]}
+                placeholder="Unité"
+                placeholderTextColor={colors.textLight}
+                value={ingUnit}
+                onChangeText={setIngUnit}
+              />
+            </View>
+            <Pressable
+              style={[styles.ingredientAddButton, !ingName.trim() && styles.ingredientAddDisabled]}
+              onPress={() => handleAddIngredient(onChange)}
+              disabled={!ingName.trim()}
+            >
+              <Text style={styles.ingredientAddText}>Ajouter</Text>
+            </Pressable>
           </View>
         )}
       />
 
-      {/* Instructions — navigable row */}
+      {/* Instructions */}
       <Text style={styles.sectionTitle}>Instructions</Text>
       <Controller
         control={control}
         name="stepsText"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.navSection}>
-            <TextInput
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Ajouter les étapes"
+        render={({ field: { onChange } }) => (
+          <View style={styles.stepsSection}>
+            {/* Steps list */}
+            {steps.map((step, index) => (
+              <View key={`step-${index}`} style={styles.stepRow}>
+                <Text style={styles.stepNumber}>{index + 1}.</Text>
+                <Text style={styles.stepText}>{step}</Text>
+                <Pressable onPress={() => handleRemoveStep(index, onChange)} hitSlop={8}>
+                  <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                </Pressable>
+              </View>
+            ))}
+
+            {/* Add step form */}
+            <RNTextInput
+              style={styles.ingredientInput}
+              placeholder="Ajouter une étape"
+              placeholderTextColor={colors.textLight}
+              value={stepText}
+              onChangeText={setStepText}
               multiline
-              style={styles.multiline}
             />
+            <Pressable
+              style={[styles.ingredientAddButton, !stepText.trim() && styles.ingredientAddDisabled]}
+              onPress={() => handleAddStep(onChange)}
+              disabled={!stepText.trim()}
+            >
+              <Text style={styles.ingredientAddText}>Ajouter</Text>
+            </Pressable>
           </View>
         )}
       />
@@ -333,16 +684,34 @@ export function RecipeForm({
       <Controller
         control={control}
         name="notes"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <View style={styles.navSection}>
-            <TextInput
-              value={value || ''}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="Ajouter des astuces"
+        render={({ field: { onChange } }) => (
+          <View style={styles.stepsSection}>
+            {/* Notes list */}
+            {notes.map((note, index) => (
+              <View key={`note-${index}`} style={styles.noteRow}>
+                <Text style={styles.stepText}>{note}</Text>
+                <Pressable onPress={() => handleRemoveNote(index, onChange)} hitSlop={8}>
+                  <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                </Pressable>
+              </View>
+            ))}
+
+            {/* Add note form */}
+            <RNTextInput
+              style={styles.ingredientInput}
+              placeholder="Ajouter une astuce"
+              placeholderTextColor={colors.textLight}
+              value={noteText}
+              onChangeText={setNoteText}
               multiline
-              style={styles.notesInput}
             />
+            <Pressable
+              style={[styles.ingredientAddButton, !noteText.trim() && styles.ingredientAddDisabled]}
+              onPress={() => handleAddNote(onChange)}
+              disabled={!noteText.trim()}
+            >
+              <Text style={styles.ingredientAddText}>Ajouter</Text>
+            </Pressable>
           </View>
         )}
       />
@@ -374,7 +743,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border + '30',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   cardRow: {
@@ -401,10 +770,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     fontSize: 16,
   },
+  cardChevronRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flexShrink: 1,
+  },
   cardChevron: {
     fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.textMuted,
+    flexShrink: 1,
+  },
+  dropdownList: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    paddingVertical: spacing.xs,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  dropdownItemText: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    color: colors.text,
+  },
+  dropdownItemSelected: {
+    color: colors.accent,
+    fontWeight: '600',
+  },
+  dropdownEmpty: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.textMuted,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   cameraButton: {
     padding: 4,
@@ -436,7 +840,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border + '30',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -470,7 +874,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border + '30',
+    borderColor: colors.border,
   },
   nutritionItem: {
     flex: 1,
@@ -496,12 +900,115 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
+  // Ingredients
+  ingredientsSection: {
+    gap: spacing.sm,
+  },
+  ingredientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  ingredientName: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    color: colors.text,
+    flex: 1,
+  },
+  ingredientRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  ingredientQty: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  ingredientInput: {
+    ...typography.body,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    backgroundColor: '#FFFFFF',
+    color: colors.text,
+  },
+  ingredientFormRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  ingredientSmallInput: {
+    flex: 1,
+  },
+  ingredientAddButton: {
+    backgroundColor: colors.accent,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+  },
+  ingredientAddDisabled: {
+    opacity: 0.5,
+  },
+  ingredientAddText: {
+    ...typography.body,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+
+  // Steps
+  stepsSection: {
+    gap: spacing.sm,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  stepNumber: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.accent,
+  },
+  stepText: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    color: colors.text,
+    flex: 1,
+  },
+
+  noteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+
   // Navigation sections
   navSection: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border + '30',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   multiline: {

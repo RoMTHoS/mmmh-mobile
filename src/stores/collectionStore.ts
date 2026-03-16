@@ -7,6 +7,7 @@ export interface Collection {
   name: string;
   type: 'recipeBook' | 'menu';
   recipeIds: string[];
+  recipeServings: Record<string, number>;
   createdAt: string;
 }
 
@@ -16,6 +17,7 @@ interface CollectionStore {
   removeCollection: (id: string) => void;
   addRecipeToCollection: (collectionId: string, recipeId: string) => void;
   removeRecipeFromCollection: (collectionId: string, recipeId: string) => void;
+  setRecipeServings: (collectionId: string, recipeId: string, servings: number) => void;
   getRecipeBooks: () => Collection[];
   getMenus: () => Collection[];
 }
@@ -31,6 +33,7 @@ export const useCollectionStore = create<CollectionStore>()(
           name,
           type,
           recipeIds: [],
+          recipeServings: {},
           createdAt: new Date().toISOString(),
         };
         set((state) => ({
@@ -57,9 +60,24 @@ export const useCollectionStore = create<CollectionStore>()(
 
       removeRecipeFromCollection: (collectionId, recipeId) => {
         set((state) => ({
+          collections: state.collections.map((c) => {
+            if (c.id !== collectionId) return c;
+            const servings = { ...(c.recipeServings ?? {}) };
+            delete servings[recipeId];
+            return {
+              ...c,
+              recipeIds: c.recipeIds.filter((r) => r !== recipeId),
+              recipeServings: servings,
+            };
+          }),
+        }));
+      },
+
+      setRecipeServings: (collectionId, recipeId, servings) => {
+        set((state) => ({
           collections: state.collections.map((c) =>
             c.id === collectionId
-              ? { ...c, recipeIds: c.recipeIds.filter((r) => r !== recipeId) }
+              ? { ...c, recipeServings: { ...(c.recipeServings ?? {}), [recipeId]: servings } }
               : c
           ),
         }));

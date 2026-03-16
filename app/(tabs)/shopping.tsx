@@ -25,6 +25,7 @@ import {
   useAddManualItem,
   useDeleteItem,
   useUpdateItem,
+  useAddRecipeToList,
   useRemoveRecipeFromList,
   useDeleteShoppingList,
   useShoppingLists,
@@ -63,6 +64,7 @@ export default function ShoppingScreen() {
   const addManualItem = useAddManualItem();
   const deleteItem = useDeleteItem();
   const updateItem = useUpdateItem();
+  const addRecipeToList = useAddRecipeToList();
   const removeRecipe = useRemoveRecipeFromList();
   const deleteList = useDeleteShoppingList();
 
@@ -132,6 +134,18 @@ export default function ShoppingScreen() {
       ]
     );
   }, [effectiveListId, deleteList, defaultList?.id, setActiveListId]);
+
+  const handleUpdateServings = useCallback(
+    (recipe: ShoppingListRecipe, newServings: number) => {
+      if (!effectiveListId) return;
+      addRecipeToList.mutate({
+        listId: effectiveListId,
+        recipeId: recipe.recipeId,
+        servingsMultiplier: newServings,
+      });
+    },
+    [effectiveListId, addRecipeToList]
+  );
 
   const handleRemoveRecipe = useCallback(
     (recipe: ShoppingListRecipe) => {
@@ -259,6 +273,7 @@ export default function ShoppingScreen() {
         recipes={recipes}
         highlightRecipeId={highlightRecipe}
         onRemoveRecipe={handleRemoveRecipe}
+        onUpdateServings={handleUpdateServings}
       />
       <ListViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
       <View style={styles.listContainer}>

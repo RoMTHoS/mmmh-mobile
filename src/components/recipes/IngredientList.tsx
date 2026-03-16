@@ -13,14 +13,15 @@ export function IngredientList({ ingredients }: IngredientListProps) {
 
   return (
     <View style={styles.container} testID="ingredient-list">
-      {ingredients.map((ingredient, index) => (
-        <View key={index} style={styles.row} testID={`ingredient-item-${index}`}>
-          <Text style={styles.name}>{ingredient.name}</Text>
-          <Text style={styles.quantity}>
-            {[ingredient.quantity, ingredient.unit].filter(Boolean).join(' ')}
-          </Text>
-        </View>
-      ))}
+      {ingredients.map((ingredient, index) => {
+        const qty = [ingredient.quantity, ingredient.unit].filter(Boolean).join(' ');
+        return (
+          <View key={index} style={styles.row} testID={`ingredient-item-${index}`}>
+            <Text style={styles.name}>{ingredient.name}</Text>
+            {qty ? <Text style={styles.quantity}>{qty}</Text> : null}
+          </View>
+        );
+      })}
     </View>
   );
 }
