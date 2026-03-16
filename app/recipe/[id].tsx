@@ -7,17 +7,22 @@ import {
   StyleSheet,
   ImageSourcePropType,
   Pressable,
+  Modal,
+  FlatList,
+  TextInput,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import { Ionicons } from '@expo/vector-icons';
 import { useRecipe, useActiveShoppingList, useShoppingListRecipes } from '../../src/hooks';
 import { useShoppingStore } from '../../src/stores/shoppingStore';
+import { useCollectionStore } from '../../src/stores/collectionStore';
 import { analytics } from '../../src/services/analytics';
 import { EVENTS } from '../../src/utils/analyticsEvents';
 import { LoadingScreen, Badge, Icon } from '../../src/components/ui';
 import { IngredientList, StepList } from '../../src/components/recipes';
 import { ServingsSelector } from '../../src/components/shopping';
-import { colors, typography, spacing, fonts } from '../../src/theme';
+import { colors, typography, spacing, fonts, radius } from '../../src/theme';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PLACEHOLDER_IMAGE: ImageSourcePropType = require('../../assets/placeholder-food.png');
@@ -39,6 +44,29 @@ export default function RecipeDetailScreen() {
     [recipesQuery.data, id]
   );
   const isInList = existingEntry !== null;
+
+  const collections = useCollectionStore((s) => s.collections);
+  const addRecipeToCollection = useCollectionStore((s) => s.addRecipeToCollection);
+  const removeRecipeFromCollection = useCollectionStore((s) => s.removeRecipeFromCollection);
+  const addCollection = useCollectionStore((s) => s.addCollection);
+  const [collectionDropdownVisible, setCollectionDropdownVisible] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
+
+  const isInAnyCollection = useMemo(
+    () => (id ? collections.some((c) => c.recipeIds.includes(id)) : false),
+    [collections, id]
+  );
+
+  const toggleCollection = (collectionId: string) => {
+    if (!id) return;
+    const col = collections.find((c) => c.id === collectionId);
+    if (!col) return;
+    if (col.recipeIds.includes(id)) {
+      removeRecipeFromCollection(collectionId, id);
+    } else {
+      addRecipeToCollection(collectionId, id);
+    }
+  };
 
   // Keep screen awake while viewing recipe (for cooking)
   useEffect(() => {
@@ -208,7 +236,98 @@ export default function RecipeDetailScreen() {
         />
       )}
 
-      {/* Bottom Action Bar — Courses + Partager only */}
+      {/* Collection dropdown */}
+      <Modal
+        visible={collectionDropdownVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setCollectionDropdownVisible(false);
+          setNewCollectionName('');
+        }}
+      >
+        <Pressable
+          style={styles.dropdownOverlay}
+          onPress={() => {
+            setCollectionDropdownVisible(false);
+            setNewCollectionName('');
+          }}
+        >
+          <Pressable style={styles.dropdown} onPress={() => {}}>
+            <Text style={styles.dropdownTitle}>Ajouter à un catalogue</Text>
+            {collections.length > 0 ? (
+              <FlatList
+                data={collections}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  const isSelected = id ? item.recipeIds.includes(id) : false;
+                  return (
+                    <Pressable
+                      style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
+                      onPress={() => toggleCollection(item.id)}
+                    >
+                      <Text style={styles.dropdownItemType}>
+                        {item.type === 'recipeBook' ? 'Livre' : 'Menu'}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          isSelected && styles.dropdownItemTextSelected,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {item.name}
+                      </Text>
+                      {isSelected && <Ionicons name="checkmark" size={18} color={colors.accent} />}
+                    </Pressable>
+                  );
+                }}
+              />
+            ) : (
+              <Text style={styles.dropdownEmpty}>Aucun catalogue créé</Text>
+            )}
+            <View style={styles.dropdownCreateRow}>
+              <TextInput
+                style={styles.dropdownCreateInput}
+                placeholder="Nouveau catalogue..."
+                placeholderTextColor={colors.textMuted}
+                value={newCollectionName}
+                onChangeText={setNewCollectionName}
+                onSubmitEditing={() => {
+                  if (newCollectionName.trim() && id) {
+                    const col = addCollection(newCollectionName.trim(), 'recipeBook');
+                    addRecipeToCollection(col.id, id);
+                    setNewCollectionName('');
+                  }
+                }}
+                returnKeyType="done"
+              />
+              <Pressable
+                style={[
+                  styles.dropdownCreateButton,
+                  !newCollectionName.trim() && styles.dropdownCreateButtonDisabled,
+                ]}
+                onPress={() => {
+                  if (newCollectionName.trim() && id) {
+                    const col = addCollection(newCollectionName.trim(), 'recipeBook');
+                    addRecipeToCollection(col.id, id);
+                    setNewCollectionName('');
+                  }
+                }}
+                disabled={!newCollectionName.trim()}
+              >
+                <Ionicons
+                  name="add"
+                  size={20}
+                  color={newCollectionName.trim() ? colors.accent : colors.textMuted}
+                />
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Bottom Action Bar */}
       <View style={styles.actionBar}>
         <Pressable
           style={styles.actionButton}
@@ -216,13 +335,21 @@ export default function RecipeDetailScreen() {
           accessibilityLabel="Ajouter aux courses"
           testID="courses-button"
         >
-          <Icon
-            name={isInList ? 'cart' : 'cart-outline'}
-            size="lg"
-            color={isInList ? colors.accent : colors.text}
-          />
+          <Icon name="cart-add" size="lg" color={isInList ? colors.accent : colors.text} />
           <Text style={[styles.actionText, isInList && styles.actionTextActive]}>
-            Ajouter à une liste de course
+            Liste de course
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.actionButton}
+          onPress={() => setCollectionDropdownVisible(true)}
+          accessibilityLabel="Ajouter à un catalogue"
+          testID="collection-button"
+        >
+          <Icon name="bookmark" size="lg" color={isInAnyCollection ? colors.accent : colors.text} />
+          <Text style={[styles.actionText, isInAnyCollection && styles.actionTextActive]}>
+            Catalogue
           </Text>
         </Pressable>
       </View>
@@ -332,7 +459,7 @@ const styles = StyleSheet.create({
   },
   actionBar: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -352,6 +479,92 @@ const styles = StyleSheet.create({
   actionTextActive: {
     color: colors.accent,
     fontWeight: '600',
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  dropdown: {
+    backgroundColor: colors.modalBackground,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    padding: spacing.md,
+    maxHeight: 400,
+  },
+  dropdownTitle: {
+    fontFamily: fonts.script,
+    fontSize: 18,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+    gap: spacing.sm,
+  },
+  dropdownItemSelected: {
+    backgroundColor: colors.surface,
+  },
+  dropdownItemType: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    color: colors.textMuted,
+    minWidth: 36,
+  },
+  dropdownItemText: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  dropdownItemTextSelected: {
+    fontWeight: '600',
+  },
+  dropdownEmpty: {
+    ...typography.body,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
+  dropdownCreateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
+  },
+  dropdownCreateInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  dropdownCreateButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropdownCreateButtonDisabled: {
+    borderColor: colors.border,
   },
   errorContainer: {
     flex: 1,

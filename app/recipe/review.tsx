@@ -1,5 +1,14 @@
-import { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, Alert, Pressable } from 'react-native';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Alert,
+  Pressable,
+  Modal,
+  FlatList,
+  TextInput,
+} from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +23,9 @@ import { markFirstImportCompleted } from '../../src/components/feedback/Feedback
 import { Text, Button, Icon } from '../../src/components/ui';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
 import { canActivateTrial } from '../../src/utils/planStateMachine';
-import { colors, spacing, fonts, radius } from '../../src/theme';
+import { colors, typography, spacing, fonts, radius } from '../../src/theme';
+import { useCollectionStore } from '../../src/stores/collectionStore';
+import { Ionicons } from '@expo/vector-icons';
 import type { Ingredient, Step } from '../../src/types';
 
 interface ExtractedRecipe {
@@ -52,6 +63,33 @@ export default function RecipeReviewScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [hasAiPhoto, setHasAiPhoto] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+
+  const collections = useCollectionStore((s) => s.collections);
+  const addRecipeToCollection = useCollectionStore((s) => s.addRecipeToCollection);
+  const recipeBooks = useMemo(
+    () => collections.filter((c) => c.type === 'recipeBook'),
+    [collections]
+  );
+  const menus = useMemo(() => collections.filter((c) => c.type === 'menu'), [collections]);
+
+  const [selectedBookIds, setSelectedBookIds] = useState<string[]>([]);
+  const [selectedMenuIds, setSelectedMenuIds] = useState<string[]>([]);
+  const [bookDropdownVisible, setBookDropdownVisible] = useState(false);
+  const [menuDropdownVisible, setMenuDropdownVisible] = useState(false);
+  const [newBookName, setNewBookName] = useState('');
+  const [newMenuName, setNewMenuName] = useState('');
+  const addCollection = useCollectionStore((s) => s.addCollection);
+
+  const toggleBookId = (id: string) => {
+    setSelectedBookIds((prev) =>
+      prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]
+    );
+  };
+  const toggleMenuId = (id: string) => {
+    setSelectedMenuIds((prev) =>
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
+    );
+  };
 
   const methods = useForm<ReviewRecipeFormData>({
     resolver: zodResolver(reviewRecipeSchema),
@@ -131,6 +169,10 @@ export default function RecipeReviewScreen() {
         notes: data.description || null,
         photoUri,
       });
+
+      // Add to selected collections
+      selectedBookIds.forEach((bookId) => addRecipeToCollection(bookId, newRecipe.id));
+      selectedMenuIds.forEach((menuId) => addRecipeToCollection(menuId, newRecipe.id));
 
       // Remove job from store after successful save
       removeJob(jobId);
@@ -245,9 +287,214 @@ export default function RecipeReviewScreen() {
             hasAiPhoto={hasAiPhoto}
           />
 
+          {/* Collection selectors */}
+          <View style={styles.collectionSection}>
+            <Text style={styles.collectionSectionTitle}>Livre de recette</Text>
+            <Pressable
+              style={styles.collectionSelector}
+              onPress={() => setBookDropdownVisible(true)}
+            >
+              <Text style={styles.collectionSelectorText} numberOfLines={1}>
+                {selectedBookIds.length > 0
+                  ? recipeBooks
+                      .filter((b) => selectedBookIds.includes(b.id))
+                      .map((b) => b.name)
+                      .join(', ')
+                  : 'Aucun'}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color={colors.text} />
+            </Pressable>
+          </View>
+
+          <View style={styles.collectionSection}>
+            <Text style={styles.collectionSectionTitle}>Regime & Menu</Text>
+            <Pressable
+              style={styles.collectionSelector}
+              onPress={() => setMenuDropdownVisible(true)}
+            >
+              <Text style={styles.collectionSelectorText} numberOfLines={1}>
+                {selectedMenuIds.length > 0
+                  ? menus
+                      .filter((m) => selectedMenuIds.includes(m.id))
+                      .map((m) => m.name)
+                      .join(', ')
+                  : 'Aucun'}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color={colors.text} />
+            </Pressable>
+          </View>
+
           <View style={styles.bottomPadding} />
         </ScrollView>
       </FormProvider>
+
+      {/* Book dropdown */}
+      <Modal
+        visible={bookDropdownVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setBookDropdownVisible(false);
+          setNewBookName('');
+        }}
+      >
+        <Pressable
+          style={styles.dropdownOverlay}
+          onPress={() => {
+            setBookDropdownVisible(false);
+            setNewBookName('');
+          }}
+        >
+          <Pressable style={styles.dropdown} onPress={() => {}}>
+            <Text style={styles.dropdownTitle}>Livre de recette</Text>
+            <FlatList
+              data={recipeBooks}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const isSelected = selectedBookIds.includes(item.id);
+                return (
+                  <Pressable
+                    style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
+                    onPress={() => toggleBookId(item.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.dropdownItemText,
+                        isSelected && styles.dropdownItemTextSelected,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                    {isSelected && <Ionicons name="checkmark" size={18} color={colors.accent} />}
+                  </Pressable>
+                );
+              }}
+            />
+            <View style={styles.dropdownCreateRow}>
+              <TextInput
+                style={styles.dropdownCreateInput}
+                placeholder="Nouveau livre..."
+                placeholderTextColor={colors.textMuted}
+                value={newBookName}
+                onChangeText={setNewBookName}
+                onSubmitEditing={() => {
+                  if (newBookName.trim()) {
+                    const col = addCollection(newBookName.trim(), 'recipeBook');
+                    setSelectedBookIds((prev) => [...prev, col.id]);
+                    setNewBookName('');
+                  }
+                }}
+                returnKeyType="done"
+              />
+              <Pressable
+                style={[
+                  styles.dropdownCreateButton,
+                  !newBookName.trim() && styles.dropdownCreateButtonDisabled,
+                ]}
+                onPress={() => {
+                  if (newBookName.trim()) {
+                    const col = addCollection(newBookName.trim(), 'recipeBook');
+                    setSelectedBookIds((prev) => [...prev, col.id]);
+                    setNewBookName('');
+                  }
+                }}
+                disabled={!newBookName.trim()}
+              >
+                <Ionicons
+                  name="add"
+                  size={20}
+                  color={newBookName.trim() ? colors.accent : colors.textMuted}
+                />
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Menu dropdown */}
+      <Modal
+        visible={menuDropdownVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setMenuDropdownVisible(false);
+          setNewMenuName('');
+        }}
+      >
+        <Pressable
+          style={styles.dropdownOverlay}
+          onPress={() => {
+            setMenuDropdownVisible(false);
+            setNewMenuName('');
+          }}
+        >
+          <Pressable style={styles.dropdown} onPress={() => {}}>
+            <Text style={styles.dropdownTitle}>Regime & Menu</Text>
+            <FlatList
+              data={menus}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const isSelected = selectedMenuIds.includes(item.id);
+                return (
+                  <Pressable
+                    style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
+                    onPress={() => toggleMenuId(item.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.dropdownItemText,
+                        isSelected && styles.dropdownItemTextSelected,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                    {isSelected && <Ionicons name="checkmark" size={18} color={colors.accent} />}
+                  </Pressable>
+                );
+              }}
+            />
+            <View style={styles.dropdownCreateRow}>
+              <TextInput
+                style={styles.dropdownCreateInput}
+                placeholder="Nouveau menu..."
+                placeholderTextColor={colors.textMuted}
+                value={newMenuName}
+                onChangeText={setNewMenuName}
+                onSubmitEditing={() => {
+                  if (newMenuName.trim()) {
+                    const col = addCollection(newMenuName.trim(), 'menu');
+                    setSelectedMenuIds((prev) => [...prev, col.id]);
+                    setNewMenuName('');
+                  }
+                }}
+                returnKeyType="done"
+              />
+              <Pressable
+                style={[
+                  styles.dropdownCreateButton,
+                  !newMenuName.trim() && styles.dropdownCreateButtonDisabled,
+                ]}
+                onPress={() => {
+                  if (newMenuName.trim()) {
+                    const col = addCollection(newMenuName.trim(), 'menu');
+                    setSelectedMenuIds((prev) => [...prev, col.id]);
+                    setNewMenuName('');
+                  }
+                }}
+                disabled={!newMenuName.trim()}
+              >
+                <Ionicons
+                  name="add"
+                  size={20}
+                  color={newMenuName.trim() ? colors.accent : colors.textMuted}
+                />
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Sticky Bottom Buttons */}
       <View style={styles.stickyBottom}>
@@ -350,6 +597,105 @@ const styles = StyleSheet.create({
     fontFamily: fonts.script,
     fontSize: 16,
     color: '#FFFFFF',
+  },
+  collectionSection: {
+    marginBottom: spacing.md,
+  },
+  collectionSectionTitle: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  collectionSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  collectionSelectorText: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  dropdown: {
+    backgroundColor: colors.modalBackground,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    padding: spacing.md,
+    maxHeight: 400,
+  },
+  dropdownTitle: {
+    fontFamily: fonts.script,
+    fontSize: 18,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+  },
+  dropdownItemSelected: {
+    backgroundColor: colors.surface,
+  },
+  dropdownItemText: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  dropdownItemTextSelected: {
+    fontWeight: '600',
+  },
+  dropdownCreateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
+  },
+  dropdownCreateInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  dropdownCreateButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropdownCreateButtonDisabled: {
+    borderColor: colors.border,
   },
   errorContainer: {
     flex: 1,

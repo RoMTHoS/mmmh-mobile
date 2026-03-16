@@ -8,12 +8,14 @@ import {
   Dimensions,
   RefreshControl,
 } from 'react-native';
-import { useState, useMemo } from 'react';
-import { router } from 'expo-router';
+import { useState, useMemo, useEffect } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
 import { SearchBar, Icon, EmptyState } from '../../src/components/ui';
 import { ImportStatusList } from '../../src/components/import';
+import { BookSelector } from '../../src/components/collections';
+import { useCollectionStore } from '../../src/stores/collectionStore';
 import { RecipeGridSkeleton } from '../../src/components/recipes/RecipeGridSkeleton';
 import { useUIStore } from '../../src/stores/uiStore';
 import { colors, spacing, radius, fonts } from '../../src/theme';
@@ -50,21 +52,46 @@ function RecipeGridItem({ recipe, onPress }: RecipeGridItemProps) {
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
+  const { bookId } = useLocalSearchParams<{ bookId?: string }>();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (bookId !== undefined) {
+      setSelectedBookId(bookId || null);
+    }
+  }, [bookId]);
   const openImportModal = useUIStore((s) => s.openImportModal);
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
+  const collections = useCollectionStore((s) => s.collections);
 
   const filteredRecipes = useMemo(() => {
     if (!recipes) return [];
-    if (!searchQuery.trim()) return recipes;
 
-    const query = searchQuery.toLowerCase();
-    return recipes.filter((r) => {
-      const titleMatch = r.title.toLowerCase().includes(query);
-      const ingredientMatch = r.ingredients?.some((ing) => ing.name.toLowerCase().includes(query));
-      return titleMatch || ingredientMatch;
-    });
-  }, [recipes, searchQuery]);
+    let result = recipes;
+
+    // Filter by selected book
+    if (selectedBookId) {
+      const book = collections.find((c) => c.id === selectedBookId);
+      if (book) {
+        result = result.filter((r) => book.recipeIds.includes(r.id));
+      }
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((r) => {
+        const titleMatch = r.title.toLowerCase().includes(query);
+        const ingredientMatch = r.ingredients?.some((ing) =>
+          ing.name.toLowerCase().includes(query)
+        );
+        return titleMatch || ingredientMatch;
+      });
+    }
+
+    return result;
+  }, [recipes, searchQuery, selectedBookId, collections]);
 
   const handleRecipePress = (recipe: Recipe) => {
     router.push(`/recipe/${recipe.id}`);
@@ -103,6 +130,8 @@ export default function SearchScreen() {
       />
 
       <ImportStatusList />
+
+      <BookSelector selectedBookId={selectedBookId} onSelect={setSelectedBookId} />
 
       {filteredRecipes.length === 0 ? (
         <EmptyState
@@ -145,7 +174,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   searchBar: {
-    margin: spacing.md,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
   gridContent: {
     paddingHorizontal: spacing.md,

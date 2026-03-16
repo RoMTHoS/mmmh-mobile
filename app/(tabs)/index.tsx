@@ -1,10 +1,24 @@
-import { View, Text, ScrollView, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
-import { useMemo } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Image,
+  Pressable,
+  StyleSheet,
+  Dimensions,
+  Modal,
+  TextInput,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
 import { Icon, MmmhLogo } from '../../src/components/ui';
 import { CollectionSection } from '../../src/components/collections';
+import { useCollectionStore } from '../../src/stores/collectionStore';
 
 import { RecipeGridSkeleton } from '../../src/components/recipes/RecipeGridSkeleton';
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
@@ -51,6 +65,9 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { data: recipes, isLoading, error } = useRecipes();
 
+  const storeCollections = useCollectionStore((s) => s.collections);
+  const addCollection = useCollectionStore((s) => s.addCollection);
+
   const latestRecipes = useMemo(() => {
     if (!recipes || recipes.length === 0) return [];
     return recipes.slice(0, 2);
@@ -67,11 +84,6 @@ export default function HomeScreen() {
         name: 'Toutes les recettes',
         images: recipeImages.slice(0, 4),
       },
-      {
-        id: 'favorites',
-        name: 'Favoris',
-        images: recipeImages.slice(0, 4),
-      },
     ];
 
     const menus = [
@@ -82,17 +94,84 @@ export default function HomeScreen() {
       },
     ];
 
-    return { recipeBooks, menus };
-  }, [recipes]);
+    const customBooks = storeCollections
+      .filter((c) => c.type === 'recipeBook')
+      .map((c) => ({ id: c.id, name: c.name, images: [] as string[] }));
+    const customMenuItems = storeCollections
+      .filter((c) => c.type === 'menu')
+      .map((c) => ({ id: c.id, name: c.name, images: [] as string[] }));
+
+    return { recipeBooks: [...recipeBooks, ...customBooks], menus: [...menus, ...customMenuItems] };
+  }, [recipes, storeCollections]);
 
   const handleCollectionPress = (id: string) => {
     if (id === 'all') {
-      router.push('/(tabs)/search');
+      router.push({ pathname: '/(tabs)/search', params: { bookId: '' } });
+    } else {
+      router.push({ pathname: '/(tabs)/search', params: { bookId: id } });
     }
   };
 
-  const handleNewCollection = () => {
-    // TODO: Open create collection modal
+  const [showNewCollectionModal, setShowNewCollectionModal] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [modalTarget, setModalTarget] = useState<'recipeBooks' | 'menus'>('recipeBooks');
+  const slideAnim = useRef(new Animated.Value(300)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (showNewCollectionModal) {
+      slideAnim.setValue(300);
+      backdropAnim.setValue(0);
+      Animated.parallel([
+        Animated.timing(backdropAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+      ]).start();
+    }
+  }, [showNewCollectionModal, slideAnim, backdropAnim]);
+
+  const closeModal = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 300,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowNewCollectionModal(false);
+      setNewCollectionName('');
+    });
+  };
+
+  const handleNewRecipeBook = () => {
+    setModalTarget('recipeBooks');
+    setNewCollectionName('');
+    setShowNewCollectionModal(true);
+  };
+
+  const handleNewMenu = () => {
+    setModalTarget('menus');
+    setNewCollectionName('');
+    setShowNewCollectionModal(true);
+  };
+
+  const handleCreateCollection = () => {
+    if (!newCollectionName.trim()) return;
+    addCollection(newCollectionName.trim(), modalTarget === 'recipeBooks' ? 'recipeBook' : 'menu');
+    closeModal();
   };
 
   // Compute card heights based on available screen space
@@ -148,7 +227,7 @@ export default function HomeScreen() {
           title="Livre de recette"
           collections={collections.recipeBooks}
           onCollectionPress={handleCollectionPress}
-          onNewPress={handleNewCollection}
+          onNewPress={handleNewRecipeBook}
           showNewButton
           cardHeight={collectionCardHeight}
         />
@@ -157,11 +236,60 @@ export default function HomeScreen() {
           title="Regime & Menu"
           collections={collections.menus}
           onCollectionPress={handleCollectionPress}
-          onNewPress={handleNewCollection}
+          onNewPress={handleNewMenu}
           showNewButton
           cardHeight={collectionCardHeight}
         />
       </View>
+
+      <Modal
+        visible={showNewCollectionModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <Animated.View
+            style={[styles.modalBackdrop, { opacity: backdropAnim }]}
+            pointerEvents="none"
+          />
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeModal} />
+          <Animated.View
+            style={[styles.modalSheetContainer, { transform: [{ translateY: slideAnim }] }]}
+            pointerEvents="box-none"
+          >
+            <Pressable style={styles.modalSheet} onPress={() => {}}>
+              <Text style={styles.modalTitle}>
+                {modalTarget === 'recipeBooks' ? 'Nouveau livre' : 'Nouveau menu'}
+              </Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Nom du catalogue"
+                placeholderTextColor={colors.textMuted}
+                value={newCollectionName}
+                onChangeText={setNewCollectionName}
+                autoFocus
+                onSubmitEditing={handleCreateCollection}
+                returnKeyType="done"
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  !newCollectionName.trim() && styles.modalButtonDisabled,
+                  pressed && { opacity: 0.85 },
+                ]}
+                onPress={handleCreateCollection}
+                disabled={!newCollectionName.trim()}
+              >
+                <Text style={styles.modalButtonText}>Créer</Text>
+              </Pressable>
+            </Pressable>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -233,6 +361,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.overlay,
+  },
+  modalSheetContainer: {},
+  modalSheet: {
+    backgroundColor: colors.modalBackground,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: colors.borderMedium,
+    padding: spacing.lg,
+    paddingBottom: spacing.md + SCREEN_HEIGHT,
+    marginBottom: -SCREEN_HEIGHT,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    ...typography.titleScript,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  modalInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    fontFamily: fonts.body,
+    fontSize: 16,
+    color: colors.text,
+    backgroundColor: colors.surface,
+    marginBottom: spacing.lg,
+  },
+  modalButton: {
+    width: '100%',
+    backgroundColor: colors.text,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  modalButtonDisabled: {
+    opacity: 0.4,
+  },
+  modalButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: colors.surface,
   },
   errorContainer: {
     flex: 1,

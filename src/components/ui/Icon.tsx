@@ -13,6 +13,7 @@ export const iconNames = [
   'calories',
   'camera',
   'cart',
+  'cart-add',
   'cart-outline',
   'check',
   'close',
@@ -111,6 +112,32 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
           <G fill={iconColor}>
             <Path d="M3 3a1 1 0 0 1 1-1h1.22a2 2 0 0 1 1.95 1.55L7.52 5H21a1 1 0 0 1 .96 1.27l-2.5 9A2 2 0 0 1 17.53 17H8.97a2 2 0 0 1-1.93-1.47L4.28 4H4a1 1 0 0 1-1-1zm6 17a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0zm9 0a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0z" />
           </G>
+        );
+
+      case 'cart-add':
+        return (
+          <Svg width={sizeValue} height={sizeValue} viewBox="0 0 81 81" accessibilityRole="image">
+            <Path
+              d="M51.36 31.2c.613 0 1.08.187 1.4.56.32.373.48.827.48 1.36 0 .667-.227 1.28-.68 1.84-.427.533-1.013.8-1.76.8H44.24l-.88 7.32c-.107.693-.413 1.227-.92 1.6-.48.373-1.04.56-1.68.56-.613 0-1.12-.187-1.52-.56-.373-.373-.52-.907-.44-1.6l.88-7.32H33.2c-.613 0-1.08-.187-1.4-.56-.32-.4-.48-.867-.48-1.4 0-.667.213-1.267.64-1.8.453-.533 1.053-.8 1.8-.8h6.52l.88-7.32c.08-.667.36-1.187.84-1.56.48-.373 1.027-.56 1.64-.56.613 0 1.133.187 1.56.56.427.373.6.893.52 1.56l-.88 7.32h6.52z"
+              fill={iconColor}
+            />
+            <Path
+              d="M3 3h8.333l2.084 12.5m0 0L19.667 53H65.5L78 15.5H13.417z"
+              stroke={iconColor}
+              strokeWidth={6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+            <Path
+              d="M23.833 78a4.167 4.167 0 1 0 0-8.333 4.167 4.167 0 0 0 0 8.333zM61.333 78a4.167 4.167 0 1 0 0-8.333 4.167 4.167 0 0 0 0 8.333z"
+              stroke={iconColor}
+              strokeWidth={6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </Svg>
         );
 
       case 'cart-outline':
@@ -313,6 +340,10 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
         return null;
     }
   };
+
+  if (name === 'cart-add') {
+    return renderIcon();
+  }
 
   return (
     <Svg width={sizeValue} height={sizeValue} viewBox="0 0 24 24" accessibilityRole="image">

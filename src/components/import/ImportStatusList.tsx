@@ -86,6 +86,6 @@ export function ImportStatusList() {
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
 });
