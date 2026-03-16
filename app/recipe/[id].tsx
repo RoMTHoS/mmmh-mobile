@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    fontFamily: fonts.body,
+    fontFamily: fonts.sans,
     fontSize: 14,
     color: colors.text,
     backgroundColor: colors.surface,

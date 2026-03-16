@@ -60,7 +60,7 @@ export function PostImportPrompt({
                 status: response.status,
                 sourceUrl,
                 importType,
-                platform: null,
+                platform: undefined,
                 pipeline: 'gemini',
                 progress: 0,
                 createdAt: response.createdAt || new Date().toISOString(),

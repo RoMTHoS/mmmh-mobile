@@ -19,6 +19,9 @@ describe('PostImportPrompt', () => {
           pipeline: 'vps',
           tier: 'free',
           canActivateTrial: true,
+          geminiQuotaRemaining: 0,
+          sourceUrl: 'https://example.com',
+          importType: 'website' as const,
         })
       );
 
@@ -33,6 +36,9 @@ describe('PostImportPrompt', () => {
           pipeline: 'vps',
           tier: 'free',
           canActivateTrial: false,
+          geminiQuotaRemaining: 0,
+          sourceUrl: 'https://example.com',
+          importType: 'website' as const,
         })
       );
 
@@ -47,6 +53,9 @@ describe('PostImportPrompt', () => {
           pipeline: 'vps',
           tier: 'free',
           canActivateTrial: true,
+          geminiQuotaRemaining: 0,
+          sourceUrl: 'https://example.com',
+          importType: 'website' as const,
         })
       );
 
@@ -62,6 +71,9 @@ describe('PostImportPrompt', () => {
           pipeline: 'gemini',
           tier: 'trial',
           canActivateTrial: false,
+          geminiQuotaRemaining: 3,
+          sourceUrl: 'https://example.com',
+          importType: 'website' as const,
         })
       );
 
@@ -77,6 +89,9 @@ describe('PostImportPrompt', () => {
           pipeline: 'gemini',
           tier: 'premium',
           canActivateTrial: false,
+          geminiQuotaRemaining: 3,
+          sourceUrl: 'https://example.com',
+          importType: 'website' as const,
         })
       );
 
@@ -92,6 +107,9 @@ describe('PostImportPrompt', () => {
           pipeline: 'gemini',
           tier: 'trial',
           canActivateTrial: false,
+          geminiQuotaRemaining: 3,
+          sourceUrl: 'https://example.com',
+          importType: 'website' as const,
         })
       );
 
@@ -106,6 +124,9 @@ describe('PostImportPrompt', () => {
           pipeline: 'vps',
           tier: 'free',
           canActivateTrial: true,
+          geminiQuotaRemaining: 0,
+          sourceUrl: 'https://example.com',
+          importType: 'website' as const,
         })
       );
 
