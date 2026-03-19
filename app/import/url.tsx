@@ -13,15 +13,12 @@ import { router, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Toast } from '../../src/utils/toast';
 import { UrlInput } from '../../src/components/import/UrlInput';
-import { TrialStatusBadge } from '../../src/components/import/TrialStatusBadge';
-import { QuotaDisplay } from '../../src/components/import/QuotaDisplay';
-import { QuotaExceededModal } from '../../src/components/import/QuotaExceededModal';
 import { GeminiFallbackDialog } from '../../src/components/import/GeminiFallbackDialog';
 import { useImportStore } from '../../src/stores/importStore';
 import { submitImport } from '../../src/services/import';
 import { detectPlatform } from '../../src/utils/validation';
 import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
-import { usePlanStatus, useActivateTrial } from '../../src/hooks';
+import { usePlanStatus } from '../../src/hooks';
 import { trackEvent } from '../../src/utils/analytics';
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
 import { PremiumIcon, Icon } from '../../src/components/ui';
@@ -35,7 +32,6 @@ export default function UrlInputScreen() {
   const queryClient = useQueryClient();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [showQuotaExceeded, setShowQuotaExceeded] = useState(false);
   const [showGeminiFallback, setShowGeminiFallback] = useState(false);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState('');
@@ -44,7 +40,6 @@ export default function UrlInputScreen() {
   const jobs = useImportStore((state) => state.jobs);
   const checkPipeline = usePipelinePreCheck();
   const planStatus = usePlanStatus();
-  const activateTrial = useActivateTrial();
 
   const doImport = useCallback(
     async (url: string, forcePremium = false) => {
@@ -135,24 +130,8 @@ export default function UrlInputScreen() {
         return;
       }
 
-      if (!planStatus) {
-        doImport(url);
-        return;
-      }
-
-      // VPS quota check: if exhausted, block for free and trial
-      if (planStatus.vpsQuotaRemaining === 0 && planStatus.tier !== 'premium') {
-        trackEvent('quota_exhausted_vps', { deviceId: '', tier: planStatus.tier });
-        setShowQuotaExceeded(true);
-        return;
-      }
-
       // Gemini quota check: if exhausted for trial, offer VPS fallback
-      if (
-        planStatus.tier === 'trial' &&
-        planStatus.geminiQuotaRemaining === 0 &&
-        planStatus.vpsQuotaRemaining > 0
-      ) {
+      if (planStatus?.tier === 'trial' && planStatus.geminiQuotaRemaining === 0) {
         trackEvent('quota_exhausted_gemini', { deviceId: '', dayOfTrial: 0 });
         setPendingUrl(url);
         setShowGeminiFallback(true);
@@ -216,16 +195,6 @@ export default function UrlInputScreen() {
     );
   }, [currentUrl, planStatus, doImport]);
 
-  const handleUpgrade = useCallback(() => {
-    setShowQuotaExceeded(false);
-    router.push('/upgrade');
-  }, []);
-
-  const handleStartTrial = useCallback(() => {
-    setShowQuotaExceeded(false);
-    activateTrial.mutate();
-  }, [activateTrial]);
-
   return (
     <>
       <Stack.Screen
@@ -268,12 +237,6 @@ export default function UrlInputScreen() {
             </View>
           </View>
 
-          {planStatus?.tier === 'trial' && <TrialStatusBadge />}
-
-          <View style={styles.quotaSection}>
-            <QuotaDisplay />
-          </View>
-
           <UrlInput
             importType="link"
             onSubmit={handleSubmit}
@@ -310,13 +273,6 @@ export default function UrlInputScreen() {
             <PremiumIcon width={24} color="#FFFFFF" />
           </Pressable>
         </View>
-
-        <QuotaExceededModal
-          visible={showQuotaExceeded}
-          onClose={() => setShowQuotaExceeded(false)}
-          onUpgrade={handleUpgrade}
-          onStartTrial={handleStartTrial}
-        />
 
         <GeminiFallbackDialog
           visible={showGeminiFallback}
@@ -369,10 +325,6 @@ const styles = StyleSheet.create({
   platformList: {
     flexDirection: 'row' as const,
     gap: spacing.md,
-  },
-  quotaSection: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
   },
   bottomButtons: {
     paddingHorizontal: spacing.md,

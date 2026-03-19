@@ -44,7 +44,12 @@ const SUPPORT_EMAIL = 'support@mymealmatehelper.com';
 
 const TIER_BADGE_CONFIG = {
   free: { label: 'Standard', bg: colors.surface, border: colors.textMuted, text: colors.textMuted },
-  trial: { label: 'Essai', bg: '#EFF6FF', border: colors.info, text: colors.info },
+  trial: {
+    label: 'Standard',
+    bg: colors.surface,
+    border: colors.textMuted,
+    text: colors.textMuted,
+  },
   premium: { label: 'Premium', bg: '#FEF3C7', border: '#D4A017', text: '#D4A017' },
 } as const;
 
@@ -63,7 +68,6 @@ function PlanUsageSection() {
   if (!planStatus) return null;
 
   const badgeConfig = TIER_BADGE_CONFIG[planStatus.tier];
-  const isTrialExpired = planStatus.tier === 'free' && userPlan?.trialStartDate !== null;
 
   const geminiPerWeek = planStatus.tier === 'trial' ? 2 : 2;
   const geminiRemaining = planStatus.geminiQuotaRemaining ?? 0;
@@ -92,9 +96,7 @@ function PlanUsageSection() {
                 testID="plan-tier-badge"
               >
                 <Text style={[planStyles.tierBadgeText, { color: badgeConfig.text }]}>
-                  {planStatus.tier === 'trial'
-                    ? `${badgeConfig.label} (${planStatus.trialDaysRemaining ?? 0}j)`
-                    : badgeConfig.label}
+                  {badgeConfig.label}
                 </Text>
               </View>
             </View>
@@ -119,11 +121,6 @@ function PlanUsageSection() {
                   <Text style={rowStyles.itemSubtitle}>Réinitialisation : lundi</Text>
                 </View>
               </View>
-            )}
-            {planStatus.tier === 'trial' && (
-              <Text style={rowStyles.itemSubtitle} testID="plan-gemini-usage">
-                Import premium aujourd'hui : {planStatus.geminiQuotaRemaining > 0 ? '0/1' : '1/1'}
-              </Text>
             )}
             {planStatus.tier === 'premium' && (
               <>
@@ -228,16 +225,6 @@ function PlanUsageSection() {
                 )}
               </>
             )}
-            {/* Trial expired message */}
-            {isTrialExpired && (
-              <Text
-                style={[rowStyles.itemSubtitle, { color: colors.warning }]}
-                testID="plan-trial-expired"
-              >
-                Votre essai est termine. Passez a Premium
-              </Text>
-            )}
-
             {/* Upgrade button */}
             {planStatus.tier !== 'premium' && (
               <Pressable

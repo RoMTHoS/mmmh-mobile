@@ -14,14 +14,11 @@ import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Toast } from '../../src/utils/toast';
-import { TrialStatusBadge } from '../../src/components/import/TrialStatusBadge';
-import { QuotaDisplay } from '../../src/components/import/QuotaDisplay';
-import { QuotaExceededModal } from '../../src/components/import/QuotaExceededModal';
 import { GeminiFallbackDialog } from '../../src/components/import/GeminiFallbackDialog';
 import { useImportStore } from '../../src/stores/importStore';
 import { submitImport } from '../../src/services/import';
 import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
-import { usePlanStatus, useActivateTrial } from '../../src/hooks';
+import { usePlanStatus } from '../../src/hooks';
 import { trackEvent } from '../../src/utils/analytics';
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
 import { PremiumIcon } from '../../src/components/ui';
@@ -36,7 +33,6 @@ export default function TextImportScreen() {
 
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showQuotaExceeded, setShowQuotaExceeded] = useState(false);
   const [showGeminiFallback, setShowGeminiFallback] = useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 
@@ -44,7 +40,6 @@ export default function TextImportScreen() {
   const jobs = useImportStore((state) => state.jobs);
   const checkPipeline = usePipelinePreCheck();
   const planStatus = usePlanStatus();
-  const activateTrial = useActivateTrial();
 
   const trimmedText = text.trim();
   const isTextValid = trimmedText.length >= MIN_TEXT_LENGTH;
@@ -136,22 +131,8 @@ export default function TextImportScreen() {
       return;
     }
 
-    if (!planStatus) {
-      doImport(trimmedText);
-      return;
-    }
-
-    if (planStatus.vpsQuotaRemaining === 0 && planStatus.tier !== 'premium') {
-      trackEvent('quota_exhausted_vps', { deviceId: '', tier: planStatus.tier });
-      setShowQuotaExceeded(true);
-      return;
-    }
-
-    if (
-      planStatus.tier === 'trial' &&
-      planStatus.geminiQuotaRemaining === 0 &&
-      planStatus.vpsQuotaRemaining > 0
-    ) {
+    // Gemini quota check: if exhausted for trial, offer VPS fallback
+    if (planStatus?.tier === 'trial' && planStatus.geminiQuotaRemaining === 0) {
       trackEvent('quota_exhausted_gemini', { deviceId: '', dayOfTrial: 0 });
       setShowGeminiFallback(true);
       return;
@@ -201,16 +182,6 @@ export default function TextImportScreen() {
     );
   }, [isTextValid, trimmedText, planStatus, doImport]);
 
-  const handleUpgrade = useCallback(() => {
-    setShowQuotaExceeded(false);
-    router.push('/upgrade');
-  }, []);
-
-  const handleStartTrial = useCallback(() => {
-    setShowQuotaExceeded(false);
-    activateTrial.mutate();
-  }, [activateTrial]);
-
   const charCountColor =
     trimmedText.length > 0 && trimmedText.length < MIN_TEXT_LENGTH
       ? colors.error
@@ -231,12 +202,6 @@ export default function TextImportScreen() {
           <Text style={styles.subtitle}>
             Collez le texte d'une recette depuis n'importe quelle source
           </Text>
-        </View>
-
-        {planStatus?.tier === 'trial' && <TrialStatusBadge />}
-
-        <View style={styles.quotaSection}>
-          <QuotaDisplay />
         </View>
 
         <View style={styles.inputSection}>
@@ -315,13 +280,6 @@ export default function TextImportScreen() {
         </Pressable>
       </View>
 
-      <QuotaExceededModal
-        visible={showQuotaExceeded}
-        onClose={() => setShowQuotaExceeded(false)}
-        onUpgrade={handleUpgrade}
-        onStartTrial={handleStartTrial}
-      />
-
       <GeminiFallbackDialog
         visible={showGeminiFallback}
         onAccept={handleFallbackAccept}
@@ -354,10 +312,6 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body,
     color: colors.textMuted,
-  },
-  quotaSection: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
   },
   inputSection: {
     paddingHorizontal: spacing.md,
