@@ -74,9 +74,7 @@ export default function HomeScreen() {
   }, [recipes]);
 
   const collections = useMemo(() => {
-    if (!recipes || recipes.length === 0) return { recipeBooks: [], menus: [] };
-
-    const recipeImages = recipes.filter((r) => r.photoUri).map((r) => r.photoUri as string);
+    const recipeImages = (recipes ?? []).filter((r) => r.photoUri).map((r) => r.photoUri as string);
 
     const recipeBooks = [
       {
