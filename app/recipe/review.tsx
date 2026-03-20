@@ -50,6 +50,7 @@ interface ExtractedRecipe {
   thumbnailUrl?: string;
   aiConfidence?: number;
   rawTranscript?: string;
+  sourceUrl?: string;
 }
 
 export default function RecipeReviewScreen() {
@@ -171,6 +172,17 @@ export default function RecipeReviewScreen() {
 
   const handleSave = async (data: ReviewRecipeFormData) => {
     try {
+      // Extract source creator from rawTranscript metadata (video imports)
+      let sourceCreator: string | null = null;
+      if (recipe?.rawTranscript) {
+        try {
+          const parsed = JSON.parse(recipe.rawTranscript);
+          sourceCreator = parsed?.metadata?.videoUploader || null;
+        } catch {
+          // rawTranscript is plain text, not JSON — no creator to extract
+        }
+      }
+
       const newRecipe = await createRecipe.mutateAsync({
         title: data.title,
         ingredients: ingredientsFromStructured(),
@@ -179,6 +191,8 @@ export default function RecipeReviewScreen() {
         servings: data.servings ?? null,
         notes: data.description || null,
         photoUri,
+        sourceUrl: job?.sourceUrl || recipe?.sourceUrl || null,
+        sourceCreator,
       });
 
       // Add to selected collections

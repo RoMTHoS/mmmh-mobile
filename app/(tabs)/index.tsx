@@ -70,7 +70,7 @@ export default function HomeScreen() {
 
   const latestRecipes = useMemo(() => {
     if (!recipes || recipes.length === 0) return [];
-    return recipes.slice(0, 2);
+    return recipes.slice(0, 10);
   }, [recipes]);
 
   const collections = useMemo(() => {
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   },
   newRecipeTitle: {
     fontFamily: fonts.script,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     textAlign: 'center',
   },

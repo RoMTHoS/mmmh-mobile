@@ -21,6 +21,8 @@ export interface Recipe {
   photoUri: string | null;
   notes: string | null;
   author: string | null;
+  sourceUrl: string | null;
+  sourceCreator: string | null;
   priceMin: number | null;
   priceMax: number | null;
   kcal: number | null;
@@ -39,6 +41,8 @@ export type CreateRecipeInput = Omit<
   | 'createdAt'
   | 'updatedAt'
   | 'author'
+  | 'sourceUrl'
+  | 'sourceCreator'
   | 'priceMin'
   | 'priceMax'
   | 'kcal'
@@ -49,6 +53,8 @@ export type CreateRecipeInput = Omit<
   | 'nutritionFats'
 > & {
   author?: string | null;
+  sourceUrl?: string | null;
+  sourceCreator?: string | null;
   priceMin?: number | null;
   priceMax?: number | null;
   kcal?: number | null;

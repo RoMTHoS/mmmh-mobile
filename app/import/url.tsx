@@ -82,8 +82,8 @@ export default function UrlInputScreen() {
           text2: 'Suivez la progression sur la page principale',
         });
 
-        // Navigate back to home
-        router.replace('/(tabs)');
+        // Navigate to search tab where import progress is shown
+        router.replace('/(tabs)/search');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Erreur lors de l'import";
 
@@ -159,6 +159,12 @@ export default function UrlInputScreen() {
   }, []);
 
   const handlePremiumImport = useCallback(() => {
+    // No quota left → go to upgrade (no URL needed)
+    if (!planStatus || planStatus.geminiQuotaRemaining <= 0) {
+      router.push('/upgrade');
+      return;
+    }
+
     const url = currentUrl.trim();
     if (!url) {
       Toast.show({
@@ -166,12 +172,6 @@ export default function UrlInputScreen() {
         text1: 'Lien requis',
         text2: 'Collez un lien avant de lancer un import premium.',
       });
-      return;
-    }
-
-    // No quota left → go to upgrade
-    if (!planStatus || planStatus.geminiQuotaRemaining <= 0) {
-      router.push('/upgrade');
       return;
     }
 

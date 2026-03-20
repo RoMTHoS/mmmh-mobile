@@ -10,6 +10,7 @@ import {
   Modal,
   FlatList,
   TextInput,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
@@ -169,6 +170,22 @@ export default function RecipeDetailScreen() {
           resizeMode="cover"
           testID="recipe-hero-image"
         />
+
+        {/* Source Creator */}
+        {recipe.sourceCreator && (
+          <Pressable
+            style={styles.sourceRow}
+            onPress={() => recipe.sourceUrl && Linking.openURL(recipe.sourceUrl)}
+            disabled={!recipe.sourceUrl}
+          >
+            <Text
+              style={[styles.sourceText, recipe.sourceUrl && styles.sourceTextLink]}
+              numberOfLines={1}
+            >
+              {recipe.sourceCreator}
+            </Text>
+          </Pressable>
+        )}
 
         <View style={styles.content}>
           {/* Author Row */}
@@ -396,6 +413,23 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 280,
     backgroundColor: colors.surfaceAlt,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  sourceText: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.textMuted,
+    flex: 1,
+  },
+  sourceTextLink: {
+    color: colors.accent,
+    textDecorationLine: 'underline',
   },
   content: {
     padding: spacing.md,

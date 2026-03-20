@@ -202,7 +202,7 @@ export default function PhotoImportScreen() {
         text2: 'Suivez la progression sur la page principale',
       });
 
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/search');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de l'envoi";
       setUploadError(errorMessage);
@@ -252,7 +252,7 @@ export default function PhotoImportScreen() {
         text2: 'Suivez la progression sur la page principale',
       });
 
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/search');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de l'envoi";
       setUploadError(errorMessage);

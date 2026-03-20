@@ -141,6 +141,12 @@ export default function UpgradeScreen() {
           title: '',
           headerStyle: { backgroundColor: colors.background },
           headerShadowVisible: false,
+          headerBackVisible: false,
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8} style={{ padding: spacing.sm }}>
+              <Icon name="arrow-left" size="lg" color={colors.text} />
+            </Pressable>
+          ),
         }}
       />
       <ScrollView

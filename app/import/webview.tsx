@@ -76,7 +76,7 @@ export default function WebViewScreen() {
               text2: 'Traitement en cours...',
             });
 
-            router.replace('/(tabs)');
+            router.replace('/(tabs)/search');
           } catch (error) {
             Toast.show({
               type: 'error',

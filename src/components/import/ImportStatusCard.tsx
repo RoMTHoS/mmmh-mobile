@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Animated, PanResponder, Dimensions } from 'react-native';
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { Button } from '../ui';
 import { PlatformBadge } from './PlatformBadge';
@@ -17,28 +17,95 @@ interface ImportStatusCardProps {
   onDismiss: () => void;
 }
 
-const STEP_LABELS: Record<string, string> = {
-  queued: 'En attente...',
-  downloading: 'Telechargement...',
-  extracting_audio: 'Extraction audio...',
-  transcribing: 'Transcription...',
-  structuring: 'Structuration...',
-  validating: 'Validation...',
-  scraping: 'Lecture de la page...',
-  parsing: 'Extraction des donnees...',
-  analyzing_with_gemini: 'Analyse Gemini...',
-  uploading_media: 'Envoi du media...',
-  processing_image: "Traitement de l'image...",
-  extracting_text: 'Extraction du texte...',
-  detecting_speech: 'Detection de la parole...',
-  complete: 'Termine!',
-};
+// Visual steps shown to the user with their progress thresholds
+const VISUAL_STEPS = [
+  { key: 'downloading', label: 'Telechargement...', targetProgress: 25 },
+  { key: 'transcription', label: 'Transcription...', targetProgress: 50 },
+  { key: 'structuring', label: 'Structuration...', targetProgress: 80 },
+  { key: 'done', label: 'Pret !', targetProgress: 100 },
+];
+
+// How long (ms) to spend on each simulated step
+const STEP_DURATIONS = [8000, 12000, 15000, 2000];
 
 export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardProps) {
   const progressAnim = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
+  const [simulatedStep, setSimulatedStep] = useState(0);
+  const [simulatedProgress, setSimulatedProgress] = useState(0);
+  const simulationRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
+  const stepStartTimeRef = useRef<number>(Date.now());
 
   const isDismissable = job.status === 'failed' || job.status === 'completed';
+
+  // Simulated progress: smoothly advance through visual steps
+  useEffect(() => {
+    if (job.status === 'completed') {
+      setSimulatedStep(VISUAL_STEPS.length - 1);
+      setSimulatedProgress(100);
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: false,
+      }).start();
+      if (simulationRef.current) clearInterval(simulationRef.current);
+      return;
+    }
+
+    if (job.status !== 'pending' && job.status !== 'processing') {
+      if (simulationRef.current) clearInterval(simulationRef.current);
+      return;
+    }
+
+    // Start simulation
+    if (!simulationRef.current) {
+      startTimeRef.current = Date.now();
+      stepStartTimeRef.current = Date.now();
+    }
+
+    if (simulationRef.current) clearInterval(simulationRef.current);
+
+    simulationRef.current = setInterval(() => {
+      const now = Date.now();
+      const stepElapsed = now - stepStartTimeRef.current;
+      const currentStepIdx = simulatedStep;
+
+      if (currentStepIdx >= VISUAL_STEPS.length - 1) {
+        // At last step, wait for backend completion
+        return;
+      }
+
+      const stepDuration = STEP_DURATIONS[currentStepIdx];
+      const stepFraction = Math.min(stepElapsed / stepDuration, 1);
+
+      const prevTarget = currentStepIdx === 0 ? 0 : VISUAL_STEPS[currentStepIdx - 1].targetProgress;
+      const currentTarget = VISUAL_STEPS[currentStepIdx].targetProgress;
+      // Ease out: slow down as approaching step boundary
+      const eased = 1 - Math.pow(1 - stepFraction, 2);
+      const progress = prevTarget + (currentTarget - prevTarget) * eased;
+
+      setSimulatedProgress(Math.round(progress));
+      Animated.timing(progressAnim, {
+        toValue: progress / 100,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+
+      // Move to next step when duration elapsed
+      if (stepFraction >= 1 && currentStepIdx < VISUAL_STEPS.length - 2) {
+        setSimulatedStep(currentStepIdx + 1);
+        stepStartTimeRef.current = now;
+      }
+    }, 200);
+
+    return () => {
+      if (simulationRef.current) {
+        clearInterval(simulationRef.current);
+        simulationRef.current = null;
+      }
+    };
+  }, [job.status, simulatedStep]);
 
   const panResponder = useMemo(
     () =>
@@ -66,18 +133,10 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
     [isDismissable, translateX, onDismiss]
   );
 
-  useEffect(() => {
-    Animated.timing(progressAnim, {
-      toValue: job.progress / 100,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [job.progress, progressAnim]);
-
   const getStatusText = () => {
     if (job.status === 'pending') return 'En attente...';
     if (job.status === 'processing') {
-      return STEP_LABELS[job.currentStep || ''] || job.currentStep || 'Traitement...';
+      return VISUAL_STEPS[simulatedStep]?.label || 'Traitement...';
     }
     if (job.status === 'completed') return 'Pret a consulter!';
     if (job.status === 'failed') return job.error?.message || 'Echec de import';
@@ -152,7 +211,7 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
             <View style={styles.progressTrack}>
               <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
             </View>
-            <Text style={styles.progressText}>{Math.round(job.progress)}%</Text>
+            <Text style={styles.progressText}>{simulatedProgress}%</Text>
           </View>
         )}
 
