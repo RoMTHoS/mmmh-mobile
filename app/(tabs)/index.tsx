@@ -11,6 +11,7 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { router } from 'expo-router';
@@ -67,6 +68,7 @@ export default function HomeScreen() {
 
   const storeCollections = useCollectionStore((s) => s.collections);
   const addCollection = useCollectionStore((s) => s.addCollection);
+  const removeCollection = useCollectionStore((s) => s.removeCollection);
 
   const latestRecipes = useMemo(() => {
     if (!recipes || recipes.length === 0) return [];
@@ -84,22 +86,22 @@ export default function HomeScreen() {
       },
     ];
 
-    const menus = [
-      {
-        id: 'menu-1',
-        name: 'Menu semaine',
-        images: recipeImages.slice(0, 4),
-      },
-    ];
+    const recipeMap = new Map((recipes ?? []).map((r) => [String(r.id), r]));
+
+    const getCollectionImages = (c: { recipeIds: string[] }) =>
+      c.recipeIds
+        .map((id) => recipeMap.get(id)?.photoUri)
+        .filter((uri): uri is string => !!uri)
+        .slice(0, 3);
 
     const customBooks = storeCollections
       .filter((c) => c.type === 'recipeBook')
-      .map((c) => ({ id: c.id, name: c.name, images: [] as string[] }));
+      .map((c) => ({ id: c.id, name: c.name, images: getCollectionImages(c) }));
     const customMenuItems = storeCollections
       .filter((c) => c.type === 'menu')
-      .map((c) => ({ id: c.id, name: c.name, images: [] as string[] }));
+      .map((c) => ({ id: c.id, name: c.name, images: getCollectionImages(c) }));
 
-    return { recipeBooks: [...recipeBooks, ...customBooks], menus: [...menus, ...customMenuItems] };
+    return { recipeBooks: [...customBooks, ...recipeBooks], menus: customMenuItems };
   }, [recipes, storeCollections]);
 
   const handleCollectionPress = (id: string) => {
@@ -108,6 +110,16 @@ export default function HomeScreen() {
     } else {
       router.push({ pathname: '/(tabs)/search', params: { bookId: id } });
     }
+  };
+
+  const handleCollectionLongPress = (id: string) => {
+    if (id === 'all') return;
+    const collection = storeCollections.find((c) => c.id === id);
+    if (!collection) return;
+    Alert.alert('Supprimer', `Voulez-vous supprimer "${collection.name}" ?`, [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Supprimer', style: 'destructive', onPress: () => removeCollection(id) },
+    ]);
   };
 
   const [showNewCollectionModal, setShowNewCollectionModal] = useState(false);
@@ -225,6 +237,7 @@ export default function HomeScreen() {
           title="Livre de recette"
           collections={collections.recipeBooks}
           onCollectionPress={handleCollectionPress}
+          onCollectionLongPress={handleCollectionLongPress}
           onNewPress={handleNewRecipeBook}
           showNewButton
           cardHeight={collectionCardHeight}
@@ -234,6 +247,7 @@ export default function HomeScreen() {
           title="Regime & Menu"
           collections={collections.menus}
           onCollectionPress={handleCollectionPress}
+          onCollectionLongPress={handleCollectionLongPress}
           onNewPress={handleNewMenu}
           showNewButton
           cardHeight={collectionCardHeight}

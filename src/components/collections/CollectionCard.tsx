@@ -7,10 +7,18 @@ interface CollectionCardProps {
   name: string;
   images: string[];
   onPress: (id: string) => void;
+  onLongPress?: (id: string) => void;
   cardHeight?: number;
 }
 
-export function CollectionCard({ id, name, images, onPress, cardHeight }: CollectionCardProps) {
+export function CollectionCard({
+  id,
+  name,
+  images,
+  onPress,
+  onLongPress,
+  cardHeight,
+}: CollectionCardProps) {
   const displayImages = images.slice(0, 3);
 
   const renderSlot = (index: number, style: object) => {
@@ -33,6 +41,7 @@ export function CollectionCard({ id, name, images, onPress, cardHeight }: Collec
         pressed && styles.pressed,
       ]}
       onPress={() => onPress(id)}
+      onLongPress={onLongPress ? () => onLongPress(id) : undefined}
       accessibilityRole="button"
       accessibilityLabel={`Collection ${name}`}
     >

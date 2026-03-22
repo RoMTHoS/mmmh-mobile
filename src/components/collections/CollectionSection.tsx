@@ -12,6 +12,7 @@ interface CollectionSectionProps {
   title: string;
   collections: Collection[];
   onCollectionPress: (id: string) => void;
+  onCollectionLongPress?: (id: string) => void;
   onNewPress?: () => void;
   showNewButton?: boolean;
   style?: object;
@@ -22,6 +23,7 @@ export function CollectionSection({
   title,
   collections,
   onCollectionPress,
+  onCollectionLongPress,
   onNewPress,
   showNewButton = false,
   style,
@@ -42,6 +44,7 @@ export function CollectionSection({
             name={collection.name}
             images={collection.images}
             onPress={onCollectionPress}
+            onLongPress={onCollectionLongPress}
             cardHeight={cardHeight}
           />
         ))}

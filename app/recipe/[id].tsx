@@ -52,6 +52,7 @@ export default function RecipeDetailScreen() {
   const addCollection = useCollectionStore((s) => s.addCollection);
   const [collectionDropdownVisible, setCollectionDropdownVisible] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState('');
+  const [newCollectionType, setNewCollectionType] = useState<'recipeBook' | 'menu'>('recipeBook');
 
   const isInAnyCollection = useMemo(
     () => (id ? collections.some((c) => c.recipeIds.includes(id)) : false),
@@ -320,41 +321,72 @@ export default function RecipeDetailScreen() {
             ) : (
               <Text style={styles.dropdownEmpty}>Aucun catalogue créé</Text>
             )}
-            <View style={styles.dropdownCreateRow}>
+            <View style={styles.dropdownCreateSection}>
               <TextInput
                 style={styles.dropdownCreateInput}
                 placeholder="Nouveau catalogue..."
                 placeholderTextColor={colors.textMuted}
                 value={newCollectionName}
                 onChangeText={setNewCollectionName}
-                onSubmitEditing={() => {
-                  if (newCollectionName.trim() && id) {
-                    const col = addCollection(newCollectionName.trim(), 'recipeBook');
-                    addRecipeToCollection(col.id, id);
-                    setNewCollectionName('');
-                  }
-                }}
                 returnKeyType="done"
+                blurOnSubmit
               />
+              <View style={styles.dropdownTypeRow}>
+                <Pressable
+                  style={[
+                    styles.dropdownTypeButton,
+                    newCollectionType === 'recipeBook' && styles.dropdownTypeButtonActive,
+                  ]}
+                  onPress={() => setNewCollectionType('recipeBook')}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownTypeText,
+                      newCollectionType === 'recipeBook' && styles.dropdownTypeTextActive,
+                    ]}
+                  >
+                    Livre
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.dropdownTypeButton,
+                    newCollectionType === 'menu' && styles.dropdownTypeButtonActive,
+                  ]}
+                  onPress={() => setNewCollectionType('menu')}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownTypeText,
+                      newCollectionType === 'menu' && styles.dropdownTypeTextActive,
+                    ]}
+                  >
+                    Menu
+                  </Text>
+                </Pressable>
+              </View>
               <Pressable
                 style={[
-                  styles.dropdownCreateButton,
+                  styles.dropdownCreateFullButton,
                   !newCollectionName.trim() && styles.dropdownCreateButtonDisabled,
                 ]}
                 onPress={() => {
                   if (newCollectionName.trim() && id) {
-                    const col = addCollection(newCollectionName.trim(), 'recipeBook');
+                    const col = addCollection(newCollectionName.trim(), newCollectionType);
                     addRecipeToCollection(col.id, id);
                     setNewCollectionName('');
                   }
                 }}
                 disabled={!newCollectionName.trim()}
               >
-                <Ionicons
-                  name="add"
-                  size={20}
-                  color={newCollectionName.trim() ? colors.accent : colors.textMuted}
-                />
+                <Text
+                  style={[
+                    styles.dropdownCreateFullButtonText,
+                    !newCollectionName.trim() && { color: colors.textMuted },
+                  ]}
+                >
+                  Créer nouveau catalogue
+                </Text>
               </Pressable>
             </View>
           </Pressable>
@@ -582,17 +614,37 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: spacing.md,
   },
-  dropdownCreateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  dropdownCreateSection: {
     marginTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  dropdownTypeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  dropdownTypeButton: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+  },
+  dropdownTypeButtonActive: {
+    borderWidth: 2,
+    borderColor: colors.text,
+  },
+  dropdownTypeText: {
+    fontFamily: fonts.script,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  dropdownTypeTextActive: {
+    color: colors.text,
+    fontWeight: '600',
   },
   dropdownCreateInput: {
-    flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -603,18 +655,21 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surface,
   },
-  dropdownCreateButton: {
-    width: 36,
-    height: 36,
+  dropdownCreateFullButton: {
+    paddingVertical: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: colors.accent,
+    backgroundColor: colors.accent,
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  dropdownCreateFullButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 14,
+    color: colors.surface,
   },
   dropdownCreateButtonDisabled: {
-    borderColor: colors.border,
+    opacity: 0.4,
   },
   errorContainer: {
     flex: 1,
