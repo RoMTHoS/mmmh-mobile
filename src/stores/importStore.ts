@@ -28,6 +28,8 @@ export interface ImportJob {
   pipeline?: 'vps' | 'gemini';
   /** Whether Gemini failed and the job fell back to VPS. */
   fallbackUsed?: boolean;
+  /** Whether local usage was already incremented optimistically on submit. */
+  usageTracked?: boolean;
   createdAt: string;
 }
 

@@ -131,6 +131,9 @@ export function RecipeCarousel({
         keyExtractor={(item) => item.recipeId}
         horizontal
         showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        nestedScrollEnabled={false}
         renderItem={({ item }) => (
           <RecipeCard
             recipe={item}
@@ -162,6 +165,7 @@ export function RecipeCarousel({
 const styles = StyleSheet.create({
   container: {
     paddingTop: spacing.md,
+    overflow: 'hidden',
   },
   listContent: {
     paddingHorizontal: spacing.md,

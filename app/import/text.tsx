@@ -19,6 +19,7 @@ import { useImportStore } from '../../src/stores/importStore';
 import { submitImport } from '../../src/services/import';
 import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
 import { usePlanStatus } from '../../src/hooks';
+import * as planDb from '../../src/services/planDatabase';
 import { trackEvent } from '../../src/utils/analytics';
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
 import { PremiumIcon } from '../../src/components/ui';
@@ -89,7 +90,13 @@ export default function TextImportScreen() {
           status: response.status,
           progress: 0,
           createdAt: response.createdAt || new Date().toISOString(),
+          ...(forcePremium ? { pipeline: 'gemini' as const, usageTracked: true } : {}),
         });
+
+        // Optimistically increment local Gemini usage so the quota updates immediately
+        if (forcePremium) {
+          await planDb.incrementGeminiUsage();
+        }
 
         queryClient.invalidateQueries({ queryKey: ['import-usage'] });
 

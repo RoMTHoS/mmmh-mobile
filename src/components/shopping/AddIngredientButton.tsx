@@ -133,6 +133,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.md,
     marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,

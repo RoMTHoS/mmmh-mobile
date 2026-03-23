@@ -19,6 +19,7 @@ import { submitImport } from '../../src/services/import';
 import { detectPlatform } from '../../src/utils/validation';
 import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
 import { usePlanStatus } from '../../src/hooks';
+import * as planDb from '../../src/services/planDatabase';
 import { trackEvent } from '../../src/utils/analytics';
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
 import { PremiumIcon, Icon } from '../../src/components/ui';
@@ -70,8 +71,13 @@ export default function UrlInputScreen() {
           status: response.status,
           progress: 0,
           createdAt: response.createdAt || new Date().toISOString(),
-          ...(forcePremium ? { pipeline: 'gemini' as const } : {}),
+          ...(forcePremium ? { pipeline: 'gemini' as const, usageTracked: true } : {}),
         });
+
+        // Optimistically increment local Gemini usage so the quota updates immediately
+        if (forcePremium) {
+          await planDb.incrementGeminiUsage();
+        }
 
         // Refresh quota display after successful import
         queryClient.invalidateQueries({ queryKey: ['import-usage'] });

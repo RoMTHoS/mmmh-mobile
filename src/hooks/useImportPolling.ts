@@ -67,10 +67,13 @@ export function useImportPolling() {
           });
           trackedJobsRef.current.add(job.jobId);
           try {
-            if (status.pipelineInfo.pipeline === 'vps') {
-              await planDb.incrementVpsUsage();
-            } else {
-              await planDb.incrementGeminiUsage();
+            // Skip if usage was already tracked optimistically on submit
+            if (!job.usageTracked) {
+              if (status.pipelineInfo.pipeline === 'vps') {
+                await planDb.incrementVpsUsage();
+              } else {
+                await planDb.incrementGeminiUsage();
+              }
             }
             queryClient.invalidateQueries({ queryKey: ['import-usage'] });
           } catch (usageError) {
