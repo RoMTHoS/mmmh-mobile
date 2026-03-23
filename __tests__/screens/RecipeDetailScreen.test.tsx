@@ -76,6 +76,8 @@ const mockRecipe = (overrides?: Partial<Recipe>): Recipe => ({
   nutritionProteins: null,
   nutritionCarbs: null,
   nutritionFats: null,
+  sourceUrl: null,
+  sourceCreator: null,
   createdAt: '2024-01-15T12:00:00.000Z',
   updatedAt: '2024-01-15T12:00:00.000Z',
   ...overrides,

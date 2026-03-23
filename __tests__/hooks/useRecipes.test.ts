@@ -43,6 +43,8 @@ const mockRecipe: Recipe = {
   nutritionProteins: null,
   nutritionCarbs: null,
   nutritionFats: null,
+  sourceUrl: null,
+  sourceCreator: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
