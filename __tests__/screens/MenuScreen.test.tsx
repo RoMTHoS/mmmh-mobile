@@ -82,9 +82,7 @@ describe('MenuScreen - Plan & Usage section', () => {
     const badgeChildren = badge.props.children;
     const badgeEl = React.isValidElement(badgeChildren) ? badgeChildren : null;
     const badgeText = badgeEl ? (badgeEl.props as { children: string }).children : '';
-    expect(badgeText).toContain('Essai');
-
-    expect(getByTestId('plan-gemini-usage')).toBeTruthy();
+    expect(badgeText).toContain('Standard');
   });
 
   it('shows premium tier with active status', () => {

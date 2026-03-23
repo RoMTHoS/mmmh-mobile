@@ -226,7 +226,7 @@ describe('TextImportScreen', () => {
       fireEvent.press(getByTestId('submit-button'));
 
       await waitFor(() => {
-        expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+        expect(router.replace).toHaveBeenCalledWith('/(tabs)/search');
       });
     });
 
@@ -250,9 +250,9 @@ describe('TextImportScreen', () => {
     });
   });
 
-  // 5.9 - quota exceeded shows modal
+  // VPS quota is unlimited — imports always proceed
   describe('quota enforcement', () => {
-    it('shows quota exceeded modal when VPS quota is 0', () => {
+    it('allows submission even when VPS quota is 0 (unlimited)', () => {
       mockPlanStatus = {
         tier: 'free',
         vpsQuotaRemaining: 0,
@@ -268,7 +268,7 @@ describe('TextImportScreen', () => {
       );
       fireEvent.press(getByTestId('submit-button'));
 
-      expect(mockSubmitImport).not.toHaveBeenCalled();
+      expect(mockSubmitImport).toHaveBeenCalled();
     });
   });
 });
