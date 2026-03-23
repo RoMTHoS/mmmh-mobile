@@ -394,6 +394,18 @@ export async function convertItemToManual(itemId: string): Promise<void> {
   }
 }
 
+export async function clearShoppingList(listId: string): Promise<void> {
+  const database = getDatabase();
+
+  try {
+    database.runSync('DELETE FROM shopping_list_items WHERE shopping_list_id = ?', [listId]);
+    database.runSync('DELETE FROM shopping_list_recipes WHERE shopping_list_id = ?', [listId]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de vider la liste. ${message}`);
+  }
+}
+
 export async function clearCheckedItems(listId: string): Promise<void> {
   const database = getDatabase();
 

@@ -5,6 +5,7 @@ import {
   SectionList,
   Image,
   Pressable,
+  Alert,
   StyleSheet,
   Dimensions,
   RefreshControl,
@@ -54,12 +55,14 @@ function MenuRecipeGridItem({
   servings,
   onDecrement,
   onIncrement,
+  onRemove,
 }: {
   recipe: Recipe;
   onPress: (r: Recipe) => void;
   servings: number;
   onDecrement: () => void;
   onIncrement: () => void;
+  onRemove: () => void;
 }) {
   return (
     <View style={styles.gridItem}>
@@ -77,22 +80,27 @@ function MenuRecipeGridItem({
           </View>
         )}
       </Pressable>
-      <View style={styles.portionStepper}>
-        <Pressable
-          onPress={onDecrement}
-          disabled={servings <= 1}
-          hitSlop={4}
-          style={styles.stepperButton}
-        >
-          <Text style={styles.stepperText}>-</Text>
+      <View style={styles.portionRow}>
+        <Pressable onPress={onRemove} hitSlop={6} style={styles.removeButton}>
+          <Ionicons name="trash-outline" size={16} color={colors.error} />
         </Pressable>
-        <View style={styles.portionCenter}>
-          <Ionicons name="person-outline" size={13} color={colors.text} />
-          <Text style={styles.portionValue}>{servings}</Text>
+        <View style={styles.portionStepper}>
+          <Pressable
+            onPress={onDecrement}
+            disabled={servings <= 1}
+            hitSlop={4}
+            style={styles.stepperButton}
+          >
+            <Text style={styles.stepperText}>-</Text>
+          </Pressable>
+          <View style={styles.portionCenter}>
+            <Ionicons name="person-outline" size={13} color={colors.text} />
+            <Text style={styles.portionValue}>{servings}</Text>
+          </View>
+          <Pressable onPress={onIncrement} hitSlop={4} style={styles.stepperButton}>
+            <Text style={styles.stepperText}>+</Text>
+          </Pressable>
         </View>
-        <Pressable onPress={onIncrement} hitSlop={4} style={styles.stepperButton}>
-          <Text style={styles.stepperText}>+</Text>
-        </Pressable>
       </View>
     </View>
   );
@@ -105,12 +113,14 @@ function GridRow({
   menuId,
   recipeServings,
   onServingsChange,
+  onRemoveRecipe,
 }: {
   items: Recipe[];
   onPress: (r: Recipe) => void;
   menuId?: string;
   recipeServings?: Record<string, number>;
   onServingsChange?: (recipeId: string, servings: number) => void;
+  onRemoveRecipe?: (recipe: Recipe) => void;
 }) {
   return (
     <View style={styles.gridRow}>
@@ -129,6 +139,7 @@ function GridRow({
               const curr = recipeServings[recipe.id] ?? recipe.servings ?? 4;
               onServingsChange(recipe.id, curr + 1);
             }}
+            onRemove={() => onRemoveRecipe?.(recipe)}
           />
         ) : (
           <RecipeGridItem key={recipe.id} recipe={recipe} onPress={onPress} />
@@ -233,6 +244,7 @@ export default function SearchScreen() {
   }, [isMenuView, filteredRecipes, collections]);
 
   const setRecipeServings = useCollectionStore((s) => s.setRecipeServings);
+  const removeRecipeFromCollection = useCollectionStore((s) => s.removeRecipeFromCollection);
 
   const handleServingsChange = useCallback(
     (recipeId: string, servings: number) => {
@@ -241,6 +253,21 @@ export default function SearchScreen() {
       }
     },
     [selectedBookId, setRecipeServings]
+  );
+
+  const handleRemoveRecipe = useCallback(
+    (recipe: Recipe) => {
+      if (!selectedBookId) return;
+      Alert.alert('Retirer la recette', `Voulez-vous retirer "${recipe.title}" de ce groupe ?`, [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Retirer',
+          style: 'destructive',
+          onPress: () => removeRecipeFromCollection(selectedBookId, recipe.id),
+        },
+      ]);
+    },
+    [selectedBookId, removeRecipeFromCollection]
   );
 
   const [shoppingModalVisible, setShoppingModalVisible] = useState(false);
@@ -320,6 +347,7 @@ export default function SearchScreen() {
                 menuId={selectedBookId ?? undefined}
                 recipeServings={selectedCollection?.recipeServings}
                 onServingsChange={handleServingsChange}
+                onRemoveRecipe={handleRemoveRecipe}
               />
             )}
             contentContainerStyle={styles.gridContent}
@@ -410,18 +438,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  portionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing.xs,
+  },
   portionStepper: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '100%',
-    marginTop: spacing.xs,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.full,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
+  },
+  removeButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stepperButton: {
     alignItems: 'center',
@@ -447,7 +484,7 @@ const styles = StyleSheet.create({
     ...typography.titleScript,
     color: colors.text,
     fontSize: 18,
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
     marginBottom: spacing.sm,
   },
   errorContainer: {
@@ -470,7 +507,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.md,
     marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,

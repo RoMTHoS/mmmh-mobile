@@ -215,13 +215,13 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
           </View>
         )}
 
-        {job.status === 'failed' && job.error?.retryable && (
+        {job.status === 'failed' && (
           <Button
-            title="Reessayer"
+            title="Réessayer"
             onPress={onRetry}
-            variant="secondary"
+            variant="primary"
             size="sm"
-            style={styles.actionButton}
+            style={styles.retryButton}
           />
         )}
 
@@ -330,6 +330,10 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginTop: spacing.sm,
+  },
+  retryButton: {
+    marginTop: spacing.sm,
+    backgroundColor: '#000000',
   },
   fallbackNotice: {
     ...typography.caption,

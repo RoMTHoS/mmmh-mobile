@@ -28,6 +28,7 @@ import {
   useAddRecipeToList,
   useRemoveRecipeFromList,
   useDeleteShoppingList,
+  useClearShoppingList,
   useShoppingLists,
 } from '../../src/hooks/useShoppingList';
 import { useShoppingStore } from '../../src/stores/shoppingStore';
@@ -67,6 +68,7 @@ export default function ShoppingScreen() {
   const addRecipeToList = useAddRecipeToList();
   const removeRecipe = useRemoveRecipeFromList();
   const deleteList = useDeleteShoppingList();
+  const clearList = useClearShoppingList();
 
   const handleToggle = useCallback(
     (itemId: string) => {
@@ -109,7 +111,18 @@ export default function ShoppingScreen() {
     // Find the current list to check if it's the default
     const currentList = (listsQuery?.data ?? []).find((l) => l.id === effectiveListId);
     if (currentList?.isDefault) {
-      Alert.alert('Liste par défaut', 'La liste par défaut ne peut pas être supprimée.');
+      Alert.alert(
+        'Vider la liste',
+        'Supprimer toutes les recettes et ingrédients de cette liste ?',
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Vider',
+            style: 'destructive',
+            onPress: () => clearList.mutate(effectiveListId),
+          },
+        ]
+      );
       return;
     }
 
@@ -133,7 +146,7 @@ export default function ShoppingScreen() {
         },
       ]
     );
-  }, [effectiveListId, deleteList, defaultList?.id, setActiveListId]);
+  }, [effectiveListId, deleteList, clearList, defaultList?.id, setActiveListId, listsQuery?.data]);
 
   const handleUpdateServings = useCallback(
     (recipe: ShoppingListRecipe, newServings: number) => {

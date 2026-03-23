@@ -227,6 +227,22 @@ export function useAddManualItem() {
   });
 }
 
+export function useClearShoppingList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (listId: string) => shoppingDb.clearShoppingList(listId),
+    onSuccess: (_, listId) => {
+      queryClient.invalidateQueries({
+        queryKey: [...SHOPPING_LIST_ITEMS_KEY, listId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...SHOPPING_LIST_RECIPES_KEY, listId],
+      });
+    },
+  });
+}
+
 export function useClearCheckedItems() {
   const queryClient = useQueryClient();
 
