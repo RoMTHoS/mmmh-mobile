@@ -17,6 +17,7 @@ import { useRecipes } from '../../src/hooks';
 import { SearchBar, Icon, EmptyState } from '../../src/components/ui';
 import { ImportStatusList } from '../../src/components/import';
 import { BookSelector } from '../../src/components/collections';
+import { MenuToShoppingModal } from '../../src/components/shopping';
 import { useCollectionStore } from '../../src/stores/collectionStore';
 import { RecipeGridSkeleton } from '../../src/components/recipes/RecipeGridSkeleton';
 import { useUIStore } from '../../src/stores/uiStore';
@@ -242,6 +243,16 @@ export default function SearchScreen() {
     [selectedBookId, setRecipeServings]
   );
 
+  const [shoppingModalVisible, setShoppingModalVisible] = useState(false);
+
+  const menuRecipeEntries = useMemo(() => {
+    if (!isMenuView || filteredRecipes.length === 0) return [];
+    return filteredRecipes.map((recipe) => ({
+      recipe,
+      servings: selectedCollection?.recipeServings?.[recipe.id] ?? recipe.servings ?? 4,
+    }));
+  }, [isMenuView, filteredRecipes, selectedCollection]);
+
   const handleRecipePress = (recipe: Recipe) => {
     router.push(`/recipe/${recipe.id}`);
   };
@@ -295,33 +306,49 @@ export default function SearchScreen() {
           onAction={searchQuery ? undefined : openImportModal}
         />
       ) : isMenuView ? (
-        <SectionList
-          sections={groupedByBook}
-          keyExtractor={(item, index) => `row-${index}-${item.map((r) => r.id).join('-')}`}
-          renderSectionHeader={({ section: { title } }) => (
-            <Text style={styles.sectionHeader}>{title}</Text>
+        <>
+          <SectionList
+            sections={groupedByBook}
+            keyExtractor={(item, index) => `row-${index}-${item.map((r) => r.id).join('-')}`}
+            renderSectionHeader={({ section: { title } }) => (
+              <Text style={styles.sectionHeader}>{title}</Text>
+            )}
+            renderItem={({ item }) => (
+              <GridRow
+                items={item}
+                onPress={handleRecipePress}
+                menuId={selectedBookId ?? undefined}
+                recipeServings={selectedCollection?.recipeServings}
+                onServingsChange={handleServingsChange}
+              />
+            )}
+            contentContainerStyle={styles.gridContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={refetch}
+                tintColor={colors.accent}
+                colors={[colors.accent]}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+            stickySectionHeadersEnabled={false}
+          />
+          {filteredRecipes.length > 0 && (
+            <Pressable
+              style={styles.addToShoppingButton}
+              onPress={() => setShoppingModalVisible(true)}
+            >
+              <Ionicons name="add" size={20} color={colors.accent} />
+              <Text style={styles.addToShoppingText}>Ajouter à une liste de courses</Text>
+            </Pressable>
           )}
-          renderItem={({ item }) => (
-            <GridRow
-              items={item}
-              onPress={handleRecipePress}
-              menuId={selectedBookId ?? undefined}
-              recipeServings={selectedCollection?.recipeServings}
-              onServingsChange={handleServingsChange}
-            />
-          )}
-          contentContainerStyle={styles.gridContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={refetch}
-              tintColor={colors.accent}
-              colors={[colors.accent]}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-          stickySectionHeadersEnabled={false}
-        />
+          <MenuToShoppingModal
+            visible={shoppingModalVisible}
+            onClose={() => setShoppingModalVisible(false)}
+            recipes={menuRecipeEntries}
+          />
+        </>
       ) : (
         <FlatList
           data={filteredRecipes}
@@ -435,5 +462,22 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: colors.error,
     marginTop: spacing.md,
+  },
+  addToShoppingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderStyle: 'dashed',
+  },
+  addToShoppingText: {
+    ...typography.body,
+    color: colors.accent,
   },
 });

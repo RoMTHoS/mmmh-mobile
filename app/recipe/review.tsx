@@ -27,6 +27,7 @@ import { colors, typography, spacing, fonts, radius } from '../../src/theme';
 import { useCollectionStore } from '../../src/stores/collectionStore';
 import { Ionicons } from '@expo/vector-icons';
 import type { Ingredient, Step } from '../../src/types';
+import { persistImage } from '../../src/utils/imageCompression';
 import type { ParsedIngredient } from '../../src/components/recipes/IngredientEditor';
 import { ingredientsToText } from '../../src/components/recipes/IngredientEditor';
 
@@ -183,6 +184,16 @@ export default function RecipeReviewScreen() {
         }
       }
 
+      // Persist photo locally if it's a remote URL or temp cache path
+      let finalPhotoUri = photoUri;
+      if (photoUri && !photoUri.includes('/photos/')) {
+        try {
+          finalPhotoUri = await persistImage(photoUri);
+        } catch {
+          // If persistence fails, keep original URI
+        }
+      }
+
       const newRecipe = await createRecipe.mutateAsync({
         title: data.title,
         ingredients: ingredientsFromStructured(),
@@ -190,7 +201,7 @@ export default function RecipeReviewScreen() {
         cookingTime: data.cookTime ?? data.prepTime ?? null,
         servings: data.servings ?? null,
         notes: data.description || null,
-        photoUri,
+        photoUri: finalPhotoUri,
         sourceUrl: job?.sourceUrl || recipe?.sourceUrl || null,
         sourceCreator,
       });

@@ -198,9 +198,18 @@ function RootLayoutNav() {
           animation: 'slide_from_right',
         }}
       >
-        <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
-        <Stack.Screen name="splash" options={{ headerShown: false, animation: 'fade' }} />
-        <Stack.Screen name="(tabs)" options={{ title: '', headerShown: false }} />
+        <Stack.Screen
+          name="onboarding"
+          options={{ headerShown: false, animation: 'fade', gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="splash"
+          options={{ headerShown: false, animation: 'fade', gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="(tabs)"
+          options={{ title: '', headerShown: false, gestureEnabled: false }}
+        />
         <Stack.Screen name="(modals)" options={{ headerShown: false }} />
         <Stack.Screen name="import" options={{ headerShown: false }} />
         <Stack.Screen name="recipe/[id]" options={{ title: '' }} />
