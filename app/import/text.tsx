@@ -270,13 +270,13 @@ export default function TextImportScreen() {
           disabled={isLoading}
           testID="premium-button"
         >
-          <PremiumIcon width={24} color="#DAA520" />
+          <PremiumIcon width={24} color="#FFFFFF" />
           <Text style={styles.premiumButtonText}>
             {planStatus && planStatus.geminiQuotaRemaining <= 0
               ? 'Passer premium'
               : 'Import premium'}
           </Text>
-          <PremiumIcon width={24} color="#DAA520" />
+          <PremiumIcon width={24} color="#FFFFFF" />
         </Pressable>
       </View>
 
@@ -411,6 +411,6 @@ const styles = StyleSheet.create({
   premiumButtonText: {
     fontFamily: fonts.script,
     fontSize: 16,
-    color: '#DAA520',
+    color: '#FFFFFF',
   },
 });
