@@ -7,6 +7,7 @@ import { PipelineBadge } from './PipelineBadge';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
 import { extractHostname } from '../../utils/validation';
 import type { ImportJob } from '../../stores/importStore';
+import { useUIStore } from '../../stores/uiStore';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
@@ -29,6 +30,7 @@ const VISUAL_STEPS = [
 const STEP_DURATIONS = [8000, 12000, 15000, 2000];
 
 export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardProps) {
+  const openImportModal = useUIStore((s) => s.openImportModal);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const [simulatedStep, setSimulatedStep] = useState(0);
@@ -215,7 +217,17 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
           </View>
         )}
 
-        {job.status === 'failed' && (
+        {job.status === 'failed' && job.error?.code === 'INSTAGRAM_POST_INVALID' && (
+          <Button
+            title="Importer différemment"
+            onPress={openImportModal}
+            variant="primary"
+            size="sm"
+            style={styles.retryButton}
+          />
+        )}
+
+        {job.status === 'failed' && job.error?.code !== 'INSTAGRAM_POST_INVALID' && (
           <Button
             title="Réessayer"
             onPress={onRetry}

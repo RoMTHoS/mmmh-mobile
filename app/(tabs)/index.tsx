@@ -220,7 +220,7 @@ export default function HomeScreen() {
         {/* Nouvelle recette section */}
         {latestRecipes.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Nouvelle recette</Text>
+            <Text style={styles.sectionTitle}>Recettes récentes</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -234,7 +234,7 @@ export default function HomeScreen() {
         )}
 
         <CollectionSection
-          title="Livre de recette"
+          title="Livres de recettes"
           collections={collections.recipeBooks}
           onCollectionPress={handleCollectionPress}
           onCollectionLongPress={handleCollectionLongPress}
@@ -244,7 +244,7 @@ export default function HomeScreen() {
         />
 
         <CollectionSection
-          title="Regime & Menu"
+          title="Plans de repas"
           collections={collections.menus}
           onCollectionPress={handleCollectionPress}
           onCollectionLongPress={handleCollectionLongPress}

@@ -21,6 +21,7 @@ import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
 import { usePlanStatus } from '../../src/hooks';
 import * as planDb from '../../src/services/planDatabase';
 import { trackEvent } from '../../src/utils/analytics';
+import { scrapeInstagramPost, isInstagramPostUrl } from '../../src/utils/instagramScraper';
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
 import { PremiumIcon, Icon } from '../../src/components/ui';
 import { PlatformBadge } from '../../src/components/import/PlatformBadge';
@@ -54,6 +55,84 @@ export default function UrlInputScreen() {
       // Auto-detect import type based on URL
       const platform = detectPlatform(url);
       const importType: ImportType = platform ? 'video' : 'website';
+
+      // Instagram photo posts: scrape caption client-side, submit as text
+      if (isInstagramPostUrl(url)) {
+        try {
+          Toast.show({
+            type: 'info',
+            text1: 'Post Instagram detecte',
+            text2: 'Extraction de la recette...',
+          });
+
+          const scraped = await scrapeInstagramPost(url);
+
+          if (!scraped.caption) {
+            // No caption found (carousel or image-only post)
+            // Add a failed job so the card shows with a button to open import modal
+            addJob({
+              jobId: `ig-post-${Date.now()}`,
+              importType: 'text',
+              sourceUrl: url,
+              platform: 'instagram',
+              status: 'failed',
+              progress: 0,
+              error: {
+                code: 'INSTAGRAM_POST_INVALID',
+                message:
+                  "Impossible d'extraire une recette depuis ce post. Essayez une autre mode d'import.",
+                retryable: false,
+              },
+              createdAt: new Date().toISOString(),
+            });
+
+            setIsLoading(false);
+            router.replace('/(tabs)/search');
+            return;
+          }
+
+          // Submit caption as text import
+          const response = await submitImport({
+            importType: 'text',
+            sourceText: scraped.caption,
+            ...(forcePremium ? { forcePremium: true } : {}),
+          });
+
+          addJob({
+            jobId: response.jobId,
+            importType: 'text',
+            sourceUrl: url,
+            platform: 'instagram',
+            status: response.status,
+            progress: 0,
+            createdAt: response.createdAt || new Date().toISOString(),
+            ...(forcePremium ? { pipeline: 'gemini' as const, usageTracked: true } : {}),
+          });
+
+          if (forcePremium) {
+            await planDb.incrementGeminiUsage();
+          }
+
+          queryClient.invalidateQueries({ queryKey: ['import-usage'] });
+
+          Toast.show({
+            type: 'success',
+            text1: 'Recette extraite',
+            text2: 'Traitement en cours...',
+          });
+
+          router.replace('/(tabs)/search');
+          return;
+        } catch (error) {
+          Toast.show({
+            type: 'error',
+            text1: 'Erreur',
+            text2: error instanceof Error ? error.message : "Echec de l'extraction Instagram",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
 
       try {
         const response = await submitImport({
