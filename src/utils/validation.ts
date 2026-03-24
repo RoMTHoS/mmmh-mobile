@@ -17,6 +17,7 @@ const VIDEO_URL_PATTERNS: Record<Platform, RegExp[]> = {
   ],
   tiktok: [
     /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i,
+    /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/photo\/\d+/i,
     /^https?:\/\/(vm|vt)\.tiktok\.com\/[\w-]+/i,
     /^https?:\/\/(www\.)?tiktok\.com\/t\/[\w-]+/i,
   ],

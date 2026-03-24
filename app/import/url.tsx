@@ -21,7 +21,7 @@ import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
 import { usePlanStatus } from '../../src/hooks';
 import * as planDb from '../../src/services/planDatabase';
 import { trackEvent } from '../../src/utils/analytics';
-import { scrapeInstagramPost, isInstagramPostUrl } from '../../src/utils/instagramScraper';
+import { scrapeSocialPost, detectPhotoPost, hasOembedSupport } from '../../src/utils/socialScraper';
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
 import { PremiumIcon, Icon } from '../../src/components/ui';
 import { PlatformBadge } from '../../src/components/import/PlatformBadge';
@@ -56,53 +56,71 @@ export default function UrlInputScreen() {
       const platform = detectPlatform(url);
       const importType: ImportType = platform ? 'video' : 'website';
 
-      // Instagram photo posts: scrape caption client-side, submit as text
-      if (isInstagramPostUrl(url)) {
+      // Social media posts: try oEmbed to get caption directly (fast path).
+      // This works for ALL TikTok URLs (video, photo, carousel, short URLs).
+      // If we get a caption, submit as text import — no need for video/website pipeline.
+      if (hasOembedSupport(url)) {
         try {
           Toast.show({
             type: 'info',
-            text1: 'Post Instagram detecte',
-            text2: 'Extraction de la recette...',
+            text1: 'Extraction de la description...',
           });
 
-          const scraped = await scrapeInstagramPost(url);
+          const scraped = await scrapeSocialPost(url);
 
-          if (!scraped.caption) {
-            // No caption found (carousel or image-only post)
-            // Add a failed job so the card shows with a button to open import modal
-            addJob({
-              jobId: `ig-post-${Date.now()}`,
+          if (scraped.caption) {
+            const response = await submitImport({
               importType: 'text',
-              sourceUrl: url,
-              platform: 'instagram',
-              status: 'failed',
-              progress: 0,
-              error: {
-                code: 'INSTAGRAM_POST_INVALID',
-                message:
-                  "Impossible d'extraire une recette depuis ce post. Essayez une autre mode d'import.",
-                retryable: false,
-              },
-              createdAt: new Date().toISOString(),
+              sourceText: scraped.caption,
+              ...(forcePremium ? { forcePremium: true } : {}),
             });
 
-            setIsLoading(false);
+            addJob({
+              jobId: response.jobId,
+              importType: 'text',
+              sourceUrl: url,
+              platform: platform || 'tiktok',
+              status: response.status,
+              progress: 0,
+              createdAt: response.createdAt || new Date().toISOString(),
+              ...(forcePremium ? { pipeline: 'gemini' as const, usageTracked: true } : {}),
+            });
+
+            if (forcePremium) {
+              await planDb.incrementGeminiUsage();
+            }
+
+            queryClient.invalidateQueries({ queryKey: ['import-usage'] });
+
+            Toast.show({
+              type: 'success',
+              text1: 'Recette extraite',
+              text2: 'Traitement en cours...',
+            });
+
             router.replace('/(tabs)/search');
             return;
           }
+        } catch {
+          // oEmbed failed — continue to normal import flow below
+        }
+      }
 
-          // Submit caption as text import
+      // Photo/carousel posts without oEmbed caption: try website scraping
+      const photoCheck = await detectPhotoPost(url);
+      if (photoCheck.isPhoto) {
+        try {
           const response = await submitImport({
-            importType: 'text',
-            sourceText: scraped.caption,
+            importType: 'website',
+            sourceUrl: photoCheck.resolvedUrl,
             ...(forcePremium ? { forcePremium: true } : {}),
           });
 
           addJob({
             jobId: response.jobId,
-            importType: 'text',
+            importType: 'website',
             sourceUrl: url,
-            platform: 'instagram',
+            platform: platform || 'instagram',
             status: response.status,
             progress: 0,
             createdAt: response.createdAt || new Date().toISOString(),
@@ -117,7 +135,7 @@ export default function UrlInputScreen() {
 
           Toast.show({
             type: 'success',
-            text1: 'Recette extraite',
+            text1: 'Import lance',
             text2: 'Traitement en cours...',
           });
 
@@ -127,7 +145,7 @@ export default function UrlInputScreen() {
           Toast.show({
             type: 'error',
             text1: 'Erreur',
-            text2: error instanceof Error ? error.message : "Echec de l'extraction Instagram",
+            text2: error instanceof Error ? error.message : "Echec de l'extraction",
           });
           setIsLoading(false);
           return;
