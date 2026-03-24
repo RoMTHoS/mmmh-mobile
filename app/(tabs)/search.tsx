@@ -10,8 +10,8 @@ import {
   Dimensions,
   RefreshControl,
 } from 'react-native';
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useState, useMemo, useCallback } from 'react';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRecipes } from '../../src/hooks';
@@ -169,11 +169,13 @@ export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (bookId !== undefined) {
-      setSelectedBookId(bookId || null);
-    }
-  }, [bookId]);
+  useFocusEffect(
+    useCallback(() => {
+      if (bookId !== undefined) {
+        setSelectedBookId(bookId || null);
+      }
+    }, [bookId])
+  );
   const openImportModal = useUIStore((s) => s.openImportModal);
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const collections = useCollectionStore((s) => s.collections);

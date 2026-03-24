@@ -8,7 +8,6 @@
  * @see Story 5.3 Task 8
  */
 
-import { Toast } from '../utils/toast';
 import { usePlanStatus } from './usePlan';
 
 /**
@@ -25,13 +24,6 @@ export function usePipelinePreCheck() {
   return function checkPipeline(): void {
     if (!planStatus) return;
 
-    if (planStatus.tier !== 'premium' && planStatus.geminiQuotaRemaining <= 0) {
-      Toast.show({
-        type: 'info',
-        text1: 'Import standard',
-        text2: 'Vos imports premium de la semaine ont été utilisés. Import avec qualité standard.',
-        visibilityTime: 4000,
-      });
-    }
+    // No-op: pipeline routing is handled by the backend
   };
 }
