@@ -72,6 +72,7 @@ export default function UrlInputScreen() {
             const response = await submitImport({
               importType: 'text',
               sourceText: scraped.caption,
+              thumbnailUrl: scraped.imageUrl || undefined,
               ...(forcePremium ? { forcePremium: true } : {}),
             });
 

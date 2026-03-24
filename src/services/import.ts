@@ -23,6 +23,7 @@ export interface SubmitImportRequest {
   sourceUrl?: string;
   sourceText?: string;
   html?: string;
+  thumbnailUrl?: string;
   forcePremium?: boolean;
 }
 
@@ -82,12 +83,14 @@ export async function submitImport(request: SubmitImportRequest): Promise<Import
         ? {
             importType: request.importType,
             text: request.sourceText,
+            thumbnailUrl: request.thumbnailUrl,
             forcePremium: request.forcePremium,
           }
         : {
             importType: request.importType,
             sourceUrl: request.sourceUrl,
             html: request.html,
+            thumbnailUrl: request.thumbnailUrl,
             forcePremium: request.forcePremium,
           };
 
