@@ -221,7 +221,9 @@ export default function SearchScreen() {
     const sections: { title: string; data: Recipe[][] }[] = [];
 
     for (const book of recipeBooks) {
-      const bookRecipes = filteredRecipes.filter((r) => book.recipeIds.includes(r.id));
+      const bookRecipes = filteredRecipes.filter(
+        (r) => book.recipeIds.includes(r.id) && !assignedIds.has(r.id)
+      );
       if (bookRecipes.length > 0) {
         bookRecipes.forEach((r) => assignedIds.add(r.id));
         sections.push({
