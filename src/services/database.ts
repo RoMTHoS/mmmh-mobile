@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import uuid from 'react-native-uuid';
+import { toRelativePhotoPath, resolveImagePath } from '../utils/imageCompression';
 import type { Recipe, CreateRecipeInput, UpdateRecipeInput } from '../types';
 
 const DATABASE_NAME = 'mmmh.db';
@@ -47,6 +48,7 @@ function deserializeRecipe(row: RecipeRow): Recipe {
     ...row,
     ingredients: JSON.parse(row.ingredients),
     steps: JSON.parse(row.steps),
+    photoUri: resolveImagePath(row.photoUri),
   };
 }
 
@@ -252,7 +254,7 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
         JSON.stringify(recipe.steps),
         recipe.cookingTime,
         recipe.servings,
-        recipe.photoUri,
+        toRelativePhotoPath(recipe.photoUri),
         recipe.notes,
         recipe.author,
         recipe.sourceUrl,
@@ -335,7 +337,7 @@ export async function updateRecipe(id: string, input: UpdateRecipeInput): Promis
         JSON.stringify(updated.steps),
         updated.cookingTime,
         updated.servings,
-        updated.photoUri,
+        toRelativePhotoPath(updated.photoUri),
         updated.notes,
         updated.author,
         updated.sourceUrl,

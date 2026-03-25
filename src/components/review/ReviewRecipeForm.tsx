@@ -8,7 +8,7 @@ import { IngredientEditor } from '../recipes/IngredientEditor';
 import type { ParsedIngredient } from '../recipes/IngredientEditor';
 import type { ReviewRecipeFormData } from '../../schemas/review.schema';
 import { colors, spacing, radius, fonts } from '../../theme';
-import { persistImage } from '../../utils/imageCompression';
+import { persistImage, deleteRecipeImage } from '../../utils/imageCompression';
 
 interface Props {
   photoUri: string | null;
@@ -39,8 +39,10 @@ export function ReviewRecipeForm({
     });
 
     if (!result.canceled) {
+      const oldUri = photoUri;
       const persistedUri = await persistImage(result.assets[0].uri);
       onPhotoChange(persistedUri);
+      deleteRecipeImage(oldUri);
     }
   };
 
@@ -61,8 +63,10 @@ export function ReviewRecipeForm({
     });
 
     if (!result.canceled) {
+      const oldUri = photoUri;
       const persistedUri = await persistImage(result.assets[0].uri);
       onPhotoChange(persistedUri);
+      deleteRecipeImage(oldUri);
     }
   };
 
@@ -95,7 +99,10 @@ export function ReviewRecipeForm({
               />
               <Button
                 title="Supprimer"
-                onPress={() => onPhotoChange(null)}
+                onPress={() => {
+                  deleteRecipeImage(photoUri);
+                  onPhotoChange(null);
+                }}
                 variant="destructive"
                 size="sm"
                 style={styles.photoButton}

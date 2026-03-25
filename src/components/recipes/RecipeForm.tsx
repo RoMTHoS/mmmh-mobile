@@ -18,7 +18,7 @@ import { IngredientEditor, parseIngredientsText, ingredientsToText } from './Ing
 import type { ParsedIngredient } from './IngredientEditor';
 import type { CreateRecipeFormData } from '../../schemas/recipe.schema';
 import { colors, spacing, radius, fonts, typography } from '../../theme';
-import { persistImage } from '../../utils/imageCompression';
+import { persistImage, deleteRecipeImage } from '../../utils/imageCompression';
 import { useCollectionStore } from '../../stores/collectionStore';
 
 interface RecipeFormProps {
@@ -178,8 +178,10 @@ export function RecipeForm({
     });
 
     if (!result.canceled) {
+      const oldUri = photoUri;
       const persistedUri = await persistImage(result.assets[0].uri);
       onPhotoChange(persistedUri);
+      deleteRecipeImage(oldUri);
     }
   };
 
@@ -200,8 +202,10 @@ export function RecipeForm({
     });
 
     if (!result.canceled) {
+      const oldUri = photoUri;
       const persistedUri = await persistImage(result.assets[0].uri);
       onPhotoChange(persistedUri);
+      deleteRecipeImage(oldUri);
     }
   };
 
