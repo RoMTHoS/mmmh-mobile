@@ -29,7 +29,7 @@ function RecipeCard({
   onIncrement?: () => void;
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const servings = Math.round(recipe.servingsMultiplier);
+  const servings = Math.round(recipe.servingsMultiplier * recipe.recipeBaseServings);
 
   useEffect(() => {
     if (isHighlighted) {
@@ -143,14 +143,17 @@ export function RecipeCarousel({
             onDecrement={
               onUpdateServings
                 ? () => {
-                    const curr = Math.round(item.servingsMultiplier);
+                    const curr = Math.round(item.servingsMultiplier * item.recipeBaseServings);
                     if (curr > 1) onUpdateServings(item, curr - 1);
                   }
                 : undefined
             }
             onIncrement={
               onUpdateServings
-                ? () => onUpdateServings(item, Math.round(item.servingsMultiplier) + 1)
+                ? () => {
+                    const curr = Math.round(item.servingsMultiplier * item.recipeBaseServings);
+                    onUpdateServings(item, curr + 1);
+                  }
                 : undefined
             }
           />

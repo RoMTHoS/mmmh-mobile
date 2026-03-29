@@ -10,10 +10,10 @@ import {
   Modal,
   FlatList,
   TextInput,
-  Linking,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useRecipe, useActiveShoppingList, useShoppingListRecipes } from '../../src/hooks';
 import { useShoppingStore } from '../../src/stores/shoppingStore';
@@ -66,7 +66,7 @@ export default function RecipeDetailScreen() {
     if (col.recipeIds.includes(id)) {
       removeRecipeFromCollection(collectionId, id);
     } else {
-      addRecipeToCollection(collectionId, id);
+      addRecipeToCollection(collectionId, id, recipe?.servings ?? 4);
     }
   };
 
@@ -176,7 +176,7 @@ export default function RecipeDetailScreen() {
         {recipe.sourceCreator && (
           <Pressable
             style={styles.sourceRow}
-            onPress={() => recipe.sourceUrl && Linking.openURL(recipe.sourceUrl)}
+            onPress={() => recipe.sourceUrl && WebBrowser.openBrowserAsync(recipe.sourceUrl)}
             disabled={!recipe.sourceUrl}
           >
             <Text
@@ -373,7 +373,7 @@ export default function RecipeDetailScreen() {
                 onPress={() => {
                   if (newCollectionName.trim() && id) {
                     const col = addCollection(newCollectionName.trim(), newCollectionType);
-                    addRecipeToCollection(col.id, id);
+                    addRecipeToCollection(col.id, id, recipe?.servings ?? 4);
                     setNewCollectionName('');
                   }
                 }}

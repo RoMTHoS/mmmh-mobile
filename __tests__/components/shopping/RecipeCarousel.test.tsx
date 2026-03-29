@@ -19,6 +19,7 @@ const mockRecipe = (overrides?: Partial<ShoppingListRecipe>): ShoppingListRecipe
   addedAt: '2024-01-01T00:00:00.000Z',
   recipeTitle: 'Crêpes',
   recipePhotoUri: null,
+  recipeBaseServings: 4,
   ...overrides,
 });
 

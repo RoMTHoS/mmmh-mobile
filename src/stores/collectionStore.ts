@@ -15,7 +15,7 @@ interface CollectionStore {
   collections: Collection[];
   addCollection: (name: string, type: 'recipeBook' | 'menu') => Collection;
   removeCollection: (id: string) => void;
-  addRecipeToCollection: (collectionId: string, recipeId: string) => void;
+  addRecipeToCollection: (collectionId: string, recipeId: string, defaultServings?: number) => void;
   removeRecipeFromCollection: (collectionId: string, recipeId: string) => void;
   setRecipeServings: (collectionId: string, recipeId: string, servings: number) => void;
   getRecipeBooks: () => Collection[];
@@ -48,13 +48,16 @@ export const useCollectionStore = create<CollectionStore>()(
         }));
       },
 
-      addRecipeToCollection: (collectionId, recipeId) => {
+      addRecipeToCollection: (collectionId, recipeId, defaultServings) => {
         set((state) => ({
-          collections: state.collections.map((c) =>
-            c.id === collectionId && !c.recipeIds.includes(recipeId)
-              ? { ...c, recipeIds: [...c.recipeIds, recipeId] }
-              : c
-          ),
+          collections: state.collections.map((c) => {
+            if (c.id !== collectionId || c.recipeIds.includes(recipeId)) return c;
+            const servings = { ...(c.recipeServings ?? {}) };
+            if (defaultServings != null && !(recipeId in servings)) {
+              servings[recipeId] = defaultServings;
+            }
+            return { ...c, recipeIds: [...c.recipeIds, recipeId], recipeServings: servings };
+          }),
         }));
       },
 

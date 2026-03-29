@@ -207,8 +207,13 @@ export default function RecipeReviewScreen() {
       });
 
       // Add to selected collections
-      selectedBookIds.forEach((bookId) => addRecipeToCollection(bookId, newRecipe.id));
-      selectedMenuIds.forEach((menuId) => addRecipeToCollection(menuId, newRecipe.id));
+      const defaultServings = data.servings ?? 4;
+      selectedBookIds.forEach((bookId) =>
+        addRecipeToCollection(bookId, newRecipe.id, defaultServings)
+      );
+      selectedMenuIds.forEach((menuId) =>
+        addRecipeToCollection(menuId, newRecipe.id, defaultServings)
+      );
 
       // Remove job from store after successful save
       removeJob(jobId);

@@ -95,8 +95,9 @@ export function MenuToShoppingModal({ visible, onClose, recipes }: MenuToShoppin
     setIsAdding(true);
     try {
       for (const entry of recipes) {
-        const recipeServings = entry.recipe.servings ?? 4;
-        const multiplier = entry.servings / recipeServings;
+        const baseServings = entry.recipe.servings ?? 4;
+        const wantedServings = entry.servings;
+        const multiplier = baseServings > 0 ? wantedServings / baseServings : 1;
         await addMutation.mutateAsync({
           listId: selectedListId,
           recipeId: entry.recipe.id,

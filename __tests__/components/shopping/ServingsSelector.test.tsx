@@ -64,6 +64,7 @@ const mockExistingEntry = (overrides?: Partial<ShoppingListRecipe>): ShoppingLis
   addedAt: '2024-01-01T00:00:00.000Z',
   recipeTitle: 'Crêpes bretonnes',
   recipePhotoUri: null,
+  recipeBaseServings: 4,
   ...overrides,
 });
 

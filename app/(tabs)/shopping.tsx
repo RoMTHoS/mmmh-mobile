@@ -151,10 +151,12 @@ export default function ShoppingScreen() {
   const handleUpdateServings = useCallback(
     (recipe: ShoppingListRecipe, newServings: number) => {
       if (!effectiveListId) return;
+      const baseServings = recipe.recipeBaseServings;
+      const multiplier = baseServings > 0 ? newServings / baseServings : 1;
       addRecipeToList.mutate({
         listId: effectiveListId,
         recipeId: recipe.recipeId,
-        servingsMultiplier: newServings,
+        servingsMultiplier: multiplier,
       });
     },
     [effectiveListId, addRecipeToList]
