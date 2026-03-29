@@ -10,8 +10,8 @@ import {
   Dimensions,
   RefreshControl,
 } from 'react-native';
-import { useState, useMemo, useCallback } from 'react';
-import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRecipes } from '../../src/hooks';
@@ -168,14 +168,15 @@ export default function SearchScreen() {
   const { bookId } = useLocalSearchParams<{ bookId?: string }>();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
+  const lastAppliedBookId = useRef<string | undefined>(undefined);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (bookId !== undefined) {
-        setSelectedBookId(bookId || null);
-      }
-    }, [bookId])
-  );
+  // Only apply bookId param when it changes (new navigation from home)
+  useEffect(() => {
+    if (bookId !== undefined && bookId !== lastAppliedBookId.current) {
+      lastAppliedBookId.current = bookId;
+      setSelectedBookId(bookId || null);
+    }
+  }, [bookId]);
   const openImportModal = useUIStore((s) => s.openImportModal);
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const collections = useCollectionStore((s) => s.collections);
@@ -250,6 +251,17 @@ export default function SearchScreen() {
   const setRecipeServings = useCollectionStore((s) => s.setRecipeServings);
   const removeRecipeFromCollection = useCollectionStore((s) => s.removeRecipeFromCollection);
 
+  // Backfill recipeServings for menu recipes that don't have an entry yet
+  useEffect(() => {
+    if (!isMenuView || !selectedBookId || !selectedCollection || !filteredRecipes.length) return;
+    const servingsMap = selectedCollection.recipeServings ?? {};
+    for (const recipe of filteredRecipes) {
+      if (!(recipe.id in servingsMap)) {
+        setRecipeServings(selectedBookId, recipe.id, recipe.servings ?? 4);
+      }
+    }
+  }, [isMenuView, selectedBookId, selectedCollection, filteredRecipes, setRecipeServings]);
+
   const handleServingsChange = useCallback(
     (recipeId: string, servings: number) => {
       if (selectedBookId) {
@@ -278,10 +290,11 @@ export default function SearchScreen() {
 
   const menuRecipeEntries = useMemo(() => {
     if (!isMenuView || filteredRecipes.length === 0) return [];
-    return filteredRecipes.map((recipe) => ({
-      recipe,
-      servings: selectedCollection?.recipeServings?.[recipe.id] ?? recipe.servings ?? 4,
-    }));
+    const recipeServingsMap = selectedCollection?.recipeServings ?? {};
+    return filteredRecipes.map((recipe) => {
+      const servings = recipeServingsMap[recipe.id] ?? recipe.servings ?? 4;
+      return { recipe, servings };
+    });
   }, [isMenuView, filteredRecipes, selectedCollection]);
 
   const handleRecipePress = (recipe: Recipe) => {
@@ -297,6 +310,7 @@ export default function SearchScreen() {
           placeholder="Rechercher"
           style={styles.searchBar}
         />
+        <ImportStatusList />
         <RecipeGridSkeleton />
       </View>
     );
@@ -304,7 +318,8 @@ export default function SearchScreen() {
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <ImportStatusList />
         <Icon name="calories" size="lg" color={colors.error} />
         <Text style={styles.errorText}>Erreur de chargement</Text>
       </View>
