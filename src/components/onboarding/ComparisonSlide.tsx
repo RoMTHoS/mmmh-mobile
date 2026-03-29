@@ -4,40 +4,71 @@ import { colors, spacing, fonts, radius } from '../../theme';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const STANDARD_RECIPE = {
-  title: 'Poulet rôti aux herbes',
-  ingredients: ['poulet', 'herbes de provence', 'huile olive', 'pommes de terre', 'sel, poivre'],
+  title: 'Assiette de Tartare de Truite',
+  servings: null as number | null,
+  ingredients: [
+    { name: 'feuille de riz', quantity: null, unit: null },
+    { name: "jaune d'œuf", quantity: '1', unit: null },
+    { name: 'filet de truit', quantity: null, unit: null },
+    { name: 'kiwi gold', quantity: '1', unit: null },
+    { name: 'échalote', quantity: null, unit: null },
+    { name: 'coriandre', quantity: null, unit: null },
+    { name: 'sauce soja', quantity: null, unit: null },
+    { name: 'huile de sésame', quantity: null, unit: null },
+    { name: 'nuoc mam', quantity: null, unit: null },
+    { name: 'sésame noir et doré', quantity: '0.5', unit: null },
+    { name: 'poivre', quantity: '1', unit: null },
+  ],
   steps: [
-    'Préchauffer le four à 200°C.',
-    'Préparer le poulet avec les herbes.',
-    'Enfourner pendant 1h30.',
+    "Prenez une feuille de riz et un jaune d'œuf.",
+    'Faites frire la feuille de riz.',
+    'Émincer les échalotes finement.',
+    'Couper le filet de truite en gros dés.',
+    'Éplucher et couper les kiwis en petits cubes.',
+    'Mélanger tous les ingrédients et assaisonner avec huile de sésame, citron et poivre.',
+    "Servez le tartare sur la feuille de riz avec le jaune d'œuf au-dessus.",
   ],
 };
 
 const PREMIUM_RECIPE = {
-  title: 'Poulet rôti aux herbes de Provence',
-  cookingTime: '1h45',
-  servings: '4',
-  kcal: '380',
+  title: 'Tartare de Truite sur Feuille de Riz Frit',
+  servings: 2,
   ingredients: [
-    { qty: '1,5 kg', name: 'poulet fermier entier' },
-    { qty: '2 c.à.s', name: 'herbes de Provence' },
-    { qty: '3 c.à.s', name: "huile d'olive extra vierge" },
-    { qty: '800 g', name: 'pommes de terre grenaille' },
-    { qty: '1', name: 'citron (jus et zeste)' },
-    { qty: '6', name: "gousses d'ail en chemise" },
+    { name: 'Filet de truite', quantity: '180', unit: 'g' },
+    { name: 'Échalote', quantity: '1', unit: 'pièce' },
+    { name: 'Kiwi gold', quantity: '1', unit: 'pièce' },
+    { name: 'Coriandre fraîche', quantity: '15', unit: 'g' },
+    { name: 'Zeste de citron vert', quantity: '1', unit: null },
+    { name: 'Huile de sésame', quantity: '1', unit: 'c.à.s' },
+    { name: 'Sauce soja', quantity: '2', unit: 'c.à.s' },
+    { name: 'Nuoc-mâm', quantity: '1', unit: 'c.à.c' },
+    { name: 'Feuille de riz', quantity: '1', unit: 'feuille' },
+    { name: "Jaune d'œuf", quantity: '1', unit: 'jaune' },
+    { name: 'Huile pour friture', quantity: '200', unit: 'ml' },
+    { name: 'Graines de sésame', quantity: '1', unit: 'c.à.c' },
   ],
   steps: [
-    'Préchauffer le four à 200°C (chaleur tournante).',
-    "Badigeonner le poulet d'huile d'olive, frotter avec les herbes, le sel et le poivre. Glisser le demi-citron pressé dans la cavité.",
-    "Disposer les pommes de terre et l'ail autour du poulet dans un plat à rôtir.",
-    'Enfourner 1h30, arroser toutes les 30 minutes avec le jus de cuisson.',
-    'Laisser reposer 15 minutes avant de découper. Servir avec le jus de cuisson.',
+    'Lever la peau et les arêtes du filet de truite fraîche.',
+    'Tailler le filet de truite en longs rubans, puis en dés.',
+    "Ciseler finement l'échalote.",
+    'Peler et tailler le kiwi gold en dés.',
+    'Hacher la coriandre fraîche.',
+    "Mélanger les dés de truite, l'échalote, le kiwi et la coriandre.",
+    "Ajouter le zeste de citron vert, l'huile de sésame, la sauce soja, le nuoc-mâm et le poivre.",
+    "Chauffer l'huile de friture à 180°C.",
+    "Frire la feuille de riz avec un jaune d'œuf au centre.",
+    'Déposer le tartare sur la feuille croustillante, saupoudrer de sésame.',
   ],
 };
 
-function RecipePreview({ isStandard }: { isStandard: boolean }) {
-  const recipe = isStandard ? STANDARD_RECIPE : PREMIUM_RECIPE;
+interface RecipeData {
+  title: string;
+  servings: number | null;
+  ingredients: { name: string; quantity: string | null; unit: string | null }[];
+  steps: string[];
+}
 
+function RecipePreview({ recipe }: { recipe: RecipeData }) {
   return (
     <View style={previewStyles.container}>
       <ScrollView
@@ -49,41 +80,36 @@ function RecipePreview({ isStandard }: { isStandard: boolean }) {
         {/* Title */}
         <Text style={previewStyles.title}>{recipe.title}</Text>
 
-        {/* Metadata badges (premium only) */}
-        {!isStandard && (
-          <View style={previewStyles.badgeRow}>
+        {/* Servings badge */}
+        {recipe.servings != null && (
+          <View style={previewStyles.metaRow}>
             <View style={previewStyles.badge}>
-              <Text style={previewStyles.badgeText}>⏱ {PREMIUM_RECIPE.cookingTime}</Text>
-            </View>
-            <View style={previewStyles.badge}>
-              <Text style={previewStyles.badgeText}>👤 {PREMIUM_RECIPE.servings} pers.</Text>
-            </View>
-            <View style={previewStyles.badge}>
-              <Text style={previewStyles.badgeText}>🔥 {PREMIUM_RECIPE.kcal} kcal</Text>
+              <Text style={previewStyles.badgeText}>👤 {recipe.servings} pers.</Text>
             </View>
           </View>
         )}
 
         {/* Ingredients */}
         <Text style={previewStyles.sectionTitle}>Ingrédients</Text>
-        {isStandard
-          ? STANDARD_RECIPE.ingredients.map((ing, i) => (
-              <Text key={i} style={previewStyles.ingredientSimple}>
-                • {ing}
+        {recipe.ingredients.map((ing, i) => {
+          const qty = [ing.quantity, ing.unit].filter(Boolean).join(' ');
+          return (
+            <View key={i} style={previewStyles.ingredientRow}>
+              <Text style={previewStyles.ingredientName} numberOfLines={1}>
+                {ing.name}
               </Text>
-            ))
-          : PREMIUM_RECIPE.ingredients.map((ing, i) => (
-              <View key={i} style={previewStyles.ingredientRow}>
-                <Text style={previewStyles.ingredientQty}>{ing.qty}</Text>
-                <Text style={previewStyles.ingredientName}>{ing.name}</Text>
-              </View>
-            ))}
+              {qty ? <Text style={previewStyles.ingredientQty}>{qty}</Text> : null}
+            </View>
+          );
+        })}
 
         {/* Instructions */}
         <Text style={previewStyles.sectionTitle}>Instructions</Text>
         {recipe.steps.map((step, i) => (
           <View key={i} style={previewStyles.stepRow}>
-            <Text style={previewStyles.stepNumber}>{i + 1}.</Text>
+            <View style={previewStyles.stepCircle}>
+              <Text style={previewStyles.stepNumber}>{i + 1}</Text>
+            </View>
             <Text style={previewStyles.stepText}>{step}</Text>
           </View>
         ))}
@@ -95,19 +121,10 @@ function RecipePreview({ isStandard }: { isStandard: boolean }) {
 export function ComparisonSlide() {
   return (
     <View style={styles.container} testID="onboarding-slide">
-      {/* Standard label */}
       <Text style={styles.tierLabel}>Standard</Text>
-
-      {/* Standard preview */}
-      <RecipePreview isStandard />
-
-      {/* VS */}
+      <RecipePreview recipe={STANDARD_RECIPE} />
       <Text style={styles.vsText}>VS</Text>
-
-      {/* Premium preview */}
-      <RecipePreview isStandard={false} />
-
-      {/* Premium label */}
+      <RecipePreview recipe={PREMIUM_RECIPE} />
       <Text style={[styles.tierLabel, styles.premiumLabel]}>Premium</Text>
     </View>
   );
@@ -157,13 +174,11 @@ const previewStyles = StyleSheet.create({
     fontFamily: fonts.script,
     fontSize: 16,
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
-  badgeRow: {
+  metaRow: {
     flexDirection: 'row',
-    gap: spacing.xs,
     marginBottom: spacing.sm,
-    flexWrap: 'wrap',
   },
   badge: {
     backgroundColor: colors.surface,
@@ -185,23 +200,13 @@ const previewStyles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
   },
-  ingredientSimple: {
-    fontFamily: fonts.sans,
-    fontSize: 12,
-    color: colors.text,
-    lineHeight: 18,
-  },
   ingredientRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: 2,
-  },
-  ingredientQty: {
-    fontFamily: fonts.sans,
-    fontSize: 12,
-    color: colors.accent,
-    fontWeight: '600',
-    width: 50,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border + '30',
   },
   ingredientName: {
     fontFamily: fonts.sans,
@@ -209,15 +214,32 @@ const previewStyles = StyleSheet.create({
     color: colors.text,
     flex: 1,
   },
+  ingredientQty: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.text,
+    textAlign: 'right',
+    marginLeft: spacing.sm,
+  },
   stepRow: {
     flexDirection: 'row',
     gap: spacing.xs,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
+    alignItems: 'flex-start',
+  },
+  stepCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.text,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 1,
   },
   stepNumber: {
     fontFamily: fonts.sans,
-    fontSize: 12,
-    color: colors.accent,
+    color: colors.background,
+    fontSize: 10,
     fontWeight: '600',
   },
   stepText: {

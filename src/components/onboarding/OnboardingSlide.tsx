@@ -1,6 +1,5 @@
 import { View, Text, Image, StyleSheet, ImageSourcePropType, Dimensions } from 'react-native';
 import { colors, typography, spacing, fonts } from '../../theme';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -22,11 +21,7 @@ export function OnboardingSlide({ title, description, illustration, video }: Onb
           <Text style={styles.tutorialDescription}>{description}</Text>
         </View>
         <View style={styles.videoContainer}>
-          {/* Placeholder — replace with screen recording image/gif */}
-          <View style={styles.videoPlaceholder}>
-            <Ionicons name="play-circle-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.videoPlaceholderText}>Screen recording</Text>
-          </View>
+          <Image source={video} style={styles.videoImage} resizeMode="contain" />
         </View>
       </View>
     );
@@ -84,16 +79,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  videoPlaceholder: {
+  videoImage: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  videoPlaceholderText: {
-    fontFamily: fonts.sans,
-    fontSize: 14,
-    color: colors.textMuted,
+    width: '100%',
   },
   // Classic layout: illustration top, text below
   illustrationContainer: {

@@ -32,21 +32,21 @@ const SLIDES: SlideData[] = [
     title: 'Capture tes recettes',
     description: 'Importes tes recettes depuis les réseaux sociaux, des photos ou du texte',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    video: require('../../../assets/onboarding/tutorial-1.mp4'),
+    video: require('../../../assets/onboarding/tutorial-1.gif'),
   },
   {
     key: 'organise',
     title: 'Organise tes recettes !',
     description: 'Créer des livres de recette et des plans de repas.',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    video: require('../../../assets/onboarding/tutorial-2.mp4'),
+    video: require('../../../assets/onboarding/tutorial-2.gif'),
   },
   {
     key: 'shopping',
     title: 'Génère ta liste de course !',
     description: 'Ajoute tes recettes à ta liste de course.',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    video: require('../../../assets/onboarding/tutorial-3.mp4'),
+    video: require('../../../assets/onboarding/tutorial-3.gif'),
   },
   {
     key: 'comparison',
