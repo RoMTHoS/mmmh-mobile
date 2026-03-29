@@ -99,7 +99,7 @@ export default function UrlInputScreen() {
               text2: 'Traitement en cours...',
             });
 
-            router.replace('/(tabs)/search');
+            router.back();
             return;
           }
         } catch {
@@ -140,7 +140,7 @@ export default function UrlInputScreen() {
             text2: 'Traitement en cours...',
           });
 
-          router.replace('/(tabs)/search');
+          router.back();
           return;
         } catch (error) {
           Toast.show({
@@ -187,7 +187,7 @@ export default function UrlInputScreen() {
         });
 
         // Navigate to search tab where import progress is shown
-        router.replace('/(tabs)/search');
+        router.back();
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Erreur lors de l'import";
 
