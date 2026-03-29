@@ -10,6 +10,7 @@ import {
   ViewToken,
 } from 'react-native';
 import { OnboardingSlide } from './OnboardingSlide';
+import { ComparisonSlide } from './ComparisonSlide';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { analytics } from '../../services/analytics';
 import { EVENTS } from '../../utils/analyticsEvents';
@@ -20,41 +21,38 @@ interface SlideData {
   key: string;
   title: string;
   description: string;
-  illustration: ReturnType<typeof require>;
+  illustration?: ReturnType<typeof require>;
+  video?: number;
+  isComparison?: boolean;
 }
 
 const SLIDES: SlideData[] = [
   {
-    key: 'transform',
-    title: 'Transforme tes recettes',
-    description:
-      'Convertis les vidéos et posts de recettes des réseaux sociaux en fiches pratiques organisées.',
+    key: 'capture',
+    title: 'Capture tes recettes',
+    description: 'Importes tes recettes depuis les réseaux sociaux, des photos ou du texte',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    illustration: require('../../../assets/onboarding/slide-1.png'),
+    video: require('../../../assets/onboarding/tutorial-1.mp4'),
   },
   {
-    key: 'import',
-    title: 'Colle, scanne, importe',
-    description:
-      'Colle un lien vidéo, un site web ou prends une photo. Notre IA extrait la recette pour toi.',
+    key: 'organise',
+    title: 'Organise tes recettes !',
+    description: 'Créer des livres de recette et des plans de repas.',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    illustration: require('../../../assets/onboarding/slide-2.png'),
+    video: require('../../../assets/onboarding/tutorial-2.mp4'),
   },
   {
-    key: 'collection',
-    title: 'Construis ta collection',
-    description:
-      'Organise tes recettes en collections, crée tes listes de courses et cuisine en toute simplicité.',
+    key: 'shopping',
+    title: 'Génère ta liste de course !',
+    description: 'Ajoute tes recettes à ta liste de course.',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    illustration: require('../../../assets/onboarding/slide-3.png'),
+    video: require('../../../assets/onboarding/tutorial-3.mp4'),
   },
   {
-    key: 'premium',
-    title: 'Essaie Premium gratuitement',
-    description:
-      "Profite de 7 jours d'essai gratuit avec imports illimités et extraction IA premium.",
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    illustration: require('../../../assets/onboarding/slide-4.png'),
+    key: 'comparison',
+    title: '',
+    description: '',
+    isComparison: true,
   },
 ];
 
@@ -112,24 +110,29 @@ export function OnboardingCarousel({ onComplete, onSkip }: OnboardingCarouselPro
 
   // Preload images on mount
   SLIDES.forEach((slide) => {
-    const resolved = Image.resolveAssetSource(slide.illustration);
-    if (resolved?.uri) {
-      Image.prefetch(resolved.uri).catch(() => {
-        // Silently ignore — local assets load fine without prefetch
-      });
+    if (slide.illustration) {
+      const resolved = Image.resolveAssetSource(slide.illustration);
+      if (resolved?.uri) {
+        Image.prefetch(resolved.uri).catch(() => {
+          // Silently ignore — local assets load fine without prefetch
+        });
+      }
     }
   });
 
-  const renderItem = useCallback(
-    ({ item }: { item: SlideData }) => (
+  const renderItem = useCallback(({ item }: { item: SlideData }) => {
+    if (item.isComparison) {
+      return <ComparisonSlide />;
+    }
+    return (
       <OnboardingSlide
-        illustration={item.illustration}
         title={item.title}
         description={item.description}
+        illustration={item.illustration}
+        video={item.video}
       />
-    ),
-    []
-  );
+    );
+  }, []);
 
   const getItemLayout = useCallback(
     (_: unknown, index: number) => ({
@@ -197,7 +200,7 @@ const styles = StyleSheet.create({
   },
   skipButton: {
     position: 'absolute',
-    top: spacing.md,
+    top: 0,
     right: spacing.md,
     zIndex: 10,
     padding: spacing.sm,
