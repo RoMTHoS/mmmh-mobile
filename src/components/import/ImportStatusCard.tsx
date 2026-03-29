@@ -22,62 +22,69 @@ interface ImportStatusCardProps {
 const VISUAL_STEPS = [
   { key: 'downloading', label: 'Telechargement...', targetProgress: 25 },
   { key: 'transcription', label: 'Transcription...', targetProgress: 50 },
-  { key: 'structuring', label: 'Structuration...', targetProgress: 80 },
+  { key: 'structuring', label: 'Structuration...', targetProgress: 99 },
   { key: 'done', label: 'Pret !', targetProgress: 100 },
 ];
 
 // How long (ms) to spend on each simulated step
-const STEP_DURATIONS = [8000, 12000, 15000, 2000];
+const STEP_DURATIONS = [8000, 12000, 80000, 2000];
 
 export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardProps) {
   const openImportModal = useUIStore((s) => s.openImportModal);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
-  const [simulatedStep, setSimulatedStep] = useState(0);
-  const [simulatedProgress, setSimulatedProgress] = useState(0);
   const simulationRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef = useRef<number>(Date.now());
-  const stepStartTimeRef = useRef<number>(Date.now());
+  const stepRef = useRef(0);
+  const stepStartTimeRef = useRef<number>(0);
+  const maxProgressRef = useRef(0);
+  const [displayStep, setDisplayStep] = useState(0);
+  const [displayProgress, setDisplayProgress] = useState(0);
 
   const isDismissable = job.status === 'failed' || job.status === 'completed';
 
   // Simulated progress: smoothly advance through visual steps
+  // Only runs when status is 'processing', pauses on 'pending'
   useEffect(() => {
     if (job.status === 'completed') {
-      setSimulatedStep(VISUAL_STEPS.length - 1);
-      setSimulatedProgress(100);
+      if (simulationRef.current) {
+        clearInterval(simulationRef.current);
+        simulationRef.current = null;
+      }
+      maxProgressRef.current = 100;
+      stepRef.current = VISUAL_STEPS.length - 1;
+      setDisplayStep(VISUAL_STEPS.length - 1);
+      setDisplayProgress(100);
       Animated.timing(progressAnim, {
         toValue: 1,
         duration: 400,
         useNativeDriver: false,
       }).start();
-      if (simulationRef.current) clearInterval(simulationRef.current);
       return;
     }
 
-    if (job.status !== 'pending' && job.status !== 'processing') {
-      if (simulationRef.current) clearInterval(simulationRef.current);
+    // Only simulate progress during 'processing', not 'pending'
+    if (job.status !== 'processing') {
+      if (simulationRef.current) {
+        clearInterval(simulationRef.current);
+        simulationRef.current = null;
+      }
       return;
     }
 
-    // Start simulation
-    if (!simulationRef.current) {
-      startTimeRef.current = Date.now();
+    // Start simulation timer if not already running
+    if (simulationRef.current) return;
+
+    if (stepStartTimeRef.current === 0) {
       stepStartTimeRef.current = Date.now();
     }
 
-    if (simulationRef.current) clearInterval(simulationRef.current);
-
     simulationRef.current = setInterval(() => {
-      const now = Date.now();
-      const stepElapsed = now - stepStartTimeRef.current;
-      const currentStepIdx = simulatedStep;
+      const currentStepIdx = stepRef.current;
 
-      if (currentStepIdx >= VISUAL_STEPS.length - 1) {
-        // At last step, wait for backend completion
-        return;
-      }
+      // At last step (done), wait for backend completion
+      if (currentStepIdx >= VISUAL_STEPS.length - 1) return;
 
+      const stepElapsed = Date.now() - stepStartTimeRef.current;
       const stepDuration = STEP_DURATIONS[currentStepIdx];
       const stepFraction = Math.min(stepElapsed / stepDuration, 1);
 
@@ -85,19 +92,24 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
       const currentTarget = VISUAL_STEPS[currentStepIdx].targetProgress;
       // Ease out: slow down as approaching step boundary
       const eased = 1 - Math.pow(1 - stepFraction, 2);
-      const progress = prevTarget + (currentTarget - prevTarget) * eased;
+      const progress = Math.round(prevTarget + (currentTarget - prevTarget) * eased);
 
-      setSimulatedProgress(Math.round(progress));
+      // Never go backward
+      if (progress < maxProgressRef.current) return;
+      maxProgressRef.current = progress;
+
+      setDisplayProgress(progress);
       Animated.timing(progressAnim, {
         toValue: progress / 100,
         duration: 200,
         useNativeDriver: false,
       }).start();
 
-      // Move to next step when duration elapsed
+      // Move to next step when duration elapsed (but not past structuring)
       if (stepFraction >= 1 && currentStepIdx < VISUAL_STEPS.length - 2) {
-        setSimulatedStep(currentStepIdx + 1);
-        stepStartTimeRef.current = now;
+        stepRef.current = currentStepIdx + 1;
+        stepStartTimeRef.current = Date.now();
+        setDisplayStep(currentStepIdx + 1);
       }
     }, 200);
 
@@ -107,7 +119,7 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
         simulationRef.current = null;
       }
     };
-  }, [job.status, simulatedStep]);
+  }, [job.status]);
 
   const panResponder = useMemo(
     () =>
@@ -138,7 +150,7 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
   const getStatusText = () => {
     if (job.status === 'pending') return 'En attente...';
     if (job.status === 'processing') {
-      return VISUAL_STEPS[simulatedStep]?.label || 'Traitement...';
+      return VISUAL_STEPS[displayStep]?.label || 'Traitement...';
     }
     if (job.status === 'completed') return 'Pret a consulter!';
     if (job.status === 'failed') return job.error?.message || 'Echec de import';
@@ -208,12 +220,12 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
           )}
         </View>
 
-        {(job.status === 'pending' || job.status === 'processing') && (
+        {job.status === 'processing' && (
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack}>
               <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
             </View>
-            <Text style={styles.progressText}>{simulatedProgress}%</Text>
+            <Text style={styles.progressText}>{displayProgress}%</Text>
           </View>
         )}
 
