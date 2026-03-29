@@ -61,7 +61,7 @@ describe('MenuScreen - Plan & Usage section', () => {
 
     const usageChildren = getByTestId('plan-vps-usage').props.children;
     const usageText = Array.isArray(usageChildren) ? usageChildren.join('') : usageChildren;
-    expect(usageText).toContain('2/2');
+    expect(usageText).toContain('5/5');
     expect(usageText).toContain('Premium import');
   });
 

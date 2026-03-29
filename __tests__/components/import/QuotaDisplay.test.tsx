@@ -51,7 +51,7 @@ describe('QuotaDisplay', () => {
     const { getByTestId, getByText } = render(<QuotaDisplay />);
     expect(getByTestId('quota-vps-text')).toBeTruthy();
     expect(getByText('Import premium')).toBeTruthy();
-    expect(getByText(/2\/2 utilises/)).toBeTruthy();
+    expect(getByText(/5\/5 utilises/)).toBeTruthy();
   });
 
   it('shows usage for trial tier with 1 remaining', () => {
@@ -66,25 +66,25 @@ describe('QuotaDisplay', () => {
     });
 
     const { getByText } = render(<QuotaDisplay />);
-    expect(getByText(/1\/2 utilises/)).toBeTruthy();
+    expect(getByText(/4\/5 utilises/)).toBeTruthy();
   });
 
-  it('shows 0/2 when both premium imports available', () => {
+  it('shows 0/5 when all premium imports available', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 5,
       isTrialExpired: false,
       canUsePremium: true,
       vpsQuotaRemaining: 10,
-      geminiQuotaRemaining: 2,
+      geminiQuotaRemaining: 5,
       storeSubscription: null,
     });
 
     const { getByText } = render(<QuotaDisplay />);
-    expect(getByText(/0\/2 utilises/)).toBeTruthy();
+    expect(getByText(/0\/5 utilises/)).toBeTruthy();
   });
 
-  it('shows 2/2 when all premium imports used', () => {
+  it('shows 5/5 when all premium imports used', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 5,
@@ -96,7 +96,7 @@ describe('QuotaDisplay', () => {
     });
 
     const { getByText } = render(<QuotaDisplay />);
-    expect(getByText(/2\/2 utilises/)).toBeTruthy();
+    expect(getByText(/5\/5 utilises/)).toBeTruthy();
   });
 
   it('shows progress bar', () => {
@@ -114,7 +114,7 @@ describe('QuotaDisplay', () => {
     expect(getByTestId('quota-progress-bar')).toBeTruthy();
   });
 
-  it('shows 2/2 when quota exhausted', () => {
+  it('shows 5/5 when quota exhausted', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'free',
       trialDaysRemaining: null,
@@ -126,6 +126,6 @@ describe('QuotaDisplay', () => {
     });
 
     const { getByText } = render(<QuotaDisplay />);
-    expect(getByText(/2\/2 utilises/)).toBeTruthy();
+    expect(getByText(/5\/5 utilises/)).toBeTruthy();
   });
 });

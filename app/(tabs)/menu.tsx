@@ -27,6 +27,7 @@ import { getDatabase } from '../../src/services/database';
 import { analytics } from '../../src/services/analytics';
 import { EVENTS } from '../../src/utils/analyticsEvents';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
+import { QUOTA } from '../../src/utils/planConstants';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const BUILD_NUMBER =
@@ -69,7 +70,8 @@ function PlanUsageSection() {
 
   const badgeConfig = TIER_BADGE_CONFIG[planStatus.tier];
 
-  const geminiPerWeek = planStatus.tier === 'trial' ? 2 : 2;
+  const geminiPerWeek =
+    planStatus.tier === 'trial' ? QUOTA.TRIAL_GEMINI_PER_WEEK : QUOTA.FREE_GEMINI_PER_WEEK;
   const geminiRemaining = planStatus.geminiQuotaRemaining ?? 0;
   const premiumUsed = geminiPerWeek - geminiRemaining;
   const premiumRatio = premiumUsed / geminiPerWeek;
