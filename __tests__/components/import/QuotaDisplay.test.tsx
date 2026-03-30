@@ -51,7 +51,7 @@ describe('QuotaDisplay', () => {
     const { getByTestId, getByText } = render(<QuotaDisplay />);
     expect(getByTestId('quota-vps-text')).toBeTruthy();
     expect(getByText('Import premium')).toBeTruthy();
-    expect(getByText(/5\/5 utilises/)).toBeTruthy();
+    expect(getByText(/3\/3 utilises/)).toBeTruthy();
   });
 
   it('shows usage for trial tier with 1 remaining', () => {
@@ -114,7 +114,7 @@ describe('QuotaDisplay', () => {
     expect(getByTestId('quota-progress-bar')).toBeTruthy();
   });
 
-  it('shows 5/5 when quota exhausted', () => {
+  it('shows 3/3 when quota exhausted', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'free',
       trialDaysRemaining: null,
@@ -126,6 +126,6 @@ describe('QuotaDisplay', () => {
     });
 
     const { getByText } = render(<QuotaDisplay />);
-    expect(getByText(/5\/5 utilises/)).toBeTruthy();
+    expect(getByText(/3\/3 utilises/)).toBeTruthy();
   });
 });
