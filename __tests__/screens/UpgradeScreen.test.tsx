@@ -122,8 +122,7 @@ describe('UpgradeScreen', () => {
 
     it('renders benefit bullets', () => {
       const { getByText } = render(React.createElement(UpgradeScreen));
-      expect(getByText(/Importe tes recettes en illimité/)).toBeDefined();
-      expect(getByText(/Sauvegarde tes recettes dans le cloud/)).toBeDefined();
+      expect(getByText(/Import premium illimité/)).toBeDefined();
       expect(getByText(/IA plus performante/)).toBeDefined();
     });
   });

@@ -185,12 +185,7 @@ export default function UpgradeScreen() {
             <View style={styles.benefitsSection}>
               <View style={styles.benefitRow}>
                 <Text style={styles.bullet}>{'•'}</Text>
-                <Text style={styles.benefitText}>Importe tes recettes en illimité</Text>
-              </View>
-
-              <View style={styles.benefitRow}>
-                <Text style={styles.bullet}>{'•'}</Text>
-                <Text style={styles.benefitText}>Sauvegarde tes recettes dans le cloud</Text>
+                <Text style={styles.benefitText}>Import premium illimité</Text>
               </View>
 
               <View style={styles.benefitRow}>
