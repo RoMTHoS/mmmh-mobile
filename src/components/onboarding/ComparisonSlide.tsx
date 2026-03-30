@@ -32,7 +32,7 @@ const STANDARD_RECIPE = {
 
 const PREMIUM_RECIPE = {
   title: 'Tartare de Truite sur Feuille de Riz Frit',
-  servings: 2,
+  servings: null as number | null,
   ingredients: [
     { name: 'Filet de truite', quantity: '180', unit: 'g' },
     { name: 'Échalote', quantity: '1', unit: 'pièce' },

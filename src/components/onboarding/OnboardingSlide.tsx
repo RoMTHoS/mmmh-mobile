@@ -71,17 +71,16 @@ const styles = StyleSheet.create({
   },
   videoContainer: {
     flex: 1,
-    width: SCREEN_WIDTH * 0.75,
+    aspectRatio: 350 / 758,
     marginBottom: spacing.lg,
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
   },
   videoImage: {
-    flex: 1,
     width: '100%',
+    height: '100%',
   },
   // Classic layout: illustration top, text below
   illustrationContainer: {
