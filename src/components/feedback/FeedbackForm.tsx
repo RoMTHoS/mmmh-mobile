@@ -43,6 +43,7 @@ const MIN_MESSAGE_LENGTH = 10;
 export function FeedbackForm() {
   const [type, setType] = useState<FeedbackType | null>(null);
   const [message, setMessage] = useState('');
+  const [url, setUrl] = useState('');
   const [screenshotUri, setScreenshotUri] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -88,6 +89,7 @@ export function FeedbackForm() {
       await submitFeedback({
         type: type!,
         message: message.trim(),
+        url: url.trim() || undefined,
         screenshotBase64,
         context,
       });
@@ -171,6 +173,19 @@ export function FeedbackForm() {
           testID="feedback-message-input"
         />
         <Text style={styles.charCount}>{message.trim().length} / 2000</Text>
+
+        {/* URL Input */}
+        <TextInput
+          label="URL (optionnel)"
+          placeholder="https://..."
+          value={url}
+          onChangeText={setUrl}
+          keyboardType="url"
+          autoCapitalize="none"
+          autoCorrect={false}
+          containerStyle={styles.urlContainer}
+          testID="feedback-url-input"
+        />
 
         {/* Screenshot Attach */}
         {screenshotUri ? (
@@ -263,6 +278,9 @@ const styles = StyleSheet.create({
   },
   messageContainer: {
     marginBottom: spacing.xs,
+  },
+  urlContainer: {
+    marginBottom: spacing.md,
   },
   charCount: {
     ...typography.caption,

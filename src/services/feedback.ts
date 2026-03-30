@@ -40,6 +40,7 @@ export interface FeedbackContext {
 export interface FeedbackPayload {
   type: FeedbackType;
   message: string;
+  url?: string;
   screenshotBase64?: string;
   context: FeedbackContext;
 }
@@ -124,6 +125,10 @@ export async function submitFeedback(payload: FeedbackPayload): Promise<void> {
     imports_count: payload.context.importsCount,
     device_id: payload.context.deviceId,
   };
+
+  if (payload.url) {
+    templateParams.url = payload.url;
+  }
 
   if (payload.screenshotBase64) {
     templateParams.screenshot = `data:image/jpeg;base64,${payload.screenshotBase64}`;
