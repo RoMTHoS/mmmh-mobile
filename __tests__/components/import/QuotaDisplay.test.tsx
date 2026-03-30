@@ -66,25 +66,25 @@ describe('QuotaDisplay', () => {
     });
 
     const { getByText } = render(<QuotaDisplay />);
-    expect(getByText(/4\/5 utilises/)).toBeTruthy();
+    expect(getByText(/9\/10 utilises/)).toBeTruthy();
   });
 
-  it('shows 0/5 when all premium imports available', () => {
+  it('shows 0/10 when all premium imports available', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 5,
       isTrialExpired: false,
       canUsePremium: true,
       vpsQuotaRemaining: 10,
-      geminiQuotaRemaining: 5,
+      geminiQuotaRemaining: 10,
       storeSubscription: null,
     });
 
     const { getByText } = render(<QuotaDisplay />);
-    expect(getByText(/0\/5 utilises/)).toBeTruthy();
+    expect(getByText(/0\/10 utilises/)).toBeTruthy();
   });
 
-  it('shows 5/5 when all premium imports used', () => {
+  it('shows 10/10 when all premium imports used', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 5,
@@ -96,7 +96,7 @@ describe('QuotaDisplay', () => {
     });
 
     const { getByText } = render(<QuotaDisplay />);
-    expect(getByText(/5\/5 utilises/)).toBeTruthy();
+    expect(getByText(/10\/10 utilises/)).toBeTruthy();
   });
 
   it('shows progress bar', () => {

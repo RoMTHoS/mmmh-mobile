@@ -45,7 +45,7 @@ describe('usePipelinePreCheck', () => {
     expect(mockToastShow).not.toHaveBeenCalled();
   });
 
-  it('shows info Toast for free tier with exhausted Gemini quota', () => {
+  it('does nothing for free tier with exhausted Gemini quota (no-op)', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'free',
       trialDaysRemaining: 0,
@@ -59,13 +59,7 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(mockToastShow).toHaveBeenCalledTimes(1);
-    expect(mockToastShow).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'info',
-        text1: 'Import standard',
-      })
-    );
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
   it('does nothing for premium tier', () => {
@@ -102,7 +96,7 @@ describe('usePipelinePreCheck', () => {
     expect(mockToastShow).not.toHaveBeenCalled();
   });
 
-  it('shows info Toast for trial tier with exhausted Gemini quota', () => {
+  it('does nothing for trial tier with exhausted Gemini quota (no-op)', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 3,
@@ -116,17 +110,10 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(mockToastShow).toHaveBeenCalledTimes(1);
-    expect(mockToastShow).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'info',
-        text1: 'Import standard',
-        visibilityTime: 4000,
-      })
-    );
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
-  it('shows info Toast when geminiQuotaRemaining is negative', () => {
+  it('does nothing when geminiQuotaRemaining is negative (no-op)', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 2,
@@ -140,6 +127,6 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(mockToastShow).toHaveBeenCalledTimes(1);
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 });

@@ -226,7 +226,7 @@ describe('TextImportScreen', () => {
       fireEvent.press(getByTestId('submit-button'));
 
       await waitFor(() => {
-        expect(router.replace).toHaveBeenCalledWith('/(tabs)/search');
+        expect(router.back).toHaveBeenCalled();
       });
     });
 
