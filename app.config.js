@@ -1,10 +1,10 @@
 export default {
   expo: {
-    name: 'mmmh',
+    name: 'MMMH',
     slug: 'mmmh',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/icon.png',
+    icon: './assets/branding/icon-ios.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
     scheme: 'mmmh',
@@ -19,8 +19,8 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#fff8e7',
+        foregroundImage: './assets/branding/icon-android-foreground.png',
+        backgroundImage: './assets/branding/icon-android-background.png',
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
