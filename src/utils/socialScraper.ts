@@ -28,6 +28,7 @@ const SHORT_URL_PATTERNS: RegExp[] = [
   /^https?:\/\/(vm|vt)\.tiktok\.com\//i,
   /^https?:\/\/(www\.)?tiktok\.com\/t\//i,
   /^https?:\/\/instagr\.am\//i,
+  /^https?:\/\/fb\.watch\//i,
 ];
 
 /**
@@ -74,11 +75,11 @@ export function isPhotoPostUrl(url: string): boolean {
   return PHOTO_POST_PATTERNS.some((pattern) => pattern.test(url));
 }
 
-function isShortUrl(url: string): boolean {
+export function isShortUrl(url: string): boolean {
   return SHORT_URL_PATTERNS.some((pattern) => pattern.test(url));
 }
 
-async function resolveShortUrl(url: string): Promise<string> {
+export async function resolveShortUrl(url: string): Promise<string> {
   try {
     const response = await fetch(url, {
       method: 'HEAD',

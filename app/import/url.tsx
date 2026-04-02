@@ -21,7 +21,13 @@ import { usePipelinePreCheck } from '../../src/hooks/usePipelinePreCheck';
 import { usePlanStatus } from '../../src/hooks';
 import * as planDb from '../../src/services/planDatabase';
 import { trackEvent } from '../../src/utils/analytics';
-import { scrapeSocialPost, detectPhotoPost, hasOembedSupport } from '../../src/utils/socialScraper';
+import {
+  scrapeSocialPost,
+  detectPhotoPost,
+  hasOembedSupport,
+  isShortUrl,
+  resolveShortUrl,
+} from '../../src/utils/socialScraper';
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
 import { PremiumIcon, Icon } from '../../src/components/ui';
 import { PlatformBadge } from '../../src/components/import/PlatformBadge';
@@ -44,8 +50,19 @@ export default function UrlInputScreen() {
   const planStatus = usePlanStatus();
 
   const doImport = useCallback(
-    async (url: string, forcePremium = false) => {
+    async (rawUrl: string, forcePremium = false) => {
       setIsLoading(true);
+
+      // Resolve short URLs (fb.watch, vm.tiktok.com, etc.) on the client
+      // since the VPS may not be able to follow these redirects
+      let url = rawUrl;
+      if (isShortUrl(rawUrl)) {
+        try {
+          url = await resolveShortUrl(rawUrl);
+        } catch {
+          url = rawUrl;
+        }
+      }
 
       // Pre-import pipeline check (informational only)
       if (!forcePremium) {
