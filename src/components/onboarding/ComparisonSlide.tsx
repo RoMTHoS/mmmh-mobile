@@ -1,7 +1,5 @@
-import { View, Text, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { colors, spacing, fonts, radius } from '../../theme';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const STANDARD_RECIPE = {
   title: 'Assiette de Tartare de Truite',
@@ -68,7 +66,7 @@ interface RecipeData {
   steps: string[];
 }
 
-function RecipePreview({ recipe }: { recipe: RecipeData }) {
+function RecipePreview({ recipe, isTablet }: { recipe: RecipeData; isTablet: boolean }) {
   return (
     <View style={previewStyles.container}>
       <ScrollView
@@ -78,39 +76,55 @@ function RecipePreview({ recipe }: { recipe: RecipeData }) {
         nestedScrollEnabled
       >
         {/* Title */}
-        <Text style={previewStyles.title}>{recipe.title}</Text>
+        <Text style={[previewStyles.title, isTablet && { fontSize: 22 }]}>{recipe.title}</Text>
 
         {/* Servings badge */}
         {recipe.servings != null && (
           <View style={previewStyles.metaRow}>
             <View style={previewStyles.badge}>
-              <Text style={previewStyles.badgeText}>👤 {recipe.servings} pers.</Text>
+              <Text style={[previewStyles.badgeText, isTablet && { fontSize: 14 }]}>
+                👤 {recipe.servings} pers.
+              </Text>
             </View>
           </View>
         )}
 
         {/* Ingredients */}
-        <Text style={previewStyles.sectionTitle}>Ingrédients</Text>
+        <Text style={[previewStyles.sectionTitle, isTablet && { fontSize: 19 }]}>Ingrédients</Text>
         {recipe.ingredients.map((ing, i) => {
           const qty = [ing.quantity, ing.unit].filter(Boolean).join(' ');
           return (
-            <View key={i} style={previewStyles.ingredientRow}>
-              <Text style={previewStyles.ingredientName} numberOfLines={1}>
+            <View key={i} style={[previewStyles.ingredientRow, isTablet && { paddingVertical: 6 }]}>
+              <Text
+                style={[previewStyles.ingredientName, isTablet && { fontSize: 16 }]}
+                numberOfLines={1}
+              >
                 {ing.name}
               </Text>
-              {qty ? <Text style={previewStyles.ingredientQty}>{qty}</Text> : null}
+              {qty ? (
+                <Text style={[previewStyles.ingredientQty, isTablet && { fontSize: 16 }]}>
+                  {qty}
+                </Text>
+              ) : null}
             </View>
           );
         })}
 
         {/* Instructions */}
-        <Text style={previewStyles.sectionTitle}>Instructions</Text>
+        <Text style={[previewStyles.sectionTitle, isTablet && { fontSize: 19 }]}>Instructions</Text>
         {recipe.steps.map((step, i) => (
           <View key={i} style={previewStyles.stepRow}>
-            <View style={previewStyles.stepCircle}>
-              <Text style={previewStyles.stepNumber}>{i + 1}</Text>
+            <View
+              style={[
+                previewStyles.stepCircle,
+                isTablet && { width: 24, height: 24, borderRadius: 12 },
+              ]}
+            >
+              <Text style={[previewStyles.stepNumber, isTablet && { fontSize: 13 }]}>{i + 1}</Text>
             </View>
-            <Text style={previewStyles.stepText}>{step}</Text>
+            <Text style={[previewStyles.stepText, isTablet && { fontSize: 16, lineHeight: 22 }]}>
+              {step}
+            </Text>
           </View>
         ))}
       </ScrollView>
@@ -119,38 +133,49 @@ function RecipePreview({ recipe }: { recipe: RecipeData }) {
 }
 
 export function ComparisonSlide() {
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+
   return (
-    <View style={styles.container} testID="onboarding-slide">
-      <Text style={styles.tierLabel}>Standard</Text>
-      <RecipePreview recipe={STANDARD_RECIPE} />
-      <Text style={styles.vsText}>VS</Text>
-      <RecipePreview recipe={PREMIUM_RECIPE} />
-      <Text style={[styles.tierLabel, styles.premiumLabel]}>Premium</Text>
+    <View style={[styles.container, { width }]} testID="onboarding-slide">
+      <View style={styles.previewsWrapper}>
+        <View style={styles.previewBlock}>
+          <Text style={styles.tierLabel}>Standard</Text>
+          <RecipePreview recipe={STANDARD_RECIPE} isTablet={isTablet} />
+        </View>
+        <View style={styles.previewBlock}>
+          <Text style={[styles.tierLabel, styles.premiumLabel]}>Premium</Text>
+          <RecipePreview recipe={PREMIUM_RECIPE} isTablet={isTablet} />
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: SCREEN_WIDTH,
     flex: 1,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     alignItems: 'center',
+  },
+  previewsWrapper: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 500,
+    gap: spacing.sm,
+  },
+  previewBlock: {
+    flex: 1,
     gap: spacing.xs,
   },
   tierLabel: {
     fontFamily: fonts.script,
-    fontSize: 18,
+    fontSize: 22,
     color: colors.textMuted,
   },
   premiumLabel: {
     color: '#D4A017',
-  },
-  vsText: {
-    fontFamily: fonts.script,
-    fontSize: 16,
-    color: colors.textMuted,
   },
 });
 
@@ -172,7 +197,7 @@ const previewStyles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.script,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     marginBottom: spacing.xs,
   },
@@ -195,7 +220,7 @@ const previewStyles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: fonts.script,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
@@ -210,13 +235,13 @@ const previewStyles = StyleSheet.create({
   },
   ingredientName: {
     fontFamily: fonts.sans,
-    fontSize: 12,
+    fontSize: 14,
     color: colors.text,
     flex: 1,
   },
   ingredientQty: {
     fontFamily: fonts.sans,
-    fontSize: 12,
+    fontSize: 14,
     color: colors.text,
     textAlign: 'right',
     marginLeft: spacing.sm,
@@ -244,9 +269,9 @@ const previewStyles = StyleSheet.create({
   },
   stepText: {
     fontFamily: fonts.sans,
-    fontSize: 12,
+    fontSize: 14,
     color: colors.text,
     flex: 1,
-    lineHeight: 17,
+    lineHeight: 19,
   },
 });

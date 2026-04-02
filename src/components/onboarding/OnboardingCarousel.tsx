@@ -8,8 +8,10 @@ import {
   Dimensions,
   Image,
   ViewToken,
+  useWindowDimensions,
 } from 'react-native';
 import { OnboardingSlide } from './OnboardingSlide';
+import { PlanComparisonSlide } from './PlanComparisonSlide';
 import { ComparisonSlide } from './ComparisonSlide';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { analytics } from '../../services/analytics';
@@ -24,6 +26,7 @@ interface SlideData {
   illustration?: ReturnType<typeof require>;
   video?: number;
   isComparison?: boolean;
+  isPlanComparison?: boolean;
 }
 
 const SLIDES: SlideData[] = [
@@ -49,6 +52,12 @@ const SLIDES: SlideData[] = [
     video: require('../../../assets/onboarding/tutorial-3.gif'),
   },
   {
+    key: 'plan-comparison',
+    title: '',
+    description: '',
+    isPlanComparison: true,
+  },
+  {
     key: 'comparison',
     title: '',
     description: '',
@@ -62,6 +71,8 @@ interface OnboardingCarouselProps {
 }
 
 export function OnboardingCarousel({ onComplete, onSkip }: OnboardingCarouselProps) {
+  const { width: windowWidth } = useWindowDimensions();
+  const isTablet = windowWidth >= 768;
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<SlideData>>(null);
   const slideTimestampRef = useRef<number>(Date.now());
@@ -121,6 +132,9 @@ export function OnboardingCarousel({ onComplete, onSkip }: OnboardingCarouselPro
   });
 
   const renderItem = useCallback(({ item }: { item: SlideData }) => {
+    if (item.isPlanComparison) {
+      return <PlanComparisonSlide />;
+    }
     if (item.isComparison) {
       return <ComparisonSlide />;
     }
@@ -182,7 +196,7 @@ export function OnboardingCarousel({ onComplete, onSkip }: OnboardingCarouselPro
 
         {/* Next / Get Started button */}
         <Pressable
-          style={styles.nextButton}
+          style={[styles.nextButton, isTablet && styles.nextButtonTablet]}
           onPress={handleNext}
           testID={isLastSlide ? 'onboarding-get-started' : 'onboarding-next'}
         >
@@ -236,6 +250,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     width: '100%',
     alignItems: 'center',
+  },
+  nextButtonTablet: {
+    maxWidth: 500,
   },
   nextButtonText: {
     ...typography.button,

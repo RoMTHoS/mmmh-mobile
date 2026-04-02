@@ -1,16 +1,19 @@
 import { useState, useCallback } from 'react';
 import {
   View,
-  ScrollView,
   TextInput,
   StyleSheet,
   Pressable,
   ActivityIndicator,
   Modal,
+  useWindowDimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 
 import { Text, Icon, MmmhLogo, PremiumIcon } from '../src/components/ui';
+import { PlanComparisonTable } from '../src/components/import/PlanComparisonTable';
 import {
   usePlanStatus,
   useActivatePremium,
@@ -45,6 +48,8 @@ export default function UpgradeScreen() {
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState<string | null>(null);
 
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
   const isPremium = planStatus?.tier === 'premium';
 
   const handleOpenOffers = useCallback(() => {
@@ -149,11 +154,7 @@ export default function UpgradeScreen() {
           ),
         }}
       />
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={[styles.container, styles.content]}>
         {isPremium ? (
           <View style={styles.activeCard} testID="premium-active-card">
             <Icon name="check" size="lg" color={colors.success} />
@@ -173,107 +174,58 @@ export default function UpgradeScreen() {
         ) : (
           <>
             {/* Crown illustration */}
-            <View style={styles.crownContainer}>
-              <PremiumIcon width={150} />
-            </View>
+            <PremiumIcon width={isTablet ? 200 : 130} />
+            <View style={styles.brandingSpacing} />
 
             {/* MMMH PREMIUM branding */}
-            <MmmhLogo width={280} />
-            <Text style={styles.premiumLabel}>PREMIUM</Text>
+            <MmmhLogo width={isTablet ? 380 : 260} />
+            <Text style={[styles.premiumLabel, isTablet && styles.premiumLabelTablet]}>
+              PREMIUM
+            </Text>
 
-            {/* Benefits list */}
-            <View style={styles.benefitsSection}>
-              <View style={styles.benefitRow}>
-                <Text style={styles.bullet}>{'•'}</Text>
-                <Text style={styles.benefitText}>Import premium illimité</Text>
-              </View>
+            <View style={styles.flex} />
 
-              <View style={styles.benefitRow}>
-                <Text style={styles.bullet}>{'•'}</Text>
-                <View>
-                  <Text style={styles.benefitText}>IA plus performante</Text>
-                  <View style={styles.subBenefits}>
-                    <Text style={styles.subBenefitText}>{'•'} Harder : Recette plus complette</Text>
-                    <Text style={styles.subBenefitText}>{'•'} Better : Recette plus précise</Text>
-                    <Text style={styles.subBenefitText}>{'•'} Faster : Génération plus rapide</Text>
-                    <Text style={styles.subBenefitText}>{'•'} Stronger : Résultat garantie</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
+            {/* Comparison table */}
+            <PlanComparisonTable />
+            <View style={styles.flex} />
           </>
         )}
-
-        <View style={styles.bottomPadding} />
-      </ScrollView>
+      </View>
 
       {/* Bottom fixed area — main screen */}
       {!isPremium && (
-        <View style={styles.bottomButtonContainer}>
-          {offeringsError && !offeringsLoading ? (
-            <View style={styles.offeringsError}>
-              <Text style={styles.offeringsErrorText}>
-                Les offres ne sont pas disponibles actuellement.
-              </Text>
-              <Pressable onPress={() => refetch()} testID="retry-offerings">
-                <Text style={styles.retryText}>Réessayer</Text>
+        <View style={styles.bottomButtonWrapper}>
+          <View
+            style={[styles.bottomButtonContainer, isTablet && styles.bottomButtonContainerTablet]}
+          >
+            {offeringsError && !offeringsLoading ? (
+              <View style={styles.offeringsError}>
+                <Text style={styles.offeringsErrorText}>
+                  Les offres ne sont pas disponibles actuellement.
+                </Text>
+                <Pressable onPress={() => refetch()} testID="retry-offerings">
+                  <Text style={styles.retryText}>Réessayer</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                style={styles.seeOffersButton}
+                onPress={handleOpenOffers}
+                disabled={offeringsLoading}
+                testID="subscribe-button"
+              >
+                {offeringsLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.seeOffersButtonText}>Voir les offres</Text>
+                )}
               </Pressable>
-            </View>
-          ) : (
-            <Pressable
-              style={styles.seeOffersButton}
-              onPress={handleOpenOffers}
-              disabled={offeringsLoading}
-              testID="subscribe-button"
-            >
-              {offeringsLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.seeOffersButtonText}>Voir les offres</Text>
-              )}
-            </Pressable>
-          )}
+            )}
 
-          {/* Promo code collapsible section */}
-          {!showPromoInput ? (
             <Pressable onPress={() => setShowPromoInput(true)} testID="promo-toggle">
               <Text style={styles.promoLinkText}>Vous avez un code promo ?</Text>
             </Pressable>
-          ) : (
-            <View style={styles.promoSection}>
-              <View style={styles.promoRow}>
-                <TextInput
-                  style={[styles.promoInput, promoError && styles.promoInputError]}
-                  value={promoCode}
-                  onChangeText={(text) => {
-                    setPromoCode(text);
-                    setPromoError(null);
-                  }}
-                  placeholder="MMMH-BETA-2026"
-                  placeholderTextColor={colors.textLight}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  maxLength={PROMO_CODE_MAX}
-                  editable={!activatePremium.isPending}
-                  autoFocus
-                  testID="promo-input"
-                />
-                <Pressable
-                  style={styles.promoActivateButton}
-                  onPress={handleActivatePromo}
-                  disabled={activatePremium.isPending}
-                  testID="promo-activate"
-                >
-                  {activatePremium.isPending ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.promoActivateText}>Activer</Text>
-                  )}
-                </Pressable>
-              </View>
-              {promoError && <Text style={styles.promoError}>{promoError}</Text>}
-            </View>
-          )}
+          </View>
         </View>
       )}
 
@@ -348,6 +300,57 @@ export default function UpgradeScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Promo code bottom sheet modal */}
+      <Modal
+        visible={showPromoInput}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowPromoInput(false)}
+        testID="promo-modal"
+      >
+        <KeyboardAvoidingView
+          style={styles.promoModalKeyboard}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setShowPromoInput(false)}>
+            <Pressable style={styles.promoModalSheet} onPress={() => {}}>
+              <Text style={styles.promoModalTitle}>Code promo</Text>
+              <View style={styles.promoRow}>
+                <TextInput
+                  style={[styles.promoInput, promoError && styles.promoInputError]}
+                  value={promoCode}
+                  onChangeText={(text) => {
+                    setPromoCode(text);
+                    setPromoError(null);
+                  }}
+                  placeholder="MMMH-BETA-2026"
+                  placeholderTextColor={colors.textLight}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={PROMO_CODE_MAX}
+                  editable={!activatePremium.isPending}
+                  autoFocus
+                  testID="promo-input"
+                />
+                <Pressable
+                  style={styles.promoActivateButton}
+                  onPress={handleActivatePromo}
+                  disabled={activatePremium.isPending}
+                  testID="promo-activate"
+                >
+                  {activatePremium.isPending ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.promoActivateText}>Activer</Text>
+                  )}
+                </Pressable>
+              </View>
+              {promoError && <Text style={styles.promoError}>{promoError}</Text>}
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
     </>
   );
 }
@@ -358,7 +361,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
     alignItems: 'center',
   },
 
@@ -385,66 +388,33 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Crown
-  crownContainer: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
+  flex: {
+    flex: 1,
+  },
+  brandingSpacing: {
+    height: spacing.md,
   },
 
   // Branding
   premiumLabel: {
     fontFamily: fonts.script,
     fontSize: 28,
-    lineHeight: 40,
+    lineHeight: 34,
     color: colors.text,
     fontWeight: '700',
     letterSpacing: 6,
     marginTop: 0,
-    marginBottom: spacing.lg,
-  },
-
-  // Benefits
-  benefitsSection: {
-    width: '100%',
-    gap: spacing.sm,
-    marginTop: spacing.xl,
-  },
-  benefitRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    paddingLeft: spacing.md,
-  },
-  bullet: {
-    fontFamily: fonts.script,
-    fontSize: 22,
-    color: colors.text,
-    lineHeight: 28,
-  },
-  benefitText: {
-    fontFamily: fonts.script,
-    fontSize: 20,
-    color: colors.text,
-    lineHeight: 28,
-  },
-  subBenefits: {
-    marginTop: spacing.xs,
-    marginLeft: spacing.md,
-    gap: 4,
-  },
-  subBenefitText: {
-    fontFamily: fonts.script,
-    fontSize: 17,
-    color: colors.text,
-    lineHeight: 26,
+    marginBottom: spacing.sm,
   },
 
   // Bottom fixed area (main screen)
+  bottomButtonWrapper: {
+    backgroundColor: colors.background,
+  },
   bottomButtonContainer: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.xl,
     paddingTop: spacing.sm,
-    backgroundColor: colors.background,
     alignItems: 'center',
     gap: spacing.sm,
   },
@@ -453,7 +423,7 @@ const styles = StyleSheet.create({
   seeOffersButton: {
     width: '100%',
     paddingVertical: spacing.md + 2,
-    borderRadius: radius.full,
+    borderRadius: radius.lg,
     backgroundColor: colors.accent,
     alignItems: 'center',
   },
@@ -519,7 +489,7 @@ const styles = StyleSheet.create({
   continueButton: {
     width: '100%',
     paddingVertical: spacing.md + 2,
-    borderRadius: radius.full,
+    borderRadius: radius.lg,
     backgroundColor: colors.accent,
     alignItems: 'center',
     marginTop: spacing.xs,
@@ -577,10 +547,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     textAlign: 'center',
   },
-  promoSection: {
-    width: '100%',
-    gap: spacing.xs,
-  },
   promoRow: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -602,7 +568,7 @@ const styles = StyleSheet.create({
   promoActivateButton: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md + 2,
-    borderRadius: radius.full,
+    borderRadius: radius.lg,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -612,13 +578,40 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#FFFFFF',
   },
+  promoModalKeyboard: {
+    flex: 1,
+  },
+  promoModalSheet: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl + spacing.md,
+    gap: spacing.sm,
+  },
+  promoModalTitle: {
+    fontFamily: fonts.script,
+    fontSize: 20,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
   promoError: {
     fontFamily: fonts.script,
     fontSize: 13,
     color: colors.error,
   },
 
-  bottomPadding: {
-    height: spacing.xl,
+  // Tablet overrides
+  premiumLabelTablet: {
+    fontSize: 36,
+    lineHeight: 48,
+    letterSpacing: 10,
+  },
+  bottomButtonContainerTablet: {
+    maxWidth: 500,
+    alignSelf: 'center',
+    width: '100%',
   },
 });

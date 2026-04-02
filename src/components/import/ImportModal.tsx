@@ -181,8 +181,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.overlay,
   },
   sheetContainer: {
-    margin: spacing.md,
+    marginHorizontal: 'auto',
     marginBottom: spacing.lg,
+    width: '100%',
+    maxWidth: 400,
+    paddingHorizontal: spacing.md,
   },
   sheet: {
     backgroundColor: colors.modalBackground,
@@ -240,7 +243,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    width: 332,
+    alignSelf: 'stretch',
   },
   createButtonPressed: {
     backgroundColor: colors.surfaceAlt,
