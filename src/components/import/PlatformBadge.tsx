@@ -13,6 +13,7 @@ const PLATFORM_CONFIG: Record<string, { icon: IconName; label: string; color: st
   instagram: { icon: 'instagram', label: 'Instagram', color: '#E4405F' },
   tiktok: { icon: 'tiktok', label: 'TikTok', color: '#000000' },
   youtube: { icon: 'youtube', label: 'YouTube', color: '#FF0000' },
+  facebook: { icon: 'facebook', label: 'Facebook', color: '#1877F2' },
 };
 
 export function PlatformBadge({ platform, size = 'md', showLabel = false }: PlatformBadgeProps) {

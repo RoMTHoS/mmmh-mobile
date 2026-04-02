@@ -326,7 +326,8 @@ export default function UrlInputScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>Importer depuis un lien</Text>
             <Text style={styles.subtitle}>
-              Collez le lien d'une video (Instagram, TikTok, YouTube) ou d'un site de recette
+              Collez le lien d'une video (Instagram, TikTok, YouTube, Facebook) ou d'un site de
+              recette
             </Text>
             <View style={styles.platformHints}>
               <Text style={styles.hintsLabel}>Videos supportees :</Text>
@@ -334,6 +335,7 @@ export default function UrlInputScreen() {
                 <PlatformBadge platform="instagram" size="sm" showLabel />
                 <PlatformBadge platform="tiktok" size="sm" showLabel />
                 <PlatformBadge platform="youtube" size="sm" showLabel />
+                <PlatformBadge platform="facebook" size="sm" showLabel />
               </View>
               <Text style={[styles.hintsLabel, { marginTop: spacing.sm }]}>
                 + tout site de recette

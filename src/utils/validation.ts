@@ -2,7 +2,7 @@
  * URL validation utilities for import flow
  */
 
-export type Platform = 'instagram' | 'tiktok' | 'youtube';
+export type Platform = 'instagram' | 'tiktok' | 'youtube' | 'facebook';
 
 interface VideoUrlValidation {
   isValid: boolean;
@@ -26,6 +26,12 @@ const VIDEO_URL_PATTERNS: Record<Platform, RegExp[]> = {
     /^https?:\/\/(www\.)?youtube\.com\/shorts\/[\w-]+/i,
     /^https?:\/\/youtu\.be\/[\w-]+/i,
     /^https?:\/\/(www\.)?youtube\.com\/embed\/[\w-]+/i,
+  ],
+  facebook: [
+    /^https?:\/\/(www\.)?facebook\.com\/.+\/videos\/\d+/i,
+    /^https?:\/\/(www\.)?facebook\.com\/reel\/\d+/i,
+    /^https?:\/\/(www\.)?facebook\.com\/watch\/?\?v=\d+/i,
+    /^https?:\/\/fb\.watch\/[\w-]+/i,
   ],
 };
 
@@ -54,7 +60,7 @@ export function validateVideoUrl(url: string): VideoUrlValidation {
 
   return {
     isValid: false,
-    error: 'URL must be from Instagram, TikTok, or YouTube',
+    error: 'URL must be from Instagram, TikTok, YouTube, or Facebook',
   };
 }
 
