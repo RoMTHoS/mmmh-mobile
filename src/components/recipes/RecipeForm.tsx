@@ -351,7 +351,7 @@ export function RecipeForm({
                     setBookDropdownOpen(false);
                   }}
                 >
-                  <Text style={styles.cardLabel}>Regime & Menu</Text>
+                  <Text style={styles.cardLabel}>Plans de repas</Text>
                   <View style={styles.cardChevronRow}>
                     <Text style={styles.cardChevron}>
                       {selectedNames.length > 0 ? selectedNames.join(', ') : 'sélectionner'}
@@ -385,7 +385,7 @@ export function RecipeForm({
                       </Pressable>
                     ))}
                     {menus.length === 0 && (
-                      <Text style={styles.dropdownEmpty}>Aucun menu créé</Text>
+                      <Text style={styles.dropdownEmpty}>Aucun plan de repas créé</Text>
                     )}
                   </View>
                 )}

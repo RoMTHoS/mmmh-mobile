@@ -22,8 +22,10 @@ import { colors, typography, spacing, borderRadius } from '../../src/theme';
 import { PremiumIcon } from '../../src/components/ui';
 import { SettingsSection } from '../../src/components/settings/SettingsSection';
 import { SettingsRow } from '../../src/components/settings/SettingsRow';
+import { Asset } from 'expo-asset';
 import { initDeviceId, getDeviceId } from '../../src/services/planSync';
-import { getDatabase } from '../../src/services/database';
+import { createRecipe, getDatabase } from '../../src/services/database';
+import { persistImage } from '../../src/utils/imageCompression';
 import { analytics } from '../../src/services/analytics';
 import { EVENTS } from '../../src/utils/analyticsEvents';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
@@ -411,6 +413,48 @@ export default function MenuScreen() {
     );
   };
 
+  const handleLoadDemoRecipes = async () => {
+    Alert.alert(
+      'Charger les recettes démo',
+      'Ceci va ajouter 31 recettes avec photos pour les screenshots. Continuer ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Charger',
+          onPress: async () => {
+            try {
+              const { demoRecipes } = await import('../../src/data/demoRecipes');
+              let count = 0;
+              for (const demo of demoRecipes) {
+                const asset = Asset.fromModule(demo.photoAsset);
+                await asset.downloadAsync();
+                const localUri = asset.localUri;
+                let photoUri: string | null = null;
+                if (localUri) {
+                  photoUri = await persistImage(localUri);
+                }
+                await createRecipe({ ...demo.recipe, photoUri });
+                count++;
+              }
+              queryClient.invalidateQueries();
+              Toast.show({
+                type: 'success',
+                text1: 'Recettes démo chargées',
+                text2: `${count} recettes ajoutées avec succès`,
+              });
+            } catch (error) {
+              Toast.show({
+                type: 'error',
+                text1: 'Erreur',
+                text2: error instanceof Error ? error.message : 'Unknown error',
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleResetTrial = async () => {
     Alert.alert(
       'Reset trial & device ID',
@@ -561,6 +605,12 @@ export default function MenuScreen() {
             title="Supprimer toutes les recettes"
             subtitle="Efface les recettes, ingrédients et photos"
             onPress={handleDeleteAllRecipes}
+          />
+          <SettingsRow
+            icon="images-outline"
+            title="Charger recettes démo"
+            subtitle="Ajoute 31 recettes avec photos pour screenshots"
+            onPress={handleLoadDemoRecipes}
             isLast
           />
         </SettingsSection>

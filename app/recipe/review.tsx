@@ -350,7 +350,7 @@ export default function RecipeReviewScreen() {
           </View>
 
           <View style={styles.collectionSection}>
-            <Text style={styles.collectionSectionTitle}>Regime & Menu</Text>
+            <Text style={styles.collectionSectionTitle}>Plans de repas</Text>
             <Pressable
               style={styles.collectionSelector}
               onPress={() => setMenuDropdownVisible(true)}
@@ -473,7 +473,7 @@ export default function RecipeReviewScreen() {
           }}
         >
           <Pressable style={styles.dropdown} onPress={() => {}}>
-            <Text style={styles.dropdownTitle}>Regime & Menu</Text>
+            <Text style={styles.dropdownTitle}>Plans de repas</Text>
             <FlatList
               data={menus}
               keyExtractor={(item) => item.id}
@@ -501,7 +501,7 @@ export default function RecipeReviewScreen() {
             <View style={styles.dropdownCreateRow}>
               <TextInput
                 style={styles.dropdownCreateInput}
-                placeholder="Nouveau menu..."
+                placeholder="Nouveau plan de repas..."
                 placeholderTextColor={colors.textMuted}
                 value={newMenuName}
                 onChangeText={setNewMenuName}

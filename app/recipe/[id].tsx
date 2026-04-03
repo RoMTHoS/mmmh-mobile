@@ -302,7 +302,7 @@ export default function RecipeDetailScreen() {
                       onPress={() => toggleCollection(item.id)}
                     >
                       <Text style={styles.dropdownItemType}>
-                        {item.type === 'recipeBook' ? 'Livre' : 'Menu'}
+                        {item.type === 'recipeBook' ? 'Livre' : 'Repas'}
                       </Text>
                       <Text
                         style={[
@@ -361,7 +361,7 @@ export default function RecipeDetailScreen() {
                       newCollectionType === 'menu' && styles.dropdownTypeTextActive,
                     ]}
                   >
-                    Menu
+                    Repas
                   </Text>
                 </Pressable>
               </View>

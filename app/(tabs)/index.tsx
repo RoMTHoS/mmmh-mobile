@@ -25,7 +25,8 @@ import { RecipeGridSkeleton } from '../../src/components/recipes/RecipeGridSkele
 import { colors, typography, fonts, spacing, radius } from '../../src/theme';
 import type { Recipe } from '../../src/types';
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+const IS_TABLET = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) >= 600;
 // Logo area ~70, tab bar ~85, 3 section titles (24+margins) ~100, padding ~30
 const FIXED_OVERHEAD = 285;
 
@@ -186,8 +187,8 @@ export default function HomeScreen() {
 
   // Compute card heights based on available screen space
   const availableHeight = SCREEN_HEIGHT - FIXED_OVERHEAD - insets.top - insets.bottom;
-  const recipeCardHeight = availableHeight * 0.45;
-  const collectionCardHeight = availableHeight * 0.33;
+  const recipeCardHeight = availableHeight * (IS_TABLET ? 0.42 : 0.45);
+  const collectionCardHeight = availableHeight * (IS_TABLET ? 0.3 : 0.33);
 
   if (isLoading) {
     return (
@@ -275,7 +276,7 @@ export default function HomeScreen() {
           >
             <Pressable style={styles.modalSheet} onPress={() => {}}>
               <Text style={styles.modalTitle}>
-                {modalTarget === 'recipeBooks' ? 'Nouveau livre' : 'Nouveau menu'}
+                {modalTarget === 'recipeBooks' ? 'Nouveau livre' : 'Nouveau plan de repas'}
               </Text>
               <TextInput
                 style={styles.modalInput}

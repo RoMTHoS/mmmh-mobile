@@ -76,11 +76,11 @@ export function BookSelector({ selectedBookId, onSelect }: BookSelectorProps) {
               )}
 
               {/* Regime & Menu section */}
-              <Text style={[styles.sectionTitle, styles.sectionTitleSpaced]}>Regime & Menu</Text>
+              <Text style={[styles.sectionTitle, styles.sectionTitleSpaced]}>Plans de repas</Text>
               {menus.length > 0 ? (
                 menus.map((m) => renderItem({ id: m.id, name: m.name }))
               ) : (
-                <Text style={styles.emptyText}>Aucun menu créé</Text>
+                <Text style={styles.emptyText}>Aucun plan de repas créé</Text>
               )}
             </ScrollView>
           </Pressable>
