@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Keyboard,
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -48,6 +49,16 @@ export default function UrlInputScreen() {
   const jobs = useImportStore((state) => state.jobs);
   const checkPipeline = usePipelinePreCheck();
   const planStatus = usePlanStatus();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const doImport = useCallback(
     async (rawUrl: string, forcePremium = false) => {
@@ -368,34 +379,36 @@ export default function UrlInputScreen() {
           />
         </ScrollView>
 
-        <View style={[styles.bottomButtons, { paddingBottom: insets.bottom + spacing.md }]}>
-          {planStatus?.tier !== 'premium' && (
+        {!keyboardVisible && (
+          <View style={[styles.bottomButtons, { paddingBottom: insets.bottom + spacing.md }]}>
+            {planStatus?.tier !== 'premium' && (
+              <Pressable
+                onPress={() => currentUrl.trim() && handleSubmit(currentUrl.trim())}
+                style={({ pressed }) => [
+                  styles.standardButton,
+                  !isLoading ? {} : styles.standardButtonDisabled,
+                  pressed && { opacity: 0.85 },
+                ]}
+                disabled={isLoading}
+              >
+                <Text style={styles.standardButtonText}>Import standard</Text>
+              </Pressable>
+            )}
             <Pressable
-              onPress={() => currentUrl.trim() && handleSubmit(currentUrl.trim())}
-              style={({ pressed }) => [
-                styles.standardButton,
-                !isLoading ? {} : styles.standardButtonDisabled,
-                pressed && { opacity: 0.85 },
-              ]}
+              style={({ pressed }) => [styles.premiumButton, pressed && { opacity: 0.85 }]}
+              onPress={handlePremiumImport}
               disabled={isLoading}
             >
-              <Text style={styles.standardButtonText}>Import standard</Text>
+              <PremiumIcon width={24} color="#FFFFFF" />
+              <Text style={styles.premiumButtonText}>
+                {planStatus && planStatus.geminiQuotaRemaining <= 0
+                  ? 'Passer premium'
+                  : 'Import premium'}
+              </Text>
+              <PremiumIcon width={24} color="#FFFFFF" />
             </Pressable>
-          )}
-          <Pressable
-            style={({ pressed }) => [styles.premiumButton, pressed && { opacity: 0.85 }]}
-            onPress={handlePremiumImport}
-            disabled={isLoading}
-          >
-            <PremiumIcon width={24} color="#FFFFFF" />
-            <Text style={styles.premiumButtonText}>
-              {planStatus && planStatus.geminiQuotaRemaining <= 0
-                ? 'Passer premium'
-                : 'Import premium'}
-            </Text>
-            <PremiumIcon width={24} color="#FFFFFF" />
-          </Pressable>
-        </View>
+          </View>
+        )}
 
         <GeminiFallbackDialog
           visible={showGeminiFallback}

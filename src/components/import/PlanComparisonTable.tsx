@@ -40,27 +40,27 @@ export function PlanComparisonTable() {
         <FeatureRow
           label="Importation des recettes"
           standard="Lente"
-          premium="Instantane"
+          premium="Instantanée"
           small={small}
         />
         <FeatureRow label="File d'attente" standard="Oui" premium="Prioritaire" small={small} />
-        <FeatureRow label="Qualite de l'IA" standard="Bonne" premium="Excellente" small={small} />
+        <FeatureRow label="Qualité de l'IA" standard="Bonne" premium="Excellente" small={small} />
         <FeatureRow
-          label="Precision des recettes"
+          label="Précision des recettes"
           standard="Correcte"
           premium="Optimale"
           small={small}
         />
         <FeatureRow
-          label="Ingredients detectes"
+          label="Ingrédients détectés"
           standard="Partiel"
           premium="Complet"
           small={small}
         />
         <FeatureRow
-          label="Quantites & unites"
+          label="Quantités & unités"
           standard="Approximatif"
-          premium="Precis"
+          premium="Précis"
           small={small}
         />
       </View>

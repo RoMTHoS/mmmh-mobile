@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Icon } from '../ui';
 import { PlatformBadge } from './PlatformBadge';
 import { colors, spacing, radius, fonts } from '../../theme';
-import { validateVideoUrl, isValidUrl, type Platform } from '../../utils/validation';
+import { validateVideoUrl, type Platform } from '../../utils/validation';
 
 export type ImportType = 'video' | 'website' | 'link';
 
@@ -15,7 +15,7 @@ interface UrlInputProps {
   onUrlChange?: (url: string) => void;
 }
 
-export function UrlInput({ importType, onSubmit, isLoading, onUrlChange }: UrlInputProps) {
+export function UrlInput({ importType, isLoading, onUrlChange }: UrlInputProps) {
   const [url, setUrl] = useState('');
   const [detectedPlatform, setDetectedPlatform] = useState<Platform | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,37 +48,6 @@ export function UrlInput({ importType, onSubmit, isLoading, onUrlChange }: UrlIn
     }
   }, [handleUrlChange]);
 
-  const handleSubmit = useCallback(() => {
-    Keyboard.dismiss();
-
-    if (!url.trim()) {
-      setError('Veuillez entrer une URL');
-      return;
-    }
-
-    if (importType === 'video') {
-      const validation = validateVideoUrl(url);
-      if (!validation.isValid) {
-        setError(validation.error || 'URL de video invalide');
-        return;
-      }
-    } else if (importType === 'link') {
-      // Accept both video platform URLs and any valid HTTP URL
-      if (!isValidUrl(url)) {
-        setError('Veuillez entrer une URL valide');
-        return;
-      }
-    } else {
-      // Website import - any valid URL
-      if (!isValidUrl(url)) {
-        setError('Veuillez entrer une URL valide');
-        return;
-      }
-    }
-
-    onSubmit(url.trim());
-  }, [url, importType, onSubmit]);
-
   const getPlaceholderText = () => {
     switch (importType) {
       case 'video':
@@ -104,8 +73,8 @@ export function UrlInput({ importType, onSubmit, isLoading, onUrlChange }: UrlIn
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
-          returnKeyType="go"
-          onSubmitEditing={handleSubmit}
+          returnKeyType="done"
+          onSubmitEditing={() => Keyboard.dismiss()}
           editable={!isLoading}
         />
         <Pressable

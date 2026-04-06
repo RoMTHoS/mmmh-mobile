@@ -14,7 +14,7 @@ export function PlanComparisonSlide() {
 
       {/* CTA at bottom */}
       <View style={styles.ctaRow}>
-        <Text style={styles.ctaText}>Voir la difference</Text>
+        <Text style={styles.ctaText}>Voir la différence</Text>
         <View style={styles.ctaArrow}>
           <Icon name="arrow-left" size="md" color={colors.accent} />
         </View>

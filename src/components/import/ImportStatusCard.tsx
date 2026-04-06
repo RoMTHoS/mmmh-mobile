@@ -12,6 +12,48 @@ import { useUIStore } from '../../stores/uiStore';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
 
+function BouncingDots({ color }: { color: string }) {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const bounceDot = (dot: Animated.Value) =>
+      Animated.sequence([
+        Animated.timing(dot, { toValue: -4, duration: 300, useNativeDriver: true }),
+        Animated.timing(dot, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]);
+
+    const loop = Animated.loop(
+      Animated.stagger(200, [
+        bounceDot(dot1),
+        bounceDot(dot2),
+        bounceDot(dot3),
+        Animated.delay(500),
+      ])
+    );
+    loop.start();
+
+    return () => loop.stop();
+  }, []);
+
+  const dotStyle = {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: color,
+    marginHorizontal: 1.5,
+  };
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 2, marginTop: 6 }}>
+      <Animated.View style={[dotStyle, { transform: [{ translateY: dot1 }] }]} />
+      <Animated.View style={[dotStyle, { transform: [{ translateY: dot2 }] }]} />
+      <Animated.View style={[dotStyle, { transform: [{ translateY: dot3 }] }]} />
+    </View>
+  );
+}
+
 interface ImportStatusCardProps {
   job: ImportJob;
   onRetry: () => void;
@@ -20,10 +62,10 @@ interface ImportStatusCardProps {
 
 // Visual steps shown to the user with their progress thresholds
 const VISUAL_STEPS = [
-  { key: 'downloading', label: 'Telechargement...', targetProgress: 25 },
-  { key: 'transcription', label: 'Transcription...', targetProgress: 50 },
-  { key: 'structuring', label: 'Structuration...', targetProgress: 99 },
-  { key: 'done', label: 'Pret !', targetProgress: 100 },
+  { key: 'downloading', label: 'Téléchargement', targetProgress: 25 },
+  { key: 'transcription', label: 'Transcription', targetProgress: 50 },
+  { key: 'structuring', label: 'Structuration', targetProgress: 99 },
+  { key: 'done', label: 'Prêt !', targetProgress: 100 },
 ];
 
 // How long (ms) to spend on each simulated step
@@ -148,14 +190,16 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
   );
 
   const getStatusText = () => {
-    if (job.status === 'pending') return 'En attente...';
+    if (job.status === 'pending') return 'En attente';
     if (job.status === 'processing') {
-      return VISUAL_STEPS[displayStep]?.label || 'Traitement...';
+      return VISUAL_STEPS[displayStep]?.label || 'Traitement';
     }
-    if (job.status === 'completed') return 'Pret a consulter!';
-    if (job.status === 'failed') return job.error?.message || 'Echec de import';
+    if (job.status === 'completed') return 'Prêt à consulter !';
+    if (job.status === 'failed') return job.error?.message || "Échec de l'import";
     return 'Statut inconnu';
   };
+
+  const showDots = job.status === 'processing' || job.status === 'pending';
 
   const formatTimeRemaining = (ms?: number) => {
     if (!ms) return '';
@@ -212,7 +256,10 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
 
       <View style={styles.content}>
         <View style={styles.statusRow}>
-          <Text style={[styles.statusText, { color: getStatusColor() }]}>{getStatusText()}</Text>
+          <View style={styles.statusLabel}>
+            <Text style={[styles.statusText, { color: getStatusColor() }]}>{getStatusText()}</Text>
+            {showDots && <BouncingDots color={getStatusColor()} />}
+          </View>
           {!!job.estimatedTimeRemaining && job.status === 'processing' && (
             <Text style={styles.timeRemaining}>
               {formatTimeRemaining(job.estimatedTimeRemaining)}
@@ -320,6 +367,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
+  },
+  statusLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   statusText: {
     fontFamily: fonts.script,

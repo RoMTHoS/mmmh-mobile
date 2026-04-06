@@ -43,6 +43,7 @@ const MIN_MESSAGE_LENGTH = 10;
 export function FeedbackForm() {
   const [type, setType] = useState<FeedbackType | null>(null);
   const [message, setMessage] = useState('');
+  const [email, setEmail] = useState('');
   const [url, setUrl] = useState('');
   const [screenshotUri, setScreenshotUri] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,6 +90,7 @@ export function FeedbackForm() {
       await submitFeedback({
         type: type!,
         message: message.trim(),
+        email: email.trim() || undefined,
         url: url.trim() || undefined,
         screenshotBase64,
         context,
@@ -154,6 +156,34 @@ export function FeedbackForm() {
             </Pressable>
           ))}
         </View>
+
+        {/* Email Input */}
+        <View style={styles.emailLabelRow}>
+          <Text style={[styles.label, { marginBottom: 0 }]}>Email</Text>
+          <Pressable
+            onPress={() =>
+              Toast.show({
+                type: 'info',
+                text1: 'Pourquoi mon email ?',
+                text2: 'Sans email, nous ne pourrons pas vous répondre.',
+              })
+            }
+            hitSlop={8}
+            testID="feedback-email-info"
+          >
+            <Ionicons name="information-circle-outline" size={14} color={colors.textMuted} />
+          </Pressable>
+        </View>
+        <TextInput
+          placeholder="votre@email.com"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          containerStyle={styles.emailContainer}
+          testID="feedback-email-input"
+        />
 
         {/* Message Input */}
         <TextInput
@@ -278,6 +308,15 @@ const styles = StyleSheet.create({
   },
   messageContainer: {
     marginBottom: spacing.xs,
+  },
+  emailLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  emailContainer: {
+    marginBottom: spacing.md,
   },
   urlContainer: {
     marginBottom: spacing.md,
