@@ -1,7 +1,6 @@
 import {
   requestCameraPermission,
   requestMediaLibraryPermission,
-  PERMISSION_MESSAGES,
 } from '../../src/utils/permissions';
 import { Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -52,18 +51,6 @@ describe('permissions', () => {
       const result = await requestMediaLibraryPermission();
 
       expect(result).toBe(false);
-    });
-  });
-
-  describe('PERMISSION_MESSAGES', () => {
-    it('has French messages for camera permission', () => {
-      expect(PERMISSION_MESSAGES.camera.title).toBe('Acces a la camera refuse');
-      expect(PERMISSION_MESSAGES.camera.message).toContain('parametres');
-    });
-
-    it('has French messages for media library permission', () => {
-      expect(PERMISSION_MESSAGES.mediaLibrary.title).toBe('Acces aux photos refuse');
-      expect(PERMISSION_MESSAGES.mediaLibrary.message).toContain('parametres');
     });
   });
 });

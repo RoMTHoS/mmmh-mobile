@@ -10,10 +10,7 @@ export type { CompressedImage } from './imageCompression';
 export {
   requestCameraPermission,
   requestMediaLibraryPermission,
-  showCameraPermissionDeniedAlert,
-  showMediaLibraryPermissionDeniedAlert,
   openSettings,
-  PERMISSION_MESSAGES,
 } from './permissions';
 
 export {

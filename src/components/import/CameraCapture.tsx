@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../ui';
+import { openSettings } from '../../utils/permissions';
 import { colors, spacing, radius, fonts } from '../../theme';
 
 interface CameraCaptureProps {
@@ -17,6 +18,26 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [flash, setFlash] = useState<'off' | 'on'>('off');
   const [isCapturing, setIsCapturing] = useState(false);
+
+  // Apple 5.1.1(iv): do not push a "Settings" screen immediately after Don't Allow.
+  // Capture whether the permission was askable when this component mounted. If it
+  // was, any subsequent denial happened during this session — dismiss silently
+  // instead of showing the Settings-link screen.
+  const wasAskableOnMount = useRef<boolean | null>(null);
+  if (wasAskableOnMount.current === null && permission) {
+    wasAskableOnMount.current = permission.canAskAgain && !permission.granted;
+  }
+  const deniedThisSession =
+    !!permission &&
+    !permission.granted &&
+    !permission.canAskAgain &&
+    wasAskableOnMount.current === true;
+
+  useEffect(() => {
+    if (deniedThisSession) {
+      onCancel();
+    }
+  }, [deniedThisSession, onCancel]);
 
   const handleCapture = async () => {
     if (!cameraRef.current || isCapturing) return;
@@ -55,7 +76,42 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
     );
   }
 
-  // Permission denied
+  // If the denial happened during this session, render nothing while the
+  // useEffect above dismisses the screen — avoid flashing the Settings UI.
+  if (deniedThisSession) {
+    return <View style={styles.container} />;
+  }
+
+  // Permission denied permanently from a prior session — user re-entered the
+  // feature knowing it was denied. Apple allows a Settings link in this context.
+  if (!permission.granted && !permission.canAskAgain) {
+    return (
+      <View style={[styles.container, styles.permissionContainer]}>
+        <View style={styles.permissionContent}>
+          <Icon name="camera" size={48} color={colors.text} />
+          <Text style={styles.permissionTitle}>Acces a la camera refuse</Text>
+          <Text style={styles.permissionText}>
+            Pour prendre des photos de vos recettes, autorisez l&apos;acces a la camera dans les
+            reglages de votre appareil.
+          </Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.permissionButton,
+              pressed && styles.permissionButtonPressed,
+            ]}
+            onPress={openSettings}
+          >
+            <Text style={styles.permissionButtonText}>Ouvrir les reglages</Text>
+          </Pressable>
+          <Pressable style={styles.backLink} onPress={onCancel}>
+            <Text style={styles.backLinkText}>Retour</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // Permission not yet requested — show pre-permission message
   if (!permission.granted) {
     return (
       <View style={[styles.container, styles.permissionContainer]}>
@@ -72,10 +128,7 @@ export function CameraCapture({ onCapture, onCancel }: CameraCaptureProps) {
             ]}
             onPress={requestPermission}
           >
-            <Text style={styles.permissionButtonText}>Autoriser l&apos;acces</Text>
-          </Pressable>
-          <Pressable style={styles.cancelLink} onPress={onCancel}>
-            <Text style={styles.cancelLinkText}>Annuler</Text>
+            <Text style={styles.permissionButtonText}>Continuer</Text>
           </Pressable>
         </View>
       </View>
@@ -175,6 +228,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
+  backLink: {
+    padding: spacing.sm,
+  },
+  backLinkText: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: colors.textMuted,
+  },
   permissionButton: {
     backgroundColor: colors.accent,
     paddingVertical: spacing.md,
@@ -189,14 +250,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.script,
     fontSize: 16,
     color: '#FFFFFF',
-  },
-  cancelLink: {
-    padding: spacing.sm,
-  },
-  cancelLinkText: {
-    fontFamily: fonts.script,
-    fontSize: 16,
-    color: colors.textMuted,
   },
   topControls: {
     flexDirection: 'row',

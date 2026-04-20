@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 
@@ -297,6 +298,21 @@ export default function UpgradeScreen() {
                 ? 'Abonnement annuel. Renouvelable automatiquement. Annulable à tout moment depuis les réglages de votre appareil.'
                 : 'Abonnement mensuel. Renouvelable automatiquement. Annulable à tout moment depuis les réglages de votre appareil.'}
             </Text>
+            <Text style={styles.termsLinks}>
+              <Text
+                style={styles.termsLink}
+                onPress={() => Linking.openURL('https://mymealmatehelper.com/terms')}
+              >
+                {"Conditions d'utilisation"}
+              </Text>
+              {'  •  '}
+              <Text
+                style={styles.termsLink}
+                onPress={() => Linking.openURL('https://mymealmatehelper.com/privacy/')}
+              >
+                Politique de confidentialité
+              </Text>
+            </Text>
           </Pressable>
         </Pressable>
       </Modal>
@@ -519,6 +535,17 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
+  },
+  termsLinks: {
+    fontFamily: fonts.script,
+    fontSize: 11,
+    color: colors.textLight,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  termsLink: {
+    textDecorationLine: 'underline' as const,
+    color: colors.textMuted,
   },
 
   // Offerings error

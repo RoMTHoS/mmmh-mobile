@@ -16,6 +16,14 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.mmmh.mobile',
+      buildNumber: '8',
+      infoPlist: {
+        CFBundleDevelopmentRegion: 'fr',
+        NSCameraUsageDescription:
+          "MMMH utilise votre appareil photo pour prendre en photo les recettes que vous souhaitez sauvegarder. Par exemple, photographiez une page de livre de cuisine et MMMH extrait automatiquement la liste des ingrédients et les étapes de préparation dans une recette enregistrée dans l'application.",
+        NSPhotoLibraryUsageDescription:
+          "MMMH accède à votre photothèque pour que vous puissiez importer des photos de recettes existantes. Par exemple, sélectionnez une capture d'écran d'une recette et MMMH extrait automatiquement ses ingrédients et ses étapes de préparation dans une recette enregistrée dans l'application.",
+      },
     },
     android: {
       adaptiveIcon: {

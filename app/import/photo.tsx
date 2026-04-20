@@ -49,18 +49,31 @@ export default function PhotoImportScreen() {
     setIsLoadingGallery(true);
 
     try {
-      const hasPermission = await requestMediaLibraryPermission();
-      if (!hasPermission) {
+      // Apple 5.1.1(iv): distinguish "denied this session" from "denied in a
+      // prior session". Check the existing permission state first. If the user
+      // already permanently denied in a prior session, show the informational
+      // alert (they are re-attempting the feature). If the permission is still
+      // askable, call request and — on denial — simply go back without any
+      // Settings-worded alert.
+      const existing = await ImagePicker.getMediaLibraryPermissionsAsync();
+
+      if (existing.status === 'granted') {
+        // continue below
+      } else if (!existing.canAskAgain) {
         Alert.alert(
           'Permission requise',
-          'Acces aux photos refuse. Activez-le dans les parametres.',
-          [
-            { text: 'Annuler', onPress: () => router.back() },
-            { text: 'Parametres', onPress: () => router.back() },
-          ]
+          "Pour choisir des photos de recettes, autorisez l'accès à la galerie dans les réglages de votre appareil.",
+          [{ text: 'OK', onPress: () => router.back() }]
         );
         setIsLoadingGallery(false);
         return;
+      } else {
+        const hasPermission = await requestMediaLibraryPermission();
+        if (!hasPermission) {
+          setIsLoadingGallery(false);
+          router.back();
+          return;
+        }
       }
 
       const selectionLimit = addingMore ? batch.remainingSlots : MAX_PHOTOS;
