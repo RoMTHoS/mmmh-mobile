@@ -81,7 +81,7 @@ describe('validateVideoUrl', () => {
     it('rejects unsupported platform', () => {
       const result = validateVideoUrl('https://example.com/video/123');
       expect(result.isValid).toBe(false);
-      expect(result.error).toContain('Instagram, TikTok, or YouTube');
+      expect(result.error).toContain('Instagram, TikTok, YouTube, or Facebook');
     });
   });
 });

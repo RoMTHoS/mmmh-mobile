@@ -121,6 +121,7 @@
       "^react-native-safe-area-context$": "<rootDir>/__mocks__/react-native-safe-area-context.js",
       "^react-native-svg$": "<rootDir>/__mocks__/react-native-svg.js",
       "^react-native-purchases$": "<rootDir>/__mocks__/react-native-purchases.js",
+      "^expo-asset$": "<rootDir>/__mocks__/expo-asset.js",
       "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js"
     },
     "moduleFileExtensions": [
