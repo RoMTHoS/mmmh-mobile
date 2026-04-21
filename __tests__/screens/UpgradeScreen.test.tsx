@@ -120,10 +120,11 @@ describe('UpgradeScreen', () => {
       expect(getByText('PREMIUM')).toBeDefined();
     });
 
-    it('renders benefit bullets', () => {
+    it('renders plan comparison table', () => {
       const { getByText } = render(React.createElement(UpgradeScreen));
-      expect(getByText(/Import premium illimité/)).toBeDefined();
-      expect(getByText(/IA plus performante/)).toBeDefined();
+      expect(getByText('Standard')).toBeDefined();
+      expect(getByText('Premium')).toBeDefined();
+      expect(getByText("Qualité de l'IA")).toBeDefined();
     });
   });
 

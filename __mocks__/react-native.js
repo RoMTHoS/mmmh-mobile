@@ -166,6 +166,8 @@ const Dimensions = {
   addEventListener: jest.fn(() => ({ remove: jest.fn() })),
 };
 
+const useWindowDimensions = jest.fn(() => ({ width: 375, height: 812, scale: 2, fontScale: 1 }));
+
 const Share = {
   share: jest.fn(() => Promise.resolve({ action: 'sharedAction' })),
 };
@@ -187,6 +189,7 @@ module.exports = {
   Linking,
   Share,
   Dimensions,
+  useWindowDimensions,
   PanResponder,
   KeyboardAvoidingView,
   Animated,
