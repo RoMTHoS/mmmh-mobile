@@ -1,41 +1,41 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   View,
-  TextInput,
   StyleSheet,
   Pressable,
   ActivityIndicator,
   Modal,
   useWindowDimensions,
-  KeyboardAvoidingView,
-  Platform,
   Linking,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 
 import { Text, Icon, MmmhLogo, PremiumIcon } from '../src/components/ui';
-import { PlanComparisonTable } from '../src/components/import/PlanComparisonTable';
 import {
   usePlanStatus,
-  useActivatePremium,
   useOfferings,
   usePurchaseSubscription,
   useRestorePurchases,
 } from '../src/hooks';
 import { Toast } from '../src/utils/toast';
-import { trackEvent } from '../src/utils/analytics';
 import { analytics } from '../src/services/analytics';
 import { EVENTS } from '../src/utils/analyticsEvents';
 import { colors, fonts, spacing, radius } from '../src/theme';
 
-const PROMO_CODE_MAX = 20;
+const PREMIUM_BENEFITS = [
+  'Importation instantanée et illimitée',
+  'Détection complète des ingrédients',
+  'Quantités et unités ultra précises',
+  'File prioritaire',
+  'Plans de repas intelligents',
+  'Listes de courses automatiques',
+];
 
 export default function UpgradeScreen() {
   const params = useLocalSearchParams<{ from?: string }>();
   const isFromOnboarding = params.from === 'onboarding';
 
   const planStatus = usePlanStatus();
-  const activatePremium = useActivatePremium();
   const {
     monthlyPriceString,
     annualPriceString,
@@ -48,9 +48,6 @@ export default function UpgradeScreen() {
 
   const [showOffersModal, setShowOffersModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual'>('annual');
-  const [showPromoInput, setShowPromoInput] = useState(false);
-  const [promoCode, setPromoCode] = useState('');
-  const [promoError, setPromoError] = useState<string | null>(null);
 
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
@@ -124,37 +121,6 @@ export default function UpgradeScreen() {
     }
   }, [restore, exitPaywall]);
 
-  const handleActivatePromo = useCallback(() => {
-    if (!promoCode.trim()) {
-      setPromoError('Code promo requis');
-      return;
-    }
-    setPromoError(null);
-    activatePremium.mutate(promoCode.trim(), {
-      onSuccess: () => {
-        trackEvent('premium_activated', {
-          deviceId: '',
-          promoCode: promoCode.trim(),
-          previousTier: planStatus?.tier ?? 'free',
-        });
-        Toast.show({
-          type: 'success',
-          text1: 'Premium activé !',
-          text2: "Profitez d'imports illimités en haute qualité.",
-          visibilityTime: 4000,
-        });
-        exitPaywall();
-      },
-      onError: (err: Error) => {
-        if (err.message.includes('promo') || err.message.includes('code')) {
-          setPromoError('Code promo invalide');
-        } else {
-          setPromoError('Impossible de vérifier le code.');
-        }
-      },
-    });
-  }, [promoCode, activatePremium, planStatus, exitPaywall]);
-
   const subscriptionInfo = planStatus?.storeSubscription;
 
   return (
@@ -208,8 +174,15 @@ export default function UpgradeScreen() {
 
             <View style={styles.flex} />
 
-            {/* Comparison table */}
-            <PlanComparisonTable />
+            {/* Premium benefits list */}
+            <View style={styles.benefitsList} testID="premium-benefits">
+              {PREMIUM_BENEFITS.map((benefit) => (
+                <View key={benefit} style={styles.benefitRow}>
+                  <Icon name="check" size="md" color={colors.accent} />
+                  <Text style={styles.benefitText}>{benefit}</Text>
+                </View>
+              ))}
+            </View>
             <View style={styles.flex} />
           </>
         )}
@@ -244,10 +217,6 @@ export default function UpgradeScreen() {
                 )}
               </Pressable>
             )}
-
-            <Pressable onPress={() => setShowPromoInput(true)} testID="promo-toggle">
-              <Text style={styles.promoLinkText}>Vous avez un code promo ?</Text>
-            </Pressable>
           </View>
         </View>
       )}
@@ -320,14 +289,14 @@ export default function UpgradeScreen() {
                 ? 'Abonnement annuel. Renouvelable automatiquement. Annulable à tout moment depuis les réglages de votre appareil.'
                 : 'Abonnement mensuel. Renouvelable automatiquement. Annulable à tout moment depuis les réglages de votre appareil.'}
             </Text>
-            <Text style={styles.termsLinks}>
+            <Text style={styles.termsLinks} numberOfLines={1} adjustsFontSizeToFit>
               <Text
                 style={styles.termsLink}
                 onPress={() => Linking.openURL('https://mymealmatehelper.com/terms')}
               >
                 {"Conditions d'utilisation"}
               </Text>
-              {'  •  '}
+              {' • '}
               <Text
                 style={styles.termsLink}
                 onPress={() => Linking.openURL('https://mymealmatehelper.com/privacy/')}
@@ -337,57 +306,6 @@ export default function UpgradeScreen() {
             </Text>
           </Pressable>
         </Pressable>
-      </Modal>
-
-      {/* Promo code bottom sheet modal */}
-      <Modal
-        visible={showPromoInput}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowPromoInput(false)}
-        testID="promo-modal"
-      >
-        <KeyboardAvoidingView
-          style={styles.promoModalKeyboard}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <Pressable style={styles.modalOverlay} onPress={() => setShowPromoInput(false)}>
-            <Pressable style={styles.promoModalSheet} onPress={() => {}}>
-              <Text style={styles.promoModalTitle}>Code promo</Text>
-              <View style={styles.promoRow}>
-                <TextInput
-                  style={[styles.promoInput, promoError && styles.promoInputError]}
-                  value={promoCode}
-                  onChangeText={(text) => {
-                    setPromoCode(text);
-                    setPromoError(null);
-                  }}
-                  placeholder="MMMH-BETA-2026"
-                  placeholderTextColor={colors.textLight}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  maxLength={PROMO_CODE_MAX}
-                  editable={!activatePremium.isPending}
-                  autoFocus
-                  testID="promo-input"
-                />
-                <Pressable
-                  style={styles.promoActivateButton}
-                  onPress={handleActivatePromo}
-                  disabled={activatePremium.isPending}
-                  testID="promo-activate"
-                >
-                  {activatePremium.isPending ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.promoActivateText}>Activer</Text>
-                  )}
-                </Pressable>
-              </View>
-              {promoError && <Text style={styles.promoError}>{promoError}</Text>}
-            </Pressable>
-          </Pressable>
-        </KeyboardAvoidingView>
       </Modal>
     </>
   );
@@ -431,6 +349,25 @@ const styles = StyleSheet.create({
   },
   brandingSpacing: {
     height: spacing.md,
+  },
+
+  // Premium benefits list
+  benefitsList: {
+    width: '100%',
+    paddingHorizontal: spacing.md,
+    gap: spacing.md,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  benefitText: {
+    flex: 1,
+    fontFamily: fonts.script,
+    fontSize: 19,
+    lineHeight: 26,
+    color: colors.text,
   },
 
   // Branding
@@ -560,7 +497,7 @@ const styles = StyleSheet.create({
   },
   termsLinks: {
     fontFamily: fonts.script,
-    fontSize: 11,
+    fontSize: 14,
     color: colors.textLight,
     textAlign: 'center',
     marginTop: spacing.xs,
@@ -586,70 +523,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.accent,
     textDecorationLine: 'underline',
-  },
-
-  // Promo
-  promoLinkText: {
-    fontFamily: fonts.script,
-    fontSize: 14,
-    color: colors.textMuted,
-    textDecorationLine: 'underline',
-    textAlign: 'center',
-  },
-  promoRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  promoInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    fontSize: 16,
-    fontFamily: fonts.script,
-    color: colors.text,
-    backgroundColor: colors.surface,
-  },
-  promoInputError: {
-    borderColor: colors.error,
-  },
-  promoActivateButton: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md + 2,
-    borderRadius: radius.lg,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  promoActivateText: {
-    fontFamily: fonts.script,
-    fontSize: 18,
-    color: '#FFFFFF',
-  },
-  promoModalKeyboard: {
-    flex: 1,
-  },
-  promoModalSheet: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl + spacing.md,
-    gap: spacing.sm,
-  },
-  promoModalTitle: {
-    fontFamily: fonts.script,
-    fontSize: 20,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.xs,
-  },
-  promoError: {
-    fontFamily: fonts.script,
-    fontSize: 13,
-    color: colors.error,
   },
 
   // Tablet overrides

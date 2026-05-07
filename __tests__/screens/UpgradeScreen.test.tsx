@@ -29,7 +29,6 @@ jest.mock('../../src/utils/toast', () => ({
   Toast: { show: jest.fn() },
 }));
 
-const mockPromoMutate = jest.fn();
 const mockPurchase = jest.fn().mockResolvedValue({ success: true, customerInfo: {} });
 const mockRestore = jest.fn().mockResolvedValue({ restored: false });
 
@@ -48,10 +47,6 @@ let mockOfferingsError: Error | null = null;
 
 jest.mock('../../src/hooks', () => ({
   usePlanStatus: () => mockPlanStatus,
-  useActivatePremium: () => ({
-    mutate: mockPromoMutate,
-    isPending: false,
-  }),
   useOfferings: () => ({
     offerings: mockMonthlyPriceString
       ? {
@@ -79,10 +74,6 @@ jest.mock('../../src/hooks', () => ({
     isRestoring: false,
     result: null,
   }),
-}));
-
-jest.mock('../../src/utils/analytics', () => ({
-  trackEvent: jest.fn(),
 }));
 
 const mockAnalyticsTrack = jest.fn();
@@ -127,11 +118,15 @@ describe('UpgradeScreen', () => {
       expect(getByText('PREMIUM')).toBeDefined();
     });
 
-    it('renders plan comparison table', () => {
-      const { getByText } = render(React.createElement(UpgradeScreen));
-      expect(getByText('Standard')).toBeDefined();
-      expect(getByText('Premium')).toBeDefined();
-      expect(getByText("Qualité de l'IA")).toBeDefined();
+    it('renders premium benefits list with all 6 bullets', () => {
+      const { getByTestId, getByText } = render(React.createElement(UpgradeScreen));
+      expect(getByTestId('premium-benefits')).toBeDefined();
+      expect(getByText('Importation instantanée et illimitée')).toBeDefined();
+      expect(getByText('Détection complète des ingrédients')).toBeDefined();
+      expect(getByText('Quantités et unités ultra précises')).toBeDefined();
+      expect(getByText('File prioritaire')).toBeDefined();
+      expect(getByText('Plans de repas intelligents')).toBeDefined();
+      expect(getByText('Listes de courses automatiques')).toBeDefined();
     });
   });
 
@@ -194,31 +189,11 @@ describe('UpgradeScreen', () => {
     });
   });
 
-  describe('promo code section', () => {
-    it('renders promo code toggle', () => {
-      const { getByTestId } = render(React.createElement(UpgradeScreen));
-      expect(getByTestId('promo-toggle')).toBeDefined();
-    });
-
-    it('expands promo input on toggle', () => {
-      const { getByTestId } = render(React.createElement(UpgradeScreen));
-      fireEvent.press(getByTestId('promo-toggle'));
-      expect(getByTestId('promo-input')).toBeDefined();
-    });
-
-    it('shows error for empty code', () => {
-      const { getByTestId, getByText } = render(React.createElement(UpgradeScreen));
-      fireEvent.press(getByTestId('promo-toggle'));
-      fireEvent.press(getByTestId('promo-activate'));
-      expect(getByText('Code promo requis')).toBeDefined();
-    });
-
-    it('calls activatePremium with valid code', () => {
-      const { getByTestId } = render(React.createElement(UpgradeScreen));
-      fireEvent.press(getByTestId('promo-toggle'));
-      fireEvent.changeText(getByTestId('promo-input'), 'MMMH-BETA-2026');
-      fireEvent.press(getByTestId('promo-activate'));
-      expect(mockPromoMutate).toHaveBeenCalledWith('MMMH-BETA-2026', expect.any(Object));
+  describe('promo code removed', () => {
+    it('does not render the promo toggle', () => {
+      const { queryByTestId } = render(React.createElement(UpgradeScreen));
+      expect(queryByTestId('promo-toggle')).toBeNull();
+      expect(queryByTestId('promo-modal')).toBeNull();
     });
   });
 
@@ -287,20 +262,6 @@ describe('UpgradeScreen', () => {
 
       await waitFor(() => expect(mockPurchase).toHaveBeenCalled());
       jest.advanceTimersByTime(2000);
-
-      expect(router.replace).toHaveBeenCalledWith('/(tabs)');
-      expect(router.back).not.toHaveBeenCalled();
-    });
-
-    it('routes to /(tabs) after promo activation success', () => {
-      const { getByTestId } = render(React.createElement(UpgradeScreen));
-      fireEvent.press(getByTestId('promo-toggle'));
-      fireEvent.changeText(getByTestId('promo-input'), 'MMMH-BETA-2026');
-      fireEvent.press(getByTestId('promo-activate'));
-
-      expect(mockPromoMutate).toHaveBeenCalledWith('MMMH-BETA-2026', expect.any(Object));
-      const onSuccess = mockPromoMutate.mock.calls[0][1].onSuccess;
-      onSuccess();
 
       expect(router.replace).toHaveBeenCalledWith('/(tabs)');
       expect(router.back).not.toHaveBeenCalled();
