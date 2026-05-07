@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { Alert, AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useImportStore } from '../stores/importStore';
 import { getImportStatus } from '../services/import';
@@ -12,15 +12,12 @@ const POLL_INTERVAL = 5000; // 5 seconds
 
 export function useImportPolling() {
   const updateJob = useImportStore((state) => state.updateJob);
-  const removeJob = useImportStore((state) => state.removeJob);
   const queryClient = useQueryClient();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef(AppState.currentState);
   const prevActiveCountRef = useRef(0);
   // Track which jobs have already had their usage incremented
   const trackedJobsRef = useRef<Set<string>>(new Set());
-  // Track which jobs have already shown the VIDEO_TOO_LONG popup (dedup across polls)
-  const alertedJobsRef = useRef<Set<string>>(new Set());
 
   // Stable polling function - gets jobs from store directly
   const pollActiveJobs = useCallback(async () => {
@@ -57,23 +54,6 @@ export function useImportPolling() {
           });
         }
 
-        // Surface VIDEO_TOO_LONG as a native popup (more discoverable than the
-        // status-card error line). Auto-dismiss the failed import on OK so the
-        // user doesn't have to also clear it manually. Dedup across poll ticks.
-        if (
-          status.status === 'failed' &&
-          status.error?.code === 'VIDEO_TOO_LONG' &&
-          !alertedJobsRef.current.has(job.jobId)
-        ) {
-          alertedJobsRef.current.add(job.jobId);
-          Alert.alert(
-            'Vidéo trop longue',
-            status.error.message ||
-              'Cette vidéo dépasse la durée maximale autorisée. Choisis-en une plus courte ✨',
-            [{ text: 'OK', onPress: () => removeJob(job.jobId) }]
-          );
-        }
-
         // Track mobile-side usage on completion (advisory, not authoritative)
         if (
           status.status === 'completed' &&
@@ -108,7 +88,7 @@ export function useImportPolling() {
         });
       }
     }
-  }, [updateJob, removeJob]);
+  }, [updateJob]);
 
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {

@@ -237,18 +237,6 @@ export default function UrlInputScreen() {
           return;
         }
 
-        // Video too long — popup instead of toast (more discoverable for a hard failure).
-        // Gated on importType=video so a future website-pipeline emission of the same code
-        // can't surface "Vidéo trop longue" copy on a website import.
-        if (errorCode === 'VIDEO_TOO_LONG' && importType === 'video') {
-          Alert.alert(
-            'Vidéo trop longue',
-            errorMessage ||
-              'Cette vidéo dépasse la durée maximale autorisée. Choisis-en une plus courte ✨'
-          );
-          return;
-        }
-
         Toast.show({
           type: 'error',
           text1: 'Erreur',
