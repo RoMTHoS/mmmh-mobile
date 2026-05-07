@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -11,7 +11,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 
 import { Text, Icon, MmmhLogo, PremiumIcon } from '../src/components/ui';
 import { PlanComparisonTable } from '../src/components/import/PlanComparisonTable';
@@ -31,6 +31,9 @@ import { colors, fonts, spacing, radius } from '../src/theme';
 const PROMO_CODE_MAX = 20;
 
 export default function UpgradeScreen() {
+  const params = useLocalSearchParams<{ from?: string }>();
+  const isFromOnboarding = params.from === 'onboarding';
+
   const planStatus = usePlanStatus();
   const activatePremium = useActivatePremium();
   const {
@@ -53,6 +56,20 @@ export default function UpgradeScreen() {
   const isTablet = width >= 768;
   const isPremium = planStatus?.tier === 'premium';
 
+  const exitPaywall = useCallback(() => {
+    if (isFromOnboarding) {
+      router.replace('/(tabs)');
+    } else {
+      router.back();
+    }
+  }, [isFromOnboarding]);
+
+  useEffect(() => {
+    if (isFromOnboarding && !isPremium) {
+      analytics.track(EVENTS.PAYWALL_VIEWED, { source: 'onboarding' });
+    }
+  }, [isFromOnboarding, isPremium]);
+
   const handleOpenOffers = useCallback(() => {
     if (offeringsError && !offeringsLoading) {
       refetch();
@@ -73,7 +90,7 @@ export default function UpgradeScreen() {
         text2: "Profitez d'imports illimités en haute qualité.",
         visibilityTime: 4000,
       });
-      setTimeout(() => router.back(), 2000);
+      setTimeout(exitPaywall, 2000);
     } else if (result.userCancelled) {
       // Silent dismiss — no error shown
     } else if (result.error) {
@@ -84,7 +101,7 @@ export default function UpgradeScreen() {
         visibilityTime: 4000,
       });
     }
-  }, [purchase, selectedPlan]);
+  }, [purchase, selectedPlan, exitPaywall]);
 
   const handleRestore = useCallback(async () => {
     analytics.track(EVENTS.RESTORE_INITIATED);
@@ -97,7 +114,7 @@ export default function UpgradeScreen() {
         text1: 'Premium restauré avec succès !',
         visibilityTime: 3000,
       });
-      setTimeout(() => router.back(), 2000);
+      setTimeout(exitPaywall, 2000);
     } else {
       Toast.show({
         type: 'info',
@@ -105,7 +122,7 @@ export default function UpgradeScreen() {
         visibilityTime: 3000,
       });
     }
-  }, [restore]);
+  }, [restore, exitPaywall]);
 
   const handleActivatePromo = useCallback(() => {
     if (!promoCode.trim()) {
@@ -126,7 +143,7 @@ export default function UpgradeScreen() {
           text2: "Profitez d'imports illimités en haute qualité.",
           visibilityTime: 4000,
         });
-        router.back();
+        exitPaywall();
       },
       onError: (err: Error) => {
         if (err.message.includes('promo') || err.message.includes('code')) {
@@ -136,7 +153,7 @@ export default function UpgradeScreen() {
         }
       },
     });
-  }, [promoCode, activatePremium, planStatus]);
+  }, [promoCode, activatePremium, planStatus, exitPaywall]);
 
   const subscriptionInfo = planStatus?.storeSubscription;
 
@@ -149,7 +166,12 @@ export default function UpgradeScreen() {
           headerShadowVisible: false,
           headerBackVisible: false,
           headerLeft: () => (
-            <Pressable onPress={() => router.back()} hitSlop={8} style={{ padding: spacing.sm }}>
+            <Pressable
+              onPress={exitPaywall}
+              hitSlop={8}
+              style={{ padding: spacing.sm }}
+              testID="paywall-back"
+            >
               <Icon name="arrow-left" size="lg" color={colors.text} />
             </Pressable>
           ),

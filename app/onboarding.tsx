@@ -26,7 +26,7 @@ export default function OnboardingScreen() {
     if (isFromSettings) {
       router.back();
     } else {
-      router.replace('/(tabs)');
+      router.replace('/upgrade?from=onboarding');
     }
   };
 

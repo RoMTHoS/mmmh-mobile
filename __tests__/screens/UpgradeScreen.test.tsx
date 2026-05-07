@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 
 // Mock dependencies before importing component
 jest.mock('react-native-svg', () => {
@@ -16,8 +17,12 @@ jest.mock('react-native-svg', () => {
 });
 
 jest.mock('expo-router', () => ({
-  Stack: { Screen: ({ children }: { children: React.ReactNode }) => children },
-  router: { back: jest.fn(), push: jest.fn() },
+  Stack: {
+    Screen: ({ options }: { options?: { headerLeft?: () => React.ReactNode } }) =>
+      options?.headerLeft ? options.headerLeft() : null,
+  },
+  router: { back: jest.fn(), push: jest.fn(), replace: jest.fn() },
+  useLocalSearchParams: jest.fn(() => ({})),
 }));
 
 jest.mock('../../src/utils/toast', () => ({
@@ -80,12 +85,14 @@ jest.mock('../../src/utils/analytics', () => ({
   trackEvent: jest.fn(),
 }));
 
+const mockAnalyticsTrack = jest.fn();
 jest.mock('../../src/services/analytics', () => ({
-  analytics: { track: jest.fn() },
+  analytics: { track: (...args: unknown[]) => mockAnalyticsTrack(...args) },
 }));
 
 jest.mock('../../src/utils/analyticsEvents', () => ({
   EVENTS: {
+    PAYWALL_VIEWED: 'Paywall Viewed',
     PURCHASE_INITIATED: 'Purchase Initiated',
     PURCHASE_COMPLETED: 'Purchase Completed',
     PURCHASE_CANCELLED: 'Purchase Cancelled',
@@ -243,6 +250,69 @@ describe('UpgradeScreen', () => {
       const { queryByTestId } = render(React.createElement(UpgradeScreen));
       expect(queryByTestId('subscribe-button')).toBeNull();
       expect(queryByTestId('promo-toggle')).toBeNull();
+    });
+  });
+
+  describe('from=onboarding', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      (useLocalSearchParams as jest.Mock).mockReturnValue({ from: 'onboarding' });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+      (useLocalSearchParams as jest.Mock).mockReturnValue({});
+    });
+
+    it('tracks PAYWALL_VIEWED with source=onboarding once on mount', () => {
+      render(React.createElement(UpgradeScreen));
+      const paywallViewedCalls = mockAnalyticsTrack.mock.calls.filter(
+        (call) => call[0] === 'Paywall Viewed'
+      );
+      expect(paywallViewedCalls).toHaveLength(1);
+      expect(paywallViewedCalls[0][1]).toEqual({ source: 'onboarding' });
+    });
+
+    it('routes to /(tabs) on back arrow tap', () => {
+      const { getByTestId } = render(React.createElement(UpgradeScreen));
+      fireEvent.press(getByTestId('paywall-back'));
+      expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(router.back).not.toHaveBeenCalled();
+    });
+
+    it('routes to /(tabs) after purchase success', async () => {
+      const { getByTestId } = render(React.createElement(UpgradeScreen));
+      fireEvent.press(getByTestId('subscribe-button'));
+      fireEvent.press(getByTestId('continue-purchase-button'));
+
+      await waitFor(() => expect(mockPurchase).toHaveBeenCalled());
+      jest.advanceTimersByTime(2000);
+
+      expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(router.back).not.toHaveBeenCalled();
+    });
+
+    it('routes to /(tabs) after promo activation success', () => {
+      const { getByTestId } = render(React.createElement(UpgradeScreen));
+      fireEvent.press(getByTestId('promo-toggle'));
+      fireEvent.changeText(getByTestId('promo-input'), 'MMMH-BETA-2026');
+      fireEvent.press(getByTestId('promo-activate'));
+
+      expect(mockPromoMutate).toHaveBeenCalledWith('MMMH-BETA-2026', expect.any(Object));
+      const onSuccess = mockPromoMutate.mock.calls[0][1].onSuccess;
+      onSuccess();
+
+      expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(router.back).not.toHaveBeenCalled();
+    });
+
+    it('does not track PAYWALL_VIEWED when user is already premium', () => {
+      mockPlanStatus = { ...mockPlanStatus, tier: 'premium' };
+      render(React.createElement(UpgradeScreen));
+      const paywallViewedCalls = mockAnalyticsTrack.mock.calls.filter(
+        (call) => call[0] === 'Paywall Viewed'
+      );
+      expect(paywallViewedCalls).toHaveLength(0);
     });
   });
 });
