@@ -617,7 +617,7 @@ describe('Plan Sync Service', () => {
     });
 
     it('should revert local plan and throw when backend rejects promo code', async () => {
-      mockPlanDb.activatePremium.mockResolvedValue(premiumPlan);
+      mockPlanDb.activatePremium.mockResolvedValue(promoPremiumPlan);
       mockPlanDb.deactivatePremium.mockResolvedValue(freePlan);
       mockFetch.mockResolvedValue({
         ok: false,
@@ -632,7 +632,7 @@ describe('Plan Sync Service', () => {
     });
 
     it('should revert local plan when backend returns conflict', async () => {
-      mockPlanDb.activatePremium.mockResolvedValue(premiumPlan);
+      mockPlanDb.activatePremium.mockResolvedValue(promoPremiumPlan);
       mockPlanDb.deactivatePremium.mockResolvedValue(freePlan);
       mockFetch.mockResolvedValue({
         ok: false,

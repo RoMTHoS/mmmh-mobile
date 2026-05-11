@@ -172,10 +172,6 @@ const Share = {
   share: jest.fn(() => Promise.resolve({ action: 'sharedAction' })),
 };
 
-const Share = {
-  share: jest.fn(() => Promise.resolve({ action: 'sharedAction' })),
-};
-
 module.exports = {
   View,
   Text,

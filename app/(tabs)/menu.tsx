@@ -30,7 +30,6 @@ import { analytics } from '../../src/services/analytics';
 import { EVENTS } from '../../src/utils/analyticsEvents';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
 import { QUOTA } from '../../src/utils/planConstants';
-import { useSettingsStore, type ThemeMode } from '../../src/stores/settingsStore';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const BUILD_NUMBER =
