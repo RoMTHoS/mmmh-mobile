@@ -18,6 +18,8 @@ export function useImportPolling() {
   const prevActiveCountRef = useRef(0);
   // Track which jobs have already had their usage incremented
   const trackedJobsRef = useRef<Set<string>>(new Set());
+  // Track which jobs have already been refunded (dedup across poll ticks)
+  const refundedJobsRef = useRef<Set<string>>(new Set());
 
   // Stable polling function - gets jobs from store directly
   const pollActiveJobs = useCallback(async () => {
@@ -52,6 +54,27 @@ export function useImportPolling() {
             import_type: job.importType,
             error_code: status.error?.code,
           });
+        }
+
+        // Refund the optimistic gemini-usage increment on VIDEO_TOO_LONG failure
+        // for premium imports. The submit-time increment in url.tsx (where
+        // forcePremium=true sets usageTracked=true) charged the user for an
+        // import that the server rejected pre-flight — no work happened.
+        if (
+          status.status === 'failed' &&
+          status.error?.code === 'VIDEO_TOO_LONG' &&
+          job.usageTracked === true &&
+          !refundedJobsRef.current.has(job.jobId)
+        ) {
+          refundedJobsRef.current.add(job.jobId);
+          try {
+            await planDb.decrementGeminiUsage();
+            queryClient.invalidateQueries({ queryKey: ['import-usage'] });
+          } catch (refundError) {
+            logger.warn('Failed to refund gemini usage after VIDEO_TOO_LONG', {
+              error: refundError instanceof Error ? refundError.message : String(refundError),
+            });
+          }
         }
 
         // Track mobile-side usage on completion (advisory, not authoritative)

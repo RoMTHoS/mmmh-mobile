@@ -371,3 +371,20 @@ export async function incrementGeminiUsage(): Promise<void> {
     throw new Error(`Impossible de mettre à jour l'utilisation Gemini. ${message}`);
   }
 }
+
+export async function decrementGeminiUsage(): Promise<void> {
+  const database = getDatabase();
+  const usage = await getTodayUsage();
+
+  try {
+    // MAX(0, ...) guard so refunds never push the counter negative if a poll
+    // tick fires twice for the same failed job before our dedup ref catches up.
+    database.runSync(
+      'UPDATE import_usage SET gemini_imports_used = MAX(0, gemini_imports_used - 1) WHERE id = ?',
+      [usage.id]
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de mettre à jour l'utilisation Gemini. ${message}`);
+  }
+}
