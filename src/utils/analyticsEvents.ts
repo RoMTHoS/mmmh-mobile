@@ -50,6 +50,9 @@ export const EVENTS = {
   CLEAR_DATA_INITIATED: 'Clear Data Initiated',
   CLEAR_DATA_CONFIRMED: 'Clear Data Confirmed',
 
+  // Paywall
+  PAYWALL_VIEWED: 'Paywall Viewed',
+
   // Purchase (Story 7.4)
   PURCHASE_INITIATED: 'Purchase Initiated',
   PURCHASE_COMPLETED: 'Purchase Completed',

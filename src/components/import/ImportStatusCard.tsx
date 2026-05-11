@@ -286,15 +286,17 @@ export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardPr
           />
         )}
 
-        {job.status === 'failed' && job.error?.code !== 'INSTAGRAM_POST_INVALID' && (
-          <Button
-            title="Réessayer"
-            onPress={onRetry}
-            variant="primary"
-            size="sm"
-            style={styles.retryButton}
-          />
-        )}
+        {job.status === 'failed' &&
+          job.error?.code !== 'INSTAGRAM_POST_INVALID' &&
+          job.error?.code !== 'VIDEO_TOO_LONG' && (
+            <Button
+              title="Réessayer"
+              onPress={onRetry}
+              variant="primary"
+              size="sm"
+              style={styles.retryButton}
+            />
+          )}
 
         {job.status === 'failed' &&
           (job.error?.code === 'BOT_DETECTED' || job.error?.code === 'ACCESS_DENIED') && (

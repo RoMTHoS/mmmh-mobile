@@ -615,6 +615,36 @@ describe('Plan Sync Service', () => {
 
       expect(result.tier).toBe('premium');
     });
+
+    it('should revert local plan and throw when backend rejects promo code', async () => {
+      mockPlanDb.activatePremium.mockResolvedValue(promoPremiumPlan);
+      mockPlanDb.deactivatePremium.mockResolvedValue(freePlan);
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ detail: 'INVALID_PROMO_CODE' }),
+      });
+
+      await expect(planSync.syncActivatePremium('BAD_CODE')).rejects.toThrow(
+        'Premium activation failed: INVALID_PROMO_CODE'
+      );
+      expect(mockPlanDb.deactivatePremium).toHaveBeenCalled();
+    });
+
+    it('should revert local plan when backend returns conflict', async () => {
+      mockPlanDb.activatePremium.mockResolvedValue(promoPremiumPlan);
+      mockPlanDb.deactivatePremium.mockResolvedValue(freePlan);
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: async () => ({ detail: 'PLAN_ALREADY_ACTIVE' }),
+      });
+
+      await expect(planSync.syncActivatePremium('PROMO123')).rejects.toThrow(
+        'Premium activation failed: PLAN_ALREADY_ACTIVE'
+      );
+      expect(mockPlanDb.deactivatePremium).toHaveBeenCalled();
+    });
   });
 
   describe('device ID management', () => {

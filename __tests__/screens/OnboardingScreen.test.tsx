@@ -58,13 +58,13 @@ describe('OnboardingScreen', () => {
     expect(mockTrack).toHaveBeenCalledWith('Onboarding Started');
   });
 
-  it('sets AsyncStorage flag and navigates to home on complete', async () => {
+  it('sets AsyncStorage flag and navigates to paywall on complete', async () => {
     const { getByTestId } = render(<OnboardingScreen />);
     fireEvent.press(getByTestId('mock-complete'));
 
     await waitFor(() => {
       expect(AsyncStorage.setItem).toHaveBeenCalledWith('hasCompletedOnboarding', 'true');
-      expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(router.replace).toHaveBeenCalledWith('/upgrade?from=onboarding');
     });
   });
 
@@ -77,13 +77,13 @@ describe('OnboardingScreen', () => {
     });
   });
 
-  it('sets AsyncStorage flag and navigates to home on skip', async () => {
+  it('sets AsyncStorage flag and navigates to paywall on skip', async () => {
     const { getByTestId } = render(<OnboardingScreen />);
     fireEvent.press(getByTestId('mock-skip'));
 
     await waitFor(() => {
       expect(AsyncStorage.setItem).toHaveBeenCalledWith('hasCompletedOnboarding', 'true');
-      expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(router.replace).toHaveBeenCalledWith('/upgrade?from=onboarding');
     });
   });
 
