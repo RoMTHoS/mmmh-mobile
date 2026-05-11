@@ -1,17 +1,9 @@
 import { View, Text, StyleSheet } from 'react-native';
 import type { Ingredient } from '../../types';
-import { fonts } from '../../theme';
+import { fonts, colors, spacing } from '../../theme';
 
 interface IngredientListProps {
   ingredients: Ingredient[];
-}
-
-function formatIngredient(ingredient: Ingredient): string {
-  const parts: string[] = [];
-  if (ingredient.quantity) parts.push(ingredient.quantity);
-  if (ingredient.unit) parts.push(ingredient.unit);
-  parts.push(ingredient.name);
-  return parts.join(' ');
 }
 
 export function IngredientList({ ingredients }: IngredientListProps) {
@@ -21,38 +13,45 @@ export function IngredientList({ ingredients }: IngredientListProps) {
 
   return (
     <View style={styles.container} testID="ingredient-list">
-      {ingredients.map((ingredient, index) => (
-        <View key={index} style={styles.item} testID={`ingredient-item-${index}`}>
-          <Text style={styles.bullet}>•</Text>
-          <Text style={styles.text}>{formatIngredient(ingredient)}</Text>
-        </View>
-      ))}
+      {ingredients.map((ingredient, index) => {
+        const qty = [ingredient.quantity, ingredient.unit].filter(Boolean).join(' ');
+        return (
+          <View key={index} style={styles.row} testID={`ingredient-item-${index}`}>
+            <Text style={styles.name}>{ingredient.name}</Text>
+            {qty ? <Text style={styles.quantity}>{qty}</Text> : null}
+          </View>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: 8,
+    gap: 2,
   },
-  item: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    paddingVertical: 4,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border + '30',
   },
-  bullet: {
+  name: {
     fontFamily: fonts.sans,
     fontSize: 15,
-    color: '#374151',
-    lineHeight: 22,
-  },
-  text: {
-    fontFamily: fonts.sans,
-    fontSize: 15,
-    color: '#374151',
+    color: colors.text,
     flex: 1,
     lineHeight: 22,
+  },
+  quantity: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    color: colors.text,
+    textAlign: 'right',
+    lineHeight: 22,
+    marginLeft: spacing.md,
   },
   emptyText: {
     fontFamily: fonts.sans,

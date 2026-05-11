@@ -1,63 +1,204 @@
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Image,
+  Pressable,
+  StyleSheet,
+  Dimensions,
+  Modal,
+  TextInput,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRecipes } from '../../src/hooks';
-import { LoadingScreen, SearchBar, Icon } from '../../src/components/ui';
+import { Icon, MmmhLogo } from '../../src/components/ui';
 import { CollectionSection } from '../../src/components/collections';
-import { ImportStatusList } from '../../src/components/import';
-import { colors, typography, spacing } from '../../src/theme';
+import { useCollectionStore } from '../../src/stores/collectionStore';
+
+import { RecipeGridSkeleton } from '../../src/components/recipes/RecipeGridSkeleton';
+import { colors, typography, fonts, spacing, radius } from '../../src/theme';
+import type { Recipe } from '../../src/types';
+
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+const IS_TABLET = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) >= 600;
+// Logo area ~70, tab bar ~85, 3 section titles (24+margins) ~100, padding ~30
+const FIXED_OVERHEAD = 285;
+
+function NewRecipeCard({ recipe, cardHeight }: { recipe: Recipe; cardHeight: number }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        { height: cardHeight, aspectRatio: 1 },
+        styles.newRecipeCard,
+        pressed && { opacity: 0.85 },
+      ]}
+      onPress={() => router.push(`/recipe/${recipe.id}`)}
+      accessibilityLabel={recipe.title}
+    >
+      <View style={styles.newRecipeImageContainer}>
+        {recipe.photoUri ? (
+          <Image
+            source={{ uri: recipe.photoUri }}
+            style={styles.newRecipeImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.newRecipeImage, styles.newRecipePlaceholder]}>
+            <Icon name="camera" size="lg" color={colors.textLight} />
+          </View>
+        )}
+        <View style={styles.newRecipeOverlay}>
+          <Text style={styles.newRecipeTitle} numberOfLines={1}>
+            {recipe.title}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const [searchQuery, setSearchQuery] = useState('');
   const { data: recipes, isLoading, error } = useRecipes();
 
-  // Group recipes into collections based on tags/categories
-  // For now, we'll create mock collections using recipe images
+  const storeCollections = useCollectionStore((s) => s.collections);
+  const addCollection = useCollectionStore((s) => s.addCollection);
+  const removeCollection = useCollectionStore((s) => s.removeCollection);
+
+  const latestRecipes = useMemo(() => {
+    if (!recipes || recipes.length === 0) return [];
+    return recipes.slice(0, 10);
+  }, [recipes]);
+
   const collections = useMemo(() => {
-    if (!recipes || recipes.length === 0) return { recipeBooks: [], menus: [] };
+    const recipeImages = (recipes ?? []).filter((r) => r.photoUri).map((r) => r.photoUri as string);
 
-    const recipeImages = recipes.filter((r) => r.photoUri).map((r) => r.photoUri as string);
-
-    // Mock collections - in full implementation, these would come from DB
     const recipeBooks = [
       {
         id: 'all',
         name: 'Toutes les recettes',
         images: recipeImages.slice(0, 4),
       },
-      {
-        id: 'favorites',
-        name: 'Favoris',
-        images: recipeImages.slice(0, 4),
-      },
     ];
 
-    const menus = [
-      {
-        id: 'menu-1',
-        name: 'Menu semaine',
-        images: recipeImages.slice(0, 4),
-      },
-    ];
+    const recipeMap = new Map((recipes ?? []).map((r) => [String(r.id), r]));
 
-    return { recipeBooks, menus };
-  }, [recipes]);
+    const getCollectionImages = (c: { recipeIds: string[] }) =>
+      c.recipeIds
+        .map((id) => recipeMap.get(id)?.photoUri)
+        .filter((uri): uri is string => !!uri)
+        .slice(0, 3);
+
+    const customBooks = storeCollections
+      .filter((c) => c.type === 'recipeBook')
+      .map((c) => ({ id: c.id, name: c.name, images: getCollectionImages(c) }));
+    const customMenuItems = storeCollections
+      .filter((c) => c.type === 'menu')
+      .map((c) => ({ id: c.id, name: c.name, images: getCollectionImages(c) }));
+
+    return { recipeBooks: [...customBooks, ...recipeBooks], menus: customMenuItems };
+  }, [recipes, storeCollections]);
 
   const handleCollectionPress = (id: string) => {
     if (id === 'all') {
-      router.push('/(tabs)/search');
+      router.push({ pathname: '/(tabs)/search', params: { bookId: '' } });
+    } else {
+      router.push({ pathname: '/(tabs)/search', params: { bookId: id } });
     }
-    // TODO: Navigate to collection detail
   };
 
-  const handleNewCollection = () => {
-    // TODO: Open create collection modal
+  const handleCollectionLongPress = (id: string) => {
+    if (id === 'all') return;
+    const collection = storeCollections.find((c) => c.id === id);
+    if (!collection) return;
+    Alert.alert('Supprimer', `Voulez-vous supprimer "${collection.name}" ?`, [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Supprimer', style: 'destructive', onPress: () => removeCollection(id) },
+    ]);
   };
+
+  const [showNewCollectionModal, setShowNewCollectionModal] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [modalTarget, setModalTarget] = useState<'recipeBooks' | 'menus'>('recipeBooks');
+  const slideAnim = useRef(new Animated.Value(300)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (showNewCollectionModal) {
+      slideAnim.setValue(300);
+      backdropAnim.setValue(0);
+      Animated.parallel([
+        Animated.timing(backdropAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+      ]).start();
+    }
+  }, [showNewCollectionModal, slideAnim, backdropAnim]);
+
+  const closeModal = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 300,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowNewCollectionModal(false);
+      setNewCollectionName('');
+    });
+  };
+
+  const handleNewRecipeBook = () => {
+    setModalTarget('recipeBooks');
+    setNewCollectionName('');
+    setShowNewCollectionModal(true);
+  };
+
+  const handleNewMenu = () => {
+    setModalTarget('menus');
+    setNewCollectionName('');
+    setShowNewCollectionModal(true);
+  };
+
+  const handleCreateCollection = () => {
+    if (!newCollectionName.trim()) return;
+    addCollection(newCollectionName.trim(), modalTarget === 'recipeBooks' ? 'recipeBook' : 'menu');
+    closeModal();
+  };
+
+  // Compute card heights based on available screen space
+  const availableHeight = SCREEN_HEIGHT - FIXED_OVERHEAD - insets.top - insets.bottom;
+  const recipeCardHeight = availableHeight * (IS_TABLET ? 0.42 : 0.45);
+  const collectionCardHeight = availableHeight * (IS_TABLET ? 0.3 : 0.33);
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.logoContainer}>
+          <MmmhLogo width={140} />
+        </View>
+        <RecipeGridSkeleton />
+      </View>
+    );
   }
 
   if (error) {
@@ -72,37 +213,96 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholder="Rechercher"
-        onFocus={() => router.push('/(tabs)/search')}
-        style={styles.searchBar}
-      />
+      <View style={styles.logoContainer}>
+        <MmmhLogo width={140} />
+      </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <ImportStatusList />
+      <View style={styles.sectionsContainer}>
+        {/* Nouvelle recette section */}
+        {latestRecipes.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Recettes récentes</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.newRecipeRow}
+            >
+              {latestRecipes.map((recipe) => (
+                <NewRecipeCard key={recipe.id} recipe={recipe} cardHeight={recipeCardHeight} />
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         <CollectionSection
-          title="Livre de recette"
+          title="Livres de recettes"
           collections={collections.recipeBooks}
           onCollectionPress={handleCollectionPress}
-          onNewPress={handleNewCollection}
+          onCollectionLongPress={handleCollectionLongPress}
+          onNewPress={handleNewRecipeBook}
           showNewButton
+          cardHeight={collectionCardHeight}
         />
 
         <CollectionSection
-          title="Regime & Menu"
+          title="Plans de repas"
           collections={collections.menus}
           onCollectionPress={handleCollectionPress}
-          onNewPress={handleNewCollection}
+          onCollectionLongPress={handleCollectionLongPress}
+          onNewPress={handleNewMenu}
           showNewButton
+          cardHeight={collectionCardHeight}
         />
-      </ScrollView>
+      </View>
+
+      <Modal
+        visible={showNewCollectionModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <Animated.View
+            style={[styles.modalBackdrop, { opacity: backdropAnim }]}
+            pointerEvents="none"
+          />
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeModal} />
+          <Animated.View
+            style={[styles.modalSheetContainer, { transform: [{ translateY: slideAnim }] }]}
+            pointerEvents="box-none"
+          >
+            <Pressable style={styles.modalSheet} onPress={() => {}}>
+              <Text style={styles.modalTitle}>
+                {modalTarget === 'recipeBooks' ? 'Nouveau livre' : 'Nouveau plan de repas'}
+              </Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Nom du catalogue"
+                placeholderTextColor={colors.textMuted}
+                value={newCollectionName}
+                onChangeText={setNewCollectionName}
+                autoFocus
+                onSubmitEditing={handleCreateCollection}
+                returnKeyType="done"
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  !newCollectionName.trim() && styles.modalButtonDisabled,
+                  pressed && { opacity: 0.85 },
+                ]}
+                onPress={handleCreateCollection}
+                disabled={!newCollectionName.trim()}
+              >
+                <Text style={styles.modalButtonText}>Créer</Text>
+              </Pressable>
+            </Pressable>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -112,15 +312,121 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  searchBar: {
-    margin: spacing.md,
+  logoContainer: {
+    alignItems: 'center',
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
+  sectionsContainer: {
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  section: {
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    fontFamily: 'Shanti',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  newRecipeRow: {
+    gap: spacing.md,
+    paddingRight: spacing.xl,
+  },
+  newRecipeCard: {
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  newRecipeImageContainer: {
+    flex: 1,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#000',
+  },
+  newRecipeImage: {
+    width: '100%',
+    flex: 1,
+    backgroundColor: colors.surfaceAlt,
+  },
+  newRecipePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  newRecipeOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.sm,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: '#000',
+  },
+  newRecipeTitle: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.overlay,
+  },
+  modalSheetContainer: {},
+  modalSheet: {
+    backgroundColor: colors.modalBackground,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: colors.borderMedium,
+    padding: spacing.lg,
+    paddingBottom: spacing.md + SCREEN_HEIGHT,
+    marginBottom: -SCREEN_HEIGHT,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    ...typography.titleScript,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  modalInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    fontFamily: fonts.sans,
+    fontSize: 16,
+    color: colors.text,
+    backgroundColor: colors.surface,
+    marginBottom: spacing.lg,
+  },
+  modalButton: {
+    width: '100%',
+    backgroundColor: colors.text,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  modalButtonDisabled: {
+    opacity: 0.4,
+  },
+  modalButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 16,
+    color: colors.surface,
   },
   errorContainer: {
     flex: 1,

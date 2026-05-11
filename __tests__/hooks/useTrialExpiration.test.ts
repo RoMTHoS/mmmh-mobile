@@ -1,4 +1,3 @@
-import Toast from 'react-native-toast-message';
 import type { UserPlan } from '../../src/types';
 
 const mockTrackEvent = jest.fn();
@@ -7,8 +6,9 @@ jest.mock('../../src/utils/analytics', () => ({
   trackEvent: (...args: unknown[]) => mockTrackEvent(...args),
 }));
 
-jest.mock('react-native-toast-message', () => ({
-  show: jest.fn(),
+const mockToastShow = jest.fn();
+jest.mock('../../src/utils/toast', () => ({
+  Toast: { show: (...args: unknown[]) => mockToastShow(...args) },
 }));
 
 // Mock useUserPlan to return controlled data
@@ -45,7 +45,7 @@ describe('useTrialExpiration', () => {
 
     render(React.createElement(TestComponent));
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
     expect(mockTrackEvent).not.toHaveBeenCalled();
   });
 
@@ -57,6 +57,9 @@ describe('useTrialExpiration', () => {
       trialEndsDate: null,
       premiumActivatedDate: null,
       promoCode: null,
+      premiumSource: null,
+      subscriptionStatus: null,
+      expiresAt: null,
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
     };
@@ -64,7 +67,7 @@ describe('useTrialExpiration', () => {
     render(React.createElement(TestComponent));
 
     // First render: previousTier is null, current is free → no transition detected
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
   it('does nothing on first render with trial tier', () => {
@@ -75,13 +78,16 @@ describe('useTrialExpiration', () => {
       trialEndsDate: '2026-02-17T00:00:00Z',
       premiumActivatedDate: null,
       promoCode: null,
+      premiumSource: null,
+      subscriptionStatus: null,
+      expiresAt: null,
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
     };
 
     render(React.createElement(TestComponent));
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
   it('shows notification on trial→free transition', () => {
@@ -93,13 +99,16 @@ describe('useTrialExpiration', () => {
       trialEndsDate: '2026-02-17T00:00:00Z',
       premiumActivatedDate: null,
       promoCode: null,
+      premiumSource: null,
+      subscriptionStatus: null,
+      expiresAt: null,
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
     };
 
     const { rerender } = render(React.createElement(TestComponent));
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
 
     // Re-render with free (expired)
     mockPlanData = {
@@ -109,7 +118,7 @@ describe('useTrialExpiration', () => {
 
     rerender(React.createElement(TestComponent));
 
-    expect(Toast.show).toHaveBeenCalledWith(
+    expect(mockToastShow).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'info',
         text1: 'Essai Premium termine',
@@ -126,6 +135,9 @@ describe('useTrialExpiration', () => {
       trialEndsDate: '2026-02-17T00:00:00Z',
       premiumActivatedDate: null,
       promoCode: null,
+      premiumSource: null,
+      subscriptionStatus: null,
+      expiresAt: null,
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
     };
@@ -135,6 +147,6 @@ describe('useTrialExpiration', () => {
     mockPlanData = { ...mockPlanData, tier: 'premium' };
     rerender(React.createElement(TestComponent));
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 });

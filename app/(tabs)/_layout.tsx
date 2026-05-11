@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Tabs } from 'expo-router';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { colors, spacing } from '../../src/theme';
@@ -6,6 +5,7 @@ import { ImportModal } from '../../src/components/import/ImportModal';
 import { Icon } from '../../src/components/ui';
 import { useActiveShoppingList, useShoppingListRecipes } from '../../src/hooks/useShoppingList';
 import { useShoppingStore } from '../../src/stores/shoppingStore';
+import { useUIStore } from '../../src/stores/uiStore';
 
 function CartTabIcon({ color }: { color: string }) {
   const activeListId = useShoppingStore((s) => s.activeListId);
@@ -28,7 +28,9 @@ function CartTabIcon({ color }: { color: string }) {
 }
 
 export default function TabLayout() {
-  const [importModalVisible, setImportModalVisible] = useState(false);
+  const importModalVisible = useUIStore((s) => s.importModalVisible);
+  const openImportModal = useUIStore((s) => s.openImportModal);
+  const closeImportModal = useUIStore((s) => s.closeImportModal);
 
   return (
     <>
@@ -68,7 +70,7 @@ export default function TabLayout() {
             title: '',
             tabBarButton: () => (
               <Pressable
-                onPress={() => setImportModalVisible(true)}
+                onPress={openImportModal}
                 style={styles.addButton}
                 accessibilityLabel="Ajouter une recette"
                 accessibilityRole="button"
@@ -94,7 +96,7 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-      <ImportModal visible={importModalVisible} onClose={() => setImportModalVisible(false)} />
+      <ImportModal visible={importModalVisible} onClose={closeImportModal} />
     </>
   );
 }

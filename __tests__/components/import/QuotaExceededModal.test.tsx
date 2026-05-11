@@ -14,6 +14,16 @@ jest.mock('../../../src/hooks/usePlan', () => ({
   useUserPlan: () => mockUseUserPlan(),
 }));
 
+jest.mock('../../../src/hooks/usePurchase', () => ({
+  useOfferings: () => ({
+    offerings: null,
+    priceString: null,
+    isLoading: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+}));
+
 jest.mock('../../../src/utils/planStateMachine', () => ({
   canActivateTrial: (plan: UserPlan) => mockCanActivateTrial(plan),
 }));
@@ -27,6 +37,9 @@ const mockPlan: UserPlan = {
   trialEndsDate: null,
   premiumActivatedDate: null,
   promoCode: null,
+  premiumSource: null,
+  subscriptionStatus: null,
+  expiresAt: null,
   createdAt: '2026-01-01',
   updatedAt: '2026-01-01',
 };

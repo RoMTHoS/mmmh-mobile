@@ -30,7 +30,7 @@ describe('Database Service', () => {
 
       await db.initializeDatabase();
 
-      expect(mockDatabase.execSync).toHaveBeenCalledTimes(4);
+      expect(mockDatabase.execSync).toHaveBeenCalledTimes(7);
       expect(mockDatabase.execSync.mock.calls[0][0]).toContain(
         'CREATE TABLE IF NOT EXISTS recipes'
       );
@@ -52,7 +52,7 @@ describe('Database Service', () => {
     });
 
     it('should skip migrations when database is current version', async () => {
-      mockDatabase.getFirstSync.mockReturnValue({ version: 4 });
+      mockDatabase.getFirstSync.mockReturnValue({ version: 7 });
 
       await db.initializeDatabase();
 
@@ -69,6 +69,15 @@ describe('Database Service', () => {
       servings: 4,
       photoUri: null,
       notes: null,
+      author: null,
+      priceMin: null,
+      priceMax: null,
+      kcal: null,
+      catalogue: null,
+      regime: null,
+      nutritionProteins: null,
+      nutritionCarbs: null,
+      nutritionFats: null,
     };
 
     it('should create a recipe with generated id and timestamps', async () => {
@@ -116,6 +125,15 @@ describe('Database Service', () => {
         servings: null,
         photoUri: null,
         notes: null,
+        author: null,
+        priceMin: null,
+        priceMax: null,
+        kcal: null,
+        catalogue: null,
+        regime: null,
+        nutritionProteins: null,
+        nutritionCarbs: null,
+        nutritionFats: null,
       };
 
       const recipe = await db.createRecipe(minimalInput);

@@ -1,5 +1,5 @@
 import { View, StyleSheet } from 'react-native';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../utils/toast';
 import { ImportStatusCard } from './ImportStatusCard';
 import { useImportStore } from '../../stores/importStore';
 import { useImportPolling } from '../../hooks/useImportPolling';
@@ -13,10 +13,6 @@ export function ImportStatusList() {
 
   // Start polling for active jobs
   useImportPolling();
-
-  const handleDismiss = (jobId: string) => {
-    removeJob(jobId);
-  };
 
   const handleRetry = async (jobId: string) => {
     const job = jobs.find((j) => j.jobId === jobId);
@@ -79,8 +75,8 @@ export function ImportStatusList() {
         <ImportStatusCard
           key={job.jobId}
           job={job}
-          onDismiss={() => handleDismiss(job.jobId)}
           onRetry={() => handleRetry(job.jobId)}
+          onDismiss={() => removeJob(job.jobId)}
         />
       ))}
     </View>
@@ -89,6 +85,7 @@ export function ImportStatusList() {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.xs,
   },
 });

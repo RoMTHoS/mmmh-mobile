@@ -41,8 +41,10 @@ export function useImportPolling() {
           estimatedTimeRemaining: status.estimatedTimeRemaining,
           error: status.error,
           result: status.result,
-          pipeline: status.pipelineInfo?.pipeline,
-          fallbackUsed: status.pipelineInfo?.fallbackUsed,
+          ...(status.pipelineInfo?.pipeline ? { pipeline: status.pipelineInfo.pipeline } : {}),
+          ...(status.pipelineInfo?.fallbackUsed != null
+            ? { fallbackUsed: status.pipelineInfo.fallbackUsed }
+            : {}),
         });
 
         if (status.status === 'failed' && !trackedJobsRef.current.has(job.jobId)) {
@@ -65,10 +67,13 @@ export function useImportPolling() {
           });
           trackedJobsRef.current.add(job.jobId);
           try {
-            if (status.pipelineInfo.pipeline === 'vps') {
-              await planDb.incrementVpsUsage();
-            } else {
-              await planDb.incrementGeminiUsage();
+            // Skip if usage was already tracked optimistically on submit
+            if (!job.usageTracked) {
+              if (status.pipelineInfo.pipeline === 'vps') {
+                await planDb.incrementVpsUsage();
+              } else {
+                await planDb.incrementGeminiUsage();
+              }
             }
             queryClient.invalidateQueries({ queryKey: ['import-usage'] });
           } catch (usageError) {

@@ -1,4 +1,10 @@
+import React from 'react';
+import { render } from '@testing-library/react-native';
 import { EmptyState } from '../../../src/components/recipes/EmptyState';
+
+jest.mock('expo-router', () => ({
+  router: { push: jest.fn() },
+}));
 
 describe('EmptyState', () => {
   beforeEach(() => {
@@ -6,31 +12,17 @@ describe('EmptyState', () => {
   });
 
   it('renders empty state component', () => {
-    const element = EmptyState();
-
-    expect(element).toBeDefined();
-    expect(element.props.testID).toBe('empty-state');
+    const { getByTestId } = render(<EmptyState />);
+    expect(getByTestId('empty-state')).toBeDefined();
   });
 
-  it('contains the expected text content', () => {
-    const element = EmptyState();
-
-    expect(element).toBeDefined();
-    // Element structure is correct
+  it('displays correct title text', () => {
+    const { getByText } = render(<EmptyState />);
+    expect(getByText('Aucune recette')).toBeDefined();
   });
 
-  it('renders a Button component', () => {
-    const element = EmptyState();
-    const children = element.props.children;
-
-    // Find the Button in children
-    const button = Array.isArray(children)
-      ? children.find(
-          (child: { type?: { name?: string } }) =>
-            child && typeof child === 'object' && child.type?.name === 'Button'
-        )
-      : null;
-
-    expect(button).toBeDefined();
+  it('renders a CTA button', () => {
+    const { getByText } = render(<EmptyState />);
+    expect(getByText('Créer une recette')).toBeDefined();
   });
 });

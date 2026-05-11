@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../src/utils/toast';
 import { Icon, Button } from '../../src/components/ui';
 import { useImportStore } from '../../src/stores/importStore';
 import { submitImport } from '../../src/services/import';
@@ -76,7 +76,7 @@ export default function WebViewScreen() {
               text2: 'Traitement en cours...',
             });
 
-            router.replace('/(tabs)');
+            router.back();
           } catch (error) {
             Toast.show({
               type: 'error',

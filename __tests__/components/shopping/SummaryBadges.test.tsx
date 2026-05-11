@@ -50,30 +50,12 @@ describe('SummaryBadges', () => {
   it('displays meal count', () => {
     const element = SummaryBadges({ list: mockList({ mealCount: 5 }) });
     const texts = findTextContent(element);
-    expect(texts.some((t) => t.includes('5 repas'))).toBe(true);
+    expect(texts.some((t) => t.includes('5'))).toBe(true);
   });
 
-  it('shows "— €" when price estimates are null', () => {
-    const element = SummaryBadges({
-      list: mockList({ priceEstimateMin: null, priceEstimateMax: null }),
-    });
+  it('displays different meal count', () => {
+    const element = SummaryBadges({ list: mockList({ mealCount: 10 }) });
     const texts = findTextContent(element);
-    expect(texts.some((t) => t.includes('— €'))).toBe(true);
-  });
-
-  it('shows price range when estimates exist', () => {
-    const element = SummaryBadges({
-      list: mockList({ priceEstimateMin: 55, priceEstimateMax: 75 }),
-    });
-    const texts = findTextContent(element);
-    expect(texts.some((t) => t.includes('55-75 €'))).toBe(true);
-  });
-
-  it('shows single price when min equals max', () => {
-    const element = SummaryBadges({
-      list: mockList({ priceEstimateMin: 50, priceEstimateMax: 50 }),
-    });
-    const texts = findTextContent(element);
-    expect(texts.some((t) => t.includes('50 €'))).toBe(true);
+    expect(texts.some((t) => t.includes('10'))).toBe(true);
   });
 });

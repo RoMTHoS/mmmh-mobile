@@ -7,17 +7,23 @@ import {
   StyleSheet,
   ImageSourcePropType,
   Pressable,
+  Modal,
+  FlatList,
+  TextInput,
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import * as WebBrowser from 'expo-web-browser';
+import { Ionicons } from '@expo/vector-icons';
 import { useRecipe, useActiveShoppingList, useShoppingListRecipes } from '../../src/hooks';
 import { useShoppingStore } from '../../src/stores/shoppingStore';
+import { useCollectionStore } from '../../src/stores/collectionStore';
 import { analytics } from '../../src/services/analytics';
 import { EVENTS } from '../../src/utils/analyticsEvents';
 import { LoadingScreen, Badge, Icon } from '../../src/components/ui';
 import { IngredientList, StepList } from '../../src/components/recipes';
 import { ServingsSelector } from '../../src/components/shopping';
-import { colors, typography, spacing, fonts } from '../../src/theme';
+import { colors, typography, spacing, fonts, radius } from '../../src/theme';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PLACEHOLDER_IMAGE: ImageSourcePropType = require('../../assets/placeholder-food.png');
@@ -26,6 +32,7 @@ export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: recipe, isLoading, error } = useRecipe(id);
   const [servingsSelectorVisible, setServingsSelectorVisible] = useState(false);
+  const [displayServings, setDisplayServings] = useState<number | null>(null);
 
   const activeListId = useShoppingStore((s) => s.activeListId);
   const listQuery = useActiveShoppingList();
@@ -39,6 +46,30 @@ export default function RecipeDetailScreen() {
   );
   const isInList = existingEntry !== null;
 
+  const collections = useCollectionStore((s) => s.collections);
+  const addRecipeToCollection = useCollectionStore((s) => s.addRecipeToCollection);
+  const removeRecipeFromCollection = useCollectionStore((s) => s.removeRecipeFromCollection);
+  const addCollection = useCollectionStore((s) => s.addCollection);
+  const [collectionDropdownVisible, setCollectionDropdownVisible] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [newCollectionType, setNewCollectionType] = useState<'recipeBook' | 'menu'>('recipeBook');
+
+  const isInAnyCollection = useMemo(
+    () => (id ? collections.some((c) => c.recipeIds.includes(id)) : false),
+    [collections, id]
+  );
+
+  const toggleCollection = (collectionId: string) => {
+    if (!id) return;
+    const col = collections.find((c) => c.id === collectionId);
+    if (!col) return;
+    if (col.recipeIds.includes(id)) {
+      removeRecipeFromCollection(collectionId, id);
+    } else {
+      addRecipeToCollection(collectionId, id, recipe?.servings ?? 4);
+    }
+  };
+
   // Keep screen awake while viewing recipe (for cooking)
   useEffect(() => {
     activateKeepAwakeAsync().catch(() => {});
@@ -50,6 +81,32 @@ export default function RecipeDetailScreen() {
   useEffect(() => {
     if (id) analytics.track(EVENTS.RECIPE_VIEWED, { recipe_id: id });
   }, [id]);
+
+  useEffect(() => {
+    if (recipe?.servings) setDisplayServings(recipe.servings);
+  }, [recipe?.servings]);
+
+  useEffect(() => {
+    if (id) analytics.track(EVENTS.RECIPE_VIEWED, { recipe_id: id });
+  }, [id]);
+
+  const baseServings = recipe?.servings ?? null;
+  const servings = displayServings ?? baseServings;
+
+  const scaledIngredients = useMemo(() => {
+    if (!recipe) return [];
+    if (!baseServings || !servings || servings === baseServings) return recipe.ingredients;
+    const multiplier = servings / baseServings;
+    return recipe.ingredients.map((ing) => {
+      if (!ing.quantity) return ing;
+      const parsed = parseFloat(ing.quantity.replace(',', '.'));
+      if (isNaN(parsed)) return ing;
+      const scaled = parsed * multiplier;
+      const formatted =
+        scaled % 1 === 0 ? String(scaled) : scaled.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+      return { ...ing, quantity: formatted };
+    });
+  }, [recipe?.ingredients, servings, baseServings]);
 
   if (isLoading) {
     return (
@@ -78,6 +135,7 @@ export default function RecipeDetailScreen() {
       <Stack.Screen
         options={{
           title: '',
+          headerShadowVisible: false,
           headerBackVisible: false,
           headerLeft: () => (
             <Pressable
@@ -89,6 +147,7 @@ export default function RecipeDetailScreen() {
               <Icon name="arrow-left" size="lg" color={colors.text} />
             </Pressable>
           ),
+          headerTitle: () => null,
           headerRight: () => (
             <Pressable
               onPress={() => router.push(`/recipe/${id}/edit`)}
@@ -102,6 +161,9 @@ export default function RecipeDetailScreen() {
         }}
       />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Title */}
+        <Text style={styles.recipeTitle}>{recipe.title}</Text>
+
         {/* Hero Image */}
         <Image
           source={recipe.photoUri ? { uri: recipe.photoUri } : PLACEHOLDER_IMAGE}
@@ -110,20 +172,77 @@ export default function RecipeDetailScreen() {
           testID="recipe-hero-image"
         />
 
+        {/* Source Creator */}
+        {recipe.sourceCreator && (
+          <Pressable
+            style={styles.sourceRow}
+            onPress={() => recipe.sourceUrl && WebBrowser.openBrowserAsync(recipe.sourceUrl)}
+            disabled={!recipe.sourceUrl}
+          >
+            <Text
+              style={[styles.sourceText, recipe.sourceUrl && styles.sourceTextLink]}
+              numberOfLines={1}
+            >
+              {recipe.sourceCreator}
+            </Text>
+          </Pressable>
+        )}
+
         <View style={styles.content}>
-          {/* Title */}
-          <Text style={styles.title}>{recipe.title}</Text>
+          {/* Author Row */}
+          {recipe.author && (
+            <View style={styles.authorRow}>
+              <View style={styles.authorAvatar}>
+                <Icon name="servings" size="sm" color={colors.textMuted} />
+              </View>
+              <Text style={styles.authorText}>Par {recipe.author}</Text>
+            </View>
+          )}
 
           {/* Metadata Badges */}
           <View style={styles.metadata}>
-            {recipe.cookingTime && <Badge icon="time" value={`${recipe.cookingTime} min`} />}
-            {recipe.servings && <Badge icon="servings" value={`${recipe.servings} portions`} />}
+            {recipe.cookingTime && <Badge icon="time" value={`${recipe.cookingTime} mn`} />}
+            {(recipe.priceMin || recipe.priceMax) && (
+              <Badge
+                icon="cost"
+                value={
+                  recipe.priceMin && recipe.priceMax
+                    ? `${recipe.priceMin}-${recipe.priceMax} €`
+                    : `${recipe.priceMin ?? recipe.priceMax} €`
+                }
+              />
+            )}
+            {recipe.kcal && <Badge icon="calories" value={`${recipe.kcal} kcal`} />}
           </View>
 
           {/* Ingredients Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ingrédients</Text>
-            <IngredientList ingredients={recipe.ingredients} />
+            <View style={styles.ingredientsHeader}>
+              <Text style={styles.sectionTitle}>Ingrédients</Text>
+              {baseServings && servings && (
+                <View style={styles.servingsStepper}>
+                  <Pressable
+                    onPress={() => setDisplayServings(Math.max(1, servings - 1))}
+                    accessibilityLabel="Diminuer les portions"
+                    hitSlop={4}
+                  >
+                    <Text style={styles.stepperButtonText}>-</Text>
+                  </Pressable>
+                  <View style={styles.servingsCenter}>
+                    <Ionicons name="person-outline" size={15} color={colors.text} />
+                    <Text style={styles.servingsCount}>{servings}</Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setDisplayServings(servings + 1)}
+                    accessibilityLabel="Augmenter les portions"
+                    hitSlop={4}
+                  >
+                    <Text style={styles.stepperButtonText}>+</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+            <IngredientList ingredients={scaledIngredients} />
           </View>
 
           {/* Instructions Section */}
@@ -152,36 +271,152 @@ export default function RecipeDetailScreen() {
         />
       )}
 
+      {/* Collection dropdown */}
+      <Modal
+        visible={collectionDropdownVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setCollectionDropdownVisible(false);
+          setNewCollectionName('');
+        }}
+      >
+        <Pressable
+          style={styles.dropdownOverlay}
+          onPress={() => {
+            setCollectionDropdownVisible(false);
+            setNewCollectionName('');
+          }}
+        >
+          <Pressable style={styles.dropdown} onPress={() => {}}>
+            <Text style={styles.dropdownTitle}>Ajouter à un catalogue</Text>
+            {collections.length > 0 ? (
+              <FlatList
+                data={collections}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  const isSelected = id ? item.recipeIds.includes(id) : false;
+                  return (
+                    <Pressable
+                      style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
+                      onPress={() => toggleCollection(item.id)}
+                    >
+                      <Text style={styles.dropdownItemType}>
+                        {item.type === 'recipeBook' ? 'Livre' : 'Repas'}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          isSelected && styles.dropdownItemTextSelected,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {item.name}
+                      </Text>
+                      {isSelected && <Ionicons name="checkmark" size={18} color={colors.accent} />}
+                    </Pressable>
+                  );
+                }}
+              />
+            ) : (
+              <Text style={styles.dropdownEmpty}>Aucun catalogue créé</Text>
+            )}
+            <View style={styles.dropdownCreateSection}>
+              <TextInput
+                style={styles.dropdownCreateInput}
+                placeholder="Nouveau catalogue..."
+                placeholderTextColor={colors.textMuted}
+                value={newCollectionName}
+                onChangeText={setNewCollectionName}
+                returnKeyType="done"
+                blurOnSubmit
+              />
+              <View style={styles.dropdownTypeRow}>
+                <Pressable
+                  style={[
+                    styles.dropdownTypeButton,
+                    newCollectionType === 'recipeBook' && styles.dropdownTypeButtonActive,
+                  ]}
+                  onPress={() => setNewCollectionType('recipeBook')}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownTypeText,
+                      newCollectionType === 'recipeBook' && styles.dropdownTypeTextActive,
+                    ]}
+                  >
+                    Livre
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.dropdownTypeButton,
+                    newCollectionType === 'menu' && styles.dropdownTypeButtonActive,
+                  ]}
+                  onPress={() => setNewCollectionType('menu')}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownTypeText,
+                      newCollectionType === 'menu' && styles.dropdownTypeTextActive,
+                    ]}
+                  >
+                    Repas
+                  </Text>
+                </Pressable>
+              </View>
+              <Pressable
+                style={[
+                  styles.dropdownCreateFullButton,
+                  !newCollectionName.trim() && styles.dropdownCreateButtonDisabled,
+                ]}
+                onPress={() => {
+                  if (newCollectionName.trim() && id) {
+                    const col = addCollection(newCollectionName.trim(), newCollectionType);
+                    addRecipeToCollection(col.id, id, recipe?.servings ?? 4);
+                    setNewCollectionName('');
+                  }
+                }}
+                disabled={!newCollectionName.trim()}
+              >
+                <Text
+                  style={[
+                    styles.dropdownCreateFullButtonText,
+                    !newCollectionName.trim() && { color: colors.textMuted },
+                  ]}
+                >
+                  Créer nouveau catalogue
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* Bottom Action Bar */}
       <View style={styles.actionBar}>
-        <Pressable
-          style={styles.actionButton}
-          onPress={() => {}}
-          accessibilityLabel="Enregistrer la recette"
-        >
-          <Icon name="bookmark" size="lg" color={colors.text} />
-          <Text style={styles.actionText}>Enregistrer</Text>
-        </Pressable>
         <Pressable
           style={styles.actionButton}
           onPress={() => setServingsSelectorVisible(true)}
           accessibilityLabel="Ajouter aux courses"
           testID="courses-button"
         >
-          <Icon
-            name={isInList ? 'cart' : 'cart-outline'}
-            size="lg"
-            color={isInList ? colors.accent : colors.text}
-          />
-          <Text style={[styles.actionText, isInList && styles.actionTextActive]}>Courses</Text>
+          <Icon name="cart-add" size="lg" color={isInList ? colors.accent : colors.text} />
+          <Text style={[styles.actionText, isInList && styles.actionTextActive]}>
+            Liste de course
+          </Text>
         </Pressable>
+
         <Pressable
           style={styles.actionButton}
-          onPress={() => {}}
-          accessibilityLabel="Partager la recette"
+          onPress={() => setCollectionDropdownVisible(true)}
+          accessibilityLabel="Ajouter à un catalogue"
+          testID="collection-button"
         >
-          <Icon name="share" size="lg" color={colors.text} />
-          <Text style={styles.actionText}>Partager</Text>
+          <Icon name="bookmark" size="lg" color={isInAnyCollection ? colors.accent : colors.text} />
+          <Text style={[styles.actionText, isInAnyCollection && styles.actionTextActive]}>
+            Catalogue
+          </Text>
         </Pressable>
       </View>
     </>
@@ -199,19 +434,57 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  recipeTitle: {
+    fontFamily: fonts.script,
+    fontSize: 24,
+    color: colors.text,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
   heroImage: {
     width: '100%',
     height: 280,
     backgroundColor: colors.surfaceAlt,
   },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  sourceText: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.textMuted,
+    flex: 1,
+  },
+  sourceTextLink: {
+    color: colors.accent,
+    textDecorationLine: 'underline',
+  },
   content: {
     padding: spacing.md,
     paddingBottom: spacing.xl,
   },
-  title: {
-    ...typography.headerScript,
-    color: colors.text,
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     marginBottom: spacing.md,
+  },
+  authorAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authorText: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.textMuted,
   },
   metadata: {
     flexDirection: 'row',
@@ -222,10 +495,44 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing.lg,
   },
+  ingredientsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   sectionTitle: {
     ...typography.titleScript,
     color: colors.text,
-    marginBottom: spacing.md,
+  },
+  servingsStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    minWidth: 100,
+  },
+  stepperButtonText: {
+    fontFamily: fonts.sans,
+    fontSize: 20,
+    color: colors.text,
+    lineHeight: 22,
+  },
+  servingsCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  servingsCount: {
+    fontFamily: fonts.sans,
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
   },
   notes: {
     ...typography.body,
@@ -234,7 +541,7 @@ const styles = StyleSheet.create({
   },
   actionBar: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -254,6 +561,115 @@ const styles = StyleSheet.create({
   actionTextActive: {
     color: colors.accent,
     fontWeight: '600',
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  dropdown: {
+    backgroundColor: colors.modalBackground,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.borderMedium,
+    padding: spacing.md,
+    maxHeight: 400,
+  },
+  dropdownTitle: {
+    fontFamily: fonts.script,
+    fontSize: 18,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+    gap: spacing.sm,
+  },
+  dropdownItemSelected: {
+    backgroundColor: colors.surface,
+  },
+  dropdownItemType: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    color: colors.textMuted,
+    minWidth: 36,
+  },
+  dropdownItemText: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  dropdownItemTextSelected: {
+    fontWeight: '600',
+  },
+  dropdownEmpty: {
+    ...typography.body,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
+  dropdownCreateSection: {
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  dropdownTypeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  dropdownTypeButton: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+  },
+  dropdownTypeButtonActive: {
+    borderWidth: 2,
+    borderColor: colors.text,
+  },
+  dropdownTypeText: {
+    fontFamily: fonts.script,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  dropdownTypeTextActive: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  dropdownCreateInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+  dropdownCreateFullButton: {
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+  },
+  dropdownCreateFullButtonText: {
+    fontFamily: fonts.script,
+    fontSize: 14,
+    color: colors.surface,
+  },
+  dropdownCreateButtonDisabled: {
+    opacity: 0.4,
   },
   errorContainer: {
     flex: 1,

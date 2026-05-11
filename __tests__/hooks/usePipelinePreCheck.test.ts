@@ -1,4 +1,3 @@
-import Toast from 'react-native-toast-message';
 import type { PlanStatus } from '../../src/types';
 
 // Mock usePlanStatus
@@ -7,8 +6,9 @@ jest.mock('../../src/hooks/usePlan', () => ({
   usePlanStatus: () => mockUsePlanStatus(),
 }));
 
-jest.mock('react-native-toast-message', () => ({
-  show: jest.fn(),
+const mockToastShow = jest.fn();
+jest.mock('../../src/utils/toast', () => ({
+  Toast: { show: (...args: unknown[]) => mockToastShow(...args) },
 }));
 
 // Import after mocks
@@ -25,10 +25,27 @@ describe('usePipelinePreCheck', () => {
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
-  it('does nothing for free tier', () => {
+  it('does nothing for free tier with remaining Gemini quota', () => {
+    mockUsePlanStatus.mockReturnValue({
+      tier: 'free',
+      trialDaysRemaining: 0,
+      isTrialExpired: false,
+      canUsePremium: false,
+      vpsQuotaRemaining: 5,
+      geminiQuotaRemaining: 2,
+      storeSubscription: null,
+    });
+
+    const check = usePipelinePreCheck();
+    check();
+
+    expect(mockToastShow).not.toHaveBeenCalled();
+  });
+
+  it('does nothing for free tier with exhausted Gemini quota (no-op)', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'free',
       trialDaysRemaining: 0,
@@ -36,12 +53,13 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: false,
       vpsQuotaRemaining: 5,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
   it('does nothing for premium tier', () => {
@@ -52,12 +70,13 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 50,
       geminiQuotaRemaining: 10,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
   it('does nothing for trial tier with remaining Gemini quota', () => {
@@ -68,15 +87,16 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 10,
       geminiQuotaRemaining: 1,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).not.toHaveBeenCalled();
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
-  it('shows info Toast for trial tier with exhausted Gemini quota', () => {
+  it('does nothing for trial tier with exhausted Gemini quota (no-op)', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 3,
@@ -84,22 +104,16 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 8,
       geminiQuotaRemaining: 0,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).toHaveBeenCalledTimes(1);
-    expect(Toast.show).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'info',
-        text1: 'Import standard',
-        visibilityTime: 4000,
-      })
-    );
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 
-  it('shows info Toast when geminiQuotaRemaining is negative', () => {
+  it('does nothing when geminiQuotaRemaining is negative (no-op)', () => {
     mockUsePlanStatus.mockReturnValue({
       tier: 'trial',
       trialDaysRemaining: 2,
@@ -107,11 +121,12 @@ describe('usePipelinePreCheck', () => {
       canUsePremium: true,
       vpsQuotaRemaining: 5,
       geminiQuotaRemaining: -1,
+      storeSubscription: null,
     });
 
     const check = usePipelinePreCheck();
     check();
 
-    expect(Toast.show).toHaveBeenCalledTimes(1);
+    expect(mockToastShow).not.toHaveBeenCalled();
   });
 });

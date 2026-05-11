@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, View, Text, Image, Pressable, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, radius } from '../../theme';
+import { colors, typography, spacing, radius, fonts } from '../../theme';
 import type { ShoppingListRecipe } from '../../types';
 
 interface RecipeCarouselProps {
   recipes: ShoppingListRecipe[];
   highlightRecipeId?: string;
   onRemoveRecipe?: (recipe: ShoppingListRecipe) => void;
+  onUpdateServings?: (recipe: ShoppingListRecipe, servings: number) => void;
 }
 
 const CARD_SIZE = 72;
@@ -17,13 +18,18 @@ function RecipeCard({
   isHighlighted,
   onLongPress,
   onRemove,
+  onDecrement,
+  onIncrement,
 }: {
   recipe: ShoppingListRecipe;
   isHighlighted: boolean;
   onLongPress?: () => void;
   onRemove?: () => void;
+  onDecrement?: () => void;
+  onIncrement?: () => void;
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const servings = Math.round(recipe.servingsMultiplier * recipe.recipeBaseServings);
 
   useEffect(() => {
     if (isHighlighted) {
@@ -37,6 +43,9 @@ function RecipeCard({
   return (
     <Pressable onLongPress={onLongPress} testID={`carousel-card-${recipe.recipeId}`}>
       <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {recipe.recipeTitle ?? 'Sans titre'}
+        </Text>
         <View>
           {recipe.recipePhotoUri ? (
             <Image
@@ -67,9 +76,23 @@ function RecipeCard({
             </Pressable>
           )}
         </View>
-        <Text style={styles.cardTitle} numberOfLines={1}>
-          {recipe.recipeTitle ?? 'Sans titre'}
-        </Text>
+        <View style={styles.portionStepper}>
+          <Pressable
+            onPress={onDecrement}
+            disabled={servings <= 1}
+            hitSlop={4}
+            style={styles.stepperButton}
+          >
+            <Text style={styles.stepperButtonText}>-</Text>
+          </Pressable>
+          <View style={styles.portionCenter}>
+            <Ionicons name="person-outline" size={13} color={colors.text} />
+            <Text style={styles.portionText}>{servings}</Text>
+          </View>
+          <Pressable onPress={onIncrement} hitSlop={4} style={styles.stepperButton}>
+            <Text style={styles.stepperButtonText}>+</Text>
+          </Pressable>
+        </View>
       </Animated.View>
     </Pressable>
   );
@@ -79,6 +102,7 @@ export function RecipeCarousel({
   recipes,
   highlightRecipeId,
   onRemoveRecipe,
+  onUpdateServings,
 }: RecipeCarouselProps) {
   const flatListRef = useRef<FlatList>(null);
   const [highlightId, setHighlightId] = useState(highlightRecipeId);
@@ -101,19 +125,37 @@ export function RecipeCarousel({
 
   return (
     <View style={styles.container} testID="recipe-carousel">
-      <Text style={styles.sectionTitle}>Recettes dans la liste</Text>
       <FlatList
         ref={flatListRef}
         data={recipes}
         keyExtractor={(item) => item.recipeId}
         horizontal
         showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        nestedScrollEnabled={false}
         renderItem={({ item }) => (
           <RecipeCard
             recipe={item}
             isHighlighted={item.recipeId === highlightId}
             onLongPress={onRemoveRecipe ? () => onRemoveRecipe(item) : undefined}
             onRemove={onRemoveRecipe ? () => onRemoveRecipe(item) : undefined}
+            onDecrement={
+              onUpdateServings
+                ? () => {
+                    const curr = Math.round(item.servingsMultiplier * item.recipeBaseServings);
+                    if (curr > 1) onUpdateServings(item, curr - 1);
+                  }
+                : undefined
+            }
+            onIncrement={
+              onUpdateServings
+                ? () => {
+                    const curr = Math.round(item.servingsMultiplier * item.recipeBaseServings);
+                    onUpdateServings(item, curr + 1);
+                  }
+                : undefined
+            }
           />
         )}
         contentContainerStyle={styles.listContent}
@@ -126,13 +168,7 @@ export function RecipeCarousel({
 const styles = StyleSheet.create({
   container: {
     paddingTop: spacing.md,
-  },
-  sectionTitle: {
-    ...typography.label,
-    color: colors.text,
-    fontWeight: '600',
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
+    overflow: 'hidden',
   },
   listContent: {
     paddingHorizontal: spacing.md,
@@ -164,15 +200,48 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     position: 'absolute',
-    top: -4,
-    right: -4,
+    top: 0,
+    right: 0,
     padding: 2,
   },
   cardTitle: {
     ...typography.caption,
     color: colors.text,
     textAlign: 'center',
-    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
     width: CARD_SIZE,
+  },
+  portionStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: CARD_SIZE,
+    marginTop: spacing.xs,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  stepperButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperButtonText: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.text,
+    lineHeight: 14,
+  },
+  portionCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  portionText: {
+    ...typography.caption,
+    color: colors.text,
+    fontSize: 11,
   },
 });

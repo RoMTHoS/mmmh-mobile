@@ -31,6 +31,16 @@ jest.mock('../../src/stores/shoppingStore', () => ({
     selector({ activeListId: 'list-1' }),
 }));
 
+jest.mock('../../src/stores/collectionStore', () => ({
+  useCollectionStore: (selector: (s: Record<string, unknown>) => unknown) =>
+    selector({
+      collections: [],
+      addRecipeToCollection: jest.fn(),
+      removeRecipeFromCollection: jest.fn(),
+      addCollection: jest.fn(),
+    }),
+}));
+
 jest.mock('../../src/services/analytics', () => ({
   analytics: { track: jest.fn() },
 }));
@@ -57,6 +67,17 @@ const mockRecipe = (overrides?: Partial<Recipe>): Recipe => ({
   servings: 4,
   photoUri: null,
   notes: 'Some notes here',
+  author: null,
+  priceMin: null,
+  priceMax: null,
+  kcal: null,
+  catalogue: null,
+  regime: null,
+  nutritionProteins: null,
+  nutritionCarbs: null,
+  nutritionFats: null,
+  sourceUrl: null,
+  sourceCreator: null,
   createdAt: '2024-01-15T12:00:00.000Z',
   updatedAt: '2024-01-15T12:00:00.000Z',
   ...overrides,

@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
 import { View, TextInput, Text, Pressable, StyleSheet, Keyboard } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { Icon, Button } from '../ui';
+import { Icon } from '../ui';
 import { PlatformBadge } from './PlatformBadge';
-import { colors, typography, spacing, radius, fonts } from '../../theme';
-import { validateVideoUrl, isValidUrl, type Platform } from '../../utils/validation';
+import { colors, spacing, radius, fonts } from '../../theme';
+import { validateVideoUrl, type Platform } from '../../utils/validation';
 
 export type ImportType = 'video' | 'website' | 'link';
 
@@ -12,9 +12,10 @@ interface UrlInputProps {
   importType: ImportType;
   onSubmit: (url: string) => void;
   isLoading: boolean;
+  onUrlChange?: (url: string) => void;
 }
 
-export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
+export function UrlInput({ importType, isLoading, onUrlChange }: UrlInputProps) {
   const [url, setUrl] = useState('');
   const [detectedPlatform, setDetectedPlatform] = useState<Platform | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +24,7 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
     (text: string) => {
       setUrl(text);
       setError(null);
+      onUrlChange?.(text);
 
       // Detect video platform for video or link import types
       if ((importType === 'video' || importType === 'link') && text.length > 10) {
@@ -45,37 +47,6 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
       // Clipboard access may fail silently
     }
   }, [handleUrlChange]);
-
-  const handleSubmit = useCallback(() => {
-    Keyboard.dismiss();
-
-    if (!url.trim()) {
-      setError('Veuillez entrer une URL');
-      return;
-    }
-
-    if (importType === 'video') {
-      const validation = validateVideoUrl(url);
-      if (!validation.isValid) {
-        setError(validation.error || 'URL de video invalide');
-        return;
-      }
-    } else if (importType === 'link') {
-      // Accept both video platform URLs and any valid HTTP URL
-      if (!isValidUrl(url)) {
-        setError('Veuillez entrer une URL valide');
-        return;
-      }
-    } else {
-      // Website import - any valid URL
-      if (!isValidUrl(url)) {
-        setError('Veuillez entrer une URL valide');
-        return;
-      }
-    }
-
-    onSubmit(url.trim());
-  }, [url, importType, onSubmit]);
 
   const getPlaceholderText = () => {
     switch (importType) {
@@ -102,8 +73,8 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
-          returnKeyType="go"
-          onSubmitEditing={handleSubmit}
+          returnKeyType="done"
+          onSubmitEditing={() => Keyboard.dismiss()}
           editable={!isLoading}
         />
         <Pressable
@@ -124,34 +95,6 @@ export function UrlInput({ importType, onSubmit, isLoading }: UrlInputProps) {
           <Icon name="check" size="sm" color={colors.success} />
         </View>
       )}
-
-      {(importType === 'video' || importType === 'link') &&
-        !detectedPlatform &&
-        url.length === 0 && (
-          <View style={styles.platformHints}>
-            <Text style={styles.hintsLabel}>
-              {importType === 'link' ? 'Videos supportees:' : 'Plateformes supportees:'}
-            </Text>
-            <View style={styles.platformList}>
-              <PlatformBadge platform="instagram" size="sm" showLabel />
-              <PlatformBadge platform="tiktok" size="sm" showLabel />
-              <PlatformBadge platform="youtube" size="sm" showLabel />
-            </View>
-            {importType === 'link' && (
-              <Text style={[styles.hintsLabel, { marginTop: spacing.sm }]}>
-                + tout site de recette
-              </Text>
-            )}
-          </View>
-        )}
-
-      <Button
-        title="Importer la recette"
-        onPress={handleSubmit}
-        loading={isLoading}
-        disabled={!url.trim() || isLoading}
-        style={styles.submitButton}
-      />
     </View>
   );
 }
@@ -211,20 +154,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.success,
-  },
-  platformHints: {
-    marginTop: spacing.lg,
-  },
-  hintsLabel: {
-    ...typography.label,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-  },
-  platformList: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  submitButton: {
-    marginTop: spacing.xl,
   },
 });

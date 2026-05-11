@@ -1,9 +1,10 @@
 import * as SQLite from 'expo-sqlite';
 import uuid from 'react-native-uuid';
+import { toRelativePhotoPath, resolveImagePath } from '../utils/imageCompression';
 import type { Recipe, CreateRecipeInput, UpdateRecipeInput } from '../types';
 
 const DATABASE_NAME = 'mmmh.db';
-const CURRENT_VERSION = 4;
+const CURRENT_VERSION = 7;
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -16,6 +17,17 @@ interface RecipeRow {
   servings: number | null;
   photoUri: string | null;
   notes: string | null;
+  author: string | null;
+  sourceUrl: string | null;
+  sourceCreator: string | null;
+  priceMin: number | null;
+  priceMax: number | null;
+  kcal: number | null;
+  catalogue: string | null;
+  regime: string | null;
+  nutritionProteins: number | null;
+  nutritionCarbs: number | null;
+  nutritionFats: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,6 +48,7 @@ function deserializeRecipe(row: RecipeRow): Recipe {
     ...row,
     ingredients: JSON.parse(row.ingredients),
     steps: JSON.parse(row.steps),
+    photoUri: resolveImagePath(row.photoUri),
   };
 }
 
@@ -170,6 +183,41 @@ async function runMigrations(fromVersion: number): Promise<void> {
       UPDATE schema_version SET version = 4;
     `);
   }
+
+  if (fromVersion < 5) {
+    database.execSync(`
+      ALTER TABLE recipes ADD COLUMN author TEXT;
+      ALTER TABLE recipes ADD COLUMN priceMin REAL;
+      ALTER TABLE recipes ADD COLUMN priceMax REAL;
+      ALTER TABLE recipes ADD COLUMN kcal INTEGER;
+      ALTER TABLE recipes ADD COLUMN catalogue TEXT;
+      ALTER TABLE recipes ADD COLUMN regime TEXT;
+      ALTER TABLE recipes ADD COLUMN nutritionProteins REAL;
+      ALTER TABLE recipes ADD COLUMN nutritionCarbs REAL;
+      ALTER TABLE recipes ADD COLUMN nutritionFats REAL;
+
+      UPDATE schema_version SET version = 5;
+    `);
+  }
+
+  if (fromVersion < 6) {
+    database.execSync(`
+      ALTER TABLE user_plan ADD COLUMN premium_source TEXT;
+      ALTER TABLE user_plan ADD COLUMN subscription_status TEXT;
+      ALTER TABLE user_plan ADD COLUMN expires_at TEXT;
+
+      UPDATE schema_version SET version = 6;
+    `);
+  }
+
+  if (fromVersion < 7) {
+    database.execSync(`
+      ALTER TABLE recipes ADD COLUMN sourceUrl TEXT;
+      ALTER TABLE recipes ADD COLUMN sourceCreator TEXT;
+
+      UPDATE schema_version SET version = 7;
+    `);
+  }
 }
 
 export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
@@ -179,6 +227,17 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
 
   const recipe: Recipe = {
     ...input,
+    author: input.author ?? null,
+    sourceUrl: input.sourceUrl ?? null,
+    sourceCreator: input.sourceCreator ?? null,
+    priceMin: input.priceMin ?? null,
+    priceMax: input.priceMax ?? null,
+    kcal: input.kcal ?? null,
+    catalogue: input.catalogue ?? null,
+    regime: input.regime ?? null,
+    nutritionProteins: input.nutritionProteins ?? null,
+    nutritionCarbs: input.nutritionCarbs ?? null,
+    nutritionFats: input.nutritionFats ?? null,
     id,
     createdAt: now,
     updatedAt: now,
@@ -186,8 +245,8 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
 
   try {
     database.runSync(
-      `INSERT INTO recipes (id, title, ingredients, steps, cookingTime, servings, photoUri, notes, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO recipes (id, title, ingredients, steps, cookingTime, servings, photoUri, notes, author, sourceUrl, sourceCreator, priceMin, priceMax, kcal, catalogue, regime, nutritionProteins, nutritionCarbs, nutritionFats, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         recipe.id,
         recipe.title,
@@ -195,8 +254,19 @@ export async function createRecipe(input: CreateRecipeInput): Promise<Recipe> {
         JSON.stringify(recipe.steps),
         recipe.cookingTime,
         recipe.servings,
-        recipe.photoUri,
+        toRelativePhotoPath(recipe.photoUri),
         recipe.notes,
+        recipe.author,
+        recipe.sourceUrl,
+        recipe.sourceCreator,
+        recipe.priceMin,
+        recipe.priceMax,
+        recipe.kcal,
+        recipe.catalogue,
+        recipe.regime,
+        recipe.nutritionProteins,
+        recipe.nutritionCarbs,
+        recipe.nutritionFats,
         recipe.createdAt,
         recipe.updatedAt,
       ]
@@ -255,7 +325,11 @@ export async function updateRecipe(id: string, input: UpdateRecipeInput): Promis
     database.runSync(
       `UPDATE recipes SET
         title = ?, ingredients = ?, steps = ?, cookingTime = ?,
-        servings = ?, photoUri = ?, notes = ?, updatedAt = ?
+        servings = ?, photoUri = ?, notes = ?, author = ?,
+        sourceUrl = ?, sourceCreator = ?,
+        priceMin = ?, priceMax = ?, kcal = ?, catalogue = ?,
+        regime = ?, nutritionProteins = ?, nutritionCarbs = ?,
+        nutritionFats = ?, updatedAt = ?
        WHERE id = ?`,
       [
         updated.title,
@@ -263,8 +337,19 @@ export async function updateRecipe(id: string, input: UpdateRecipeInput): Promis
         JSON.stringify(updated.steps),
         updated.cookingTime,
         updated.servings,
-        updated.photoUri,
+        toRelativePhotoPath(updated.photoUri),
         updated.notes,
+        updated.author,
+        updated.sourceUrl,
+        updated.sourceCreator,
+        updated.priceMin,
+        updated.priceMax,
+        updated.kcal,
+        updated.catalogue,
+        updated.regime,
+        updated.nutritionProteins,
+        updated.nutritionCarbs,
+        updated.nutritionFats,
         updated.updatedAt,
         id,
       ]

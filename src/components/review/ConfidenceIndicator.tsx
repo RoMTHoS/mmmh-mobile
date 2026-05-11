@@ -1,15 +1,14 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing, fonts } from '../../theme';
 import { Icon } from '../ui';
+import { PipelineBadge } from '../import/PipelineBadge';
 
 interface Props {
   confidence: number;
+  pipeline?: 'vps' | 'gemini' | null;
 }
 
-export function ConfidenceIndicator({ confidence }: Props) {
-  const [showExplanation, setShowExplanation] = useState(false);
-
+export function ConfidenceIndicator({ confidence, pipeline }: Props) {
   const getConfidenceLevel = () => {
     if (confidence >= 0.8) return { label: 'Elevee', color: colors.success };
     if (confidence >= 0.6) return { label: 'Moyenne', color: colors.warning };
@@ -22,33 +21,20 @@ export function ConfidenceIndicator({ confidence }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>Confiance IA</Text>
-          <Pressable
-            onPress={() => setShowExplanation(!showExplanation)}
-            hitSlop={8}
-            style={styles.infoButton}
-          >
-            <Icon name="info" size="sm" color={colors.textMuted} />
-          </Pressable>
+        <Text style={styles.title}>Confiance IA</Text>
+        <View style={styles.headerRight}>
+          <View style={[styles.badge, { backgroundColor: color }]}>
+            <Text style={styles.badgeText}>{label}</Text>
+          </View>
+          {pipeline && <PipelineBadge pipeline={pipeline} size="md" />}
         </View>
-        <View style={[styles.badge, { backgroundColor: color }]}>
-          <Text style={styles.badgeText}>{label}</Text>
-        </View>
-      </View>
-
-      <View style={styles.barContainer}>
-        <View style={[styles.bar, { width: `${percentage}%`, backgroundColor: color }]} />
       </View>
 
       <Text style={styles.percentage}>{percentage}% de confiance</Text>
 
-      {showExplanation && (
-        <Text style={styles.explanation}>
-          Le score de confiance indique a quel point l&apos;IA est certaine de l&apos;extraction.
-          Verifiez attentivement les champs en cas de score faible.
-        </Text>
-      )}
+      <View style={styles.barContainer}>
+        <View style={[styles.bar, { width: `${percentage}%`, backgroundColor: color }]} />
+      </View>
 
       {confidence < 0.6 && (
         <View style={styles.warningContainer}>
@@ -77,27 +63,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  titleRow: {
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   title: {
     fontFamily: fonts.script,
     fontSize: 16,
     color: colors.text,
   },
-  infoButton: {
-    padding: 2,
-  },
   badge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 5,
     borderRadius: radius.sm,
   },
   badgeText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
   },
   barContainer: {
@@ -105,21 +88,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     borderRadius: 4,
     overflow: 'hidden',
+    marginTop: spacing.xs,
+    borderWidth: 0.5,
+    borderColor: colors.border,
   },
   bar: {
     height: '100%',
     borderRadius: 4,
   },
   percentage: {
-    marginTop: spacing.xs,
     fontSize: 12,
     color: colors.textMuted,
-  },
-  explanation: {
-    marginTop: spacing.sm,
-    fontSize: 13,
-    color: colors.textMuted,
-    lineHeight: 18,
   },
   warningContainer: {
     flexDirection: 'row',

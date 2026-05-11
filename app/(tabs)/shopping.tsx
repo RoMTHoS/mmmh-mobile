@@ -7,7 +7,6 @@ import { colors, typography, spacing } from '../../src/theme';
 import { LoadingScreen } from '../../src/components/ui/LoadingScreen';
 import {
   RecipeCarousel,
-  SummaryBadges,
   ListViewTabs,
   CategoryView,
   RecipeView,
@@ -26,8 +25,10 @@ import {
   useAddManualItem,
   useDeleteItem,
   useUpdateItem,
+  useAddRecipeToList,
   useRemoveRecipeFromList,
   useDeleteShoppingList,
+  useClearShoppingList,
   useShoppingLists,
 } from '../../src/hooks/useShoppingList';
 import { useShoppingStore } from '../../src/stores/shoppingStore';
@@ -56,8 +57,6 @@ export default function ShoppingScreen() {
     }
   }, [activeListId, defaultList?.id, setActiveListId]);
 
-  const list = defaultList;
-
   const recipesQuery = useShoppingListRecipes(effectiveListId);
   const itemsQuery = useShoppingListItems(effectiveListId);
   const listsQuery = useShoppingLists(true);
@@ -66,8 +65,10 @@ export default function ShoppingScreen() {
   const addManualItem = useAddManualItem();
   const deleteItem = useDeleteItem();
   const updateItem = useUpdateItem();
+  const addRecipeToList = useAddRecipeToList();
   const removeRecipe = useRemoveRecipeFromList();
   const deleteList = useDeleteShoppingList();
+  const clearList = useClearShoppingList();
 
   const handleToggle = useCallback(
     (itemId: string) => {
@@ -110,7 +111,18 @@ export default function ShoppingScreen() {
     // Find the current list to check if it's the default
     const currentList = (listsQuery?.data ?? []).find((l) => l.id === effectiveListId);
     if (currentList?.isDefault) {
-      Alert.alert('Liste par défaut', 'La liste par défaut ne peut pas être supprimée.');
+      Alert.alert(
+        'Vider la liste',
+        'Supprimer toutes les recettes et ingrédients de cette liste ?',
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Vider',
+            style: 'destructive',
+            onPress: () => clearList.mutate(effectiveListId),
+          },
+        ]
+      );
       return;
     }
 
@@ -134,7 +146,21 @@ export default function ShoppingScreen() {
         },
       ]
     );
-  }, [effectiveListId, deleteList, defaultList?.id, setActiveListId]);
+  }, [effectiveListId, deleteList, clearList, defaultList?.id, setActiveListId, listsQuery?.data]);
+
+  const handleUpdateServings = useCallback(
+    (recipe: ShoppingListRecipe, newServings: number) => {
+      if (!effectiveListId) return;
+      const baseServings = recipe.recipeBaseServings;
+      const multiplier = baseServings > 0 ? newServings / baseServings : 1;
+      addRecipeToList.mutate({
+        listId: effectiveListId,
+        recipeId: recipe.recipeId,
+        servingsMultiplier: multiplier,
+      });
+    },
+    [effectiveListId, addRecipeToList]
+  );
 
   const handleRemoveRecipe = useCallback(
     (recipe: ShoppingListRecipe) => {
@@ -262,8 +288,8 @@ export default function ShoppingScreen() {
         recipes={recipes}
         highlightRecipeId={highlightRecipe}
         onRemoveRecipe={handleRemoveRecipe}
+        onUpdateServings={handleUpdateServings}
       />
-      <SummaryBadges list={list!} />
       <ListViewTabs activeTab={activeTab} onTabChange={setActiveTab} />
       <View style={styles.listContainer}>
         {activeTab === 'categories' && (

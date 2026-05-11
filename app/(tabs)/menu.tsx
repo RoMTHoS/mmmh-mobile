@@ -1,18 +1,31 @@
 import { useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert, Share, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  Alert,
+  Share,
+  Linking,
+  Platform,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../src/utils/toast';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import Constants from 'expo-constants';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { PremiumIcon } from '../../src/components/ui';
 import { SettingsSection } from '../../src/components/settings/SettingsSection';
 import { SettingsRow } from '../../src/components/settings/SettingsRow';
+import { Asset } from 'expo-asset';
 import { initDeviceId, getDeviceId } from '../../src/services/planSync';
-import { getDatabase } from '../../src/services/database';
+import { createRecipe, getDatabase } from '../../src/services/database';
+import { persistImage } from '../../src/utils/imageCompression';
 import { analytics } from '../../src/services/analytics';
 import { EVENTS } from '../../src/utils/analyticsEvents';
 import { usePlanStatus, useUserPlan } from '../../src/hooks';
@@ -26,7 +39,6 @@ const BUILD_NUMBER =
   '1';
 
 const URLS = {
-  faq: 'https://mymealmatehelper.com/faq',
   privacy: 'https://mymealmatehelper.com/privacy',
   terms: 'https://mymealmatehelper.com/terms',
   download: 'https://mymealmatehelper.com/download',
@@ -34,17 +46,14 @@ const URLS = {
 
 const SUPPORT_EMAIL = 'support@mymealmatehelper.com';
 
-const THEME_LABELS: Record<ThemeMode, string> = {
-  light: 'Clair',
-  dark: 'Sombre',
-  system: 'Système',
-};
-
-const THEME_OPTIONS: ThemeMode[] = ['light', 'dark', 'system'];
-
 const TIER_BADGE_CONFIG = {
-  free: { label: 'Gratuit', bg: colors.surface, border: colors.textMuted, text: colors.textMuted },
-  trial: { label: 'Essai', bg: '#EFF6FF', border: colors.info, text: colors.info },
+  free: { label: 'Standard', bg: colors.surface, border: colors.textMuted, text: colors.textMuted },
+  trial: {
+    label: 'Standard',
+    bg: colors.surface,
+    border: colors.textMuted,
+    text: colors.textMuted,
+  },
   premium: { label: 'Premium', bg: '#FEF3C7', border: '#D4A017', text: '#D4A017' },
 } as const;
 
@@ -52,15 +61,25 @@ function PlanUsageSection() {
   const planStatus = usePlanStatus();
   const { data: userPlan } = useUserPlan();
 
+  const handleManageSubscription = () => {
+    const url =
+      Platform.OS === 'ios'
+        ? 'https://apps.apple.com/account/subscriptions'
+        : 'https://play.google.com/store/account/subscriptions';
+    Linking.openURL(url);
+  };
+
   if (!planStatus) return null;
 
   const badgeConfig = TIER_BADGE_CONFIG[planStatus.tier];
-  const isTrialExpired = planStatus.tier === 'free' && userPlan?.trialStartDate !== null;
 
-  const vpsLimit = planStatus.tier === 'trial' ? QUOTA.TRIAL_VPS_PER_WEEK : QUOTA.FREE_VPS_PER_WEEK;
-  const vpsUsed = planStatus.tier === 'premium' ? 0 : vpsLimit - planStatus.vpsQuotaRemaining;
-  const vpsRatio = planStatus.tier === 'premium' ? 0 : vpsUsed / vpsLimit;
-  const barColor = vpsRatio >= 1 ? colors.error : vpsRatio >= 0.7 ? colors.warning : colors.success;
+  const geminiPerWeek =
+    planStatus.tier === 'trial' ? QUOTA.TRIAL_GEMINI_PER_WEEK : QUOTA.FREE_GEMINI_PER_WEEK;
+  const geminiRemaining = planStatus.geminiQuotaRemaining ?? 0;
+  const premiumUsed = geminiPerWeek - geminiRemaining;
+  const premiumRatio = premiumUsed / geminiPerWeek;
+  const barColor =
+    premiumRatio >= 1 ? colors.error : premiumRatio >= 0.7 ? colors.warning : colors.success;
 
   return (
     <View style={sectionStyles.section} testID="plan-usage-section">
@@ -68,9 +87,9 @@ function PlanUsageSection() {
       <View style={sectionStyles.sectionContent}>
         <View style={[rowStyles.item, rowStyles.itemLast]}>
           <View style={rowStyles.itemIcon}>
-            <Ionicons name="diamond-outline" size={22} color={colors.accent} />
+            <PremiumIcon width={22} />
           </View>
-          <View style={[rowStyles.itemContent, { gap: 6 }]}>
+          <View style={[rowStyles.itemContent, { gap: spacing.md }]}>
             {/* Tier badge */}
             <View style={planStyles.tierRow}>
               <Text style={rowStyles.itemTitle}>Plan actuel</Text>
@@ -82,73 +101,135 @@ function PlanUsageSection() {
                 testID="plan-tier-badge"
               >
                 <Text style={[planStyles.tierBadgeText, { color: badgeConfig.text }]}>
-                  {planStatus.tier === 'trial'
-                    ? `${badgeConfig.label} (${planStatus.trialDaysRemaining ?? 0}j)`
-                    : badgeConfig.label}
+                  {badgeConfig.label}
                 </Text>
               </View>
             </View>
 
             {planStatus.tier !== 'premium' && (
-              <>
-                <Text style={rowStyles.itemSubtitle} testID="plan-vps-usage">
-                  Imports cette semaine : {vpsUsed}/{vpsLimit}
-                </Text>
+              <View style={planStyles.progressGroup}>
                 <View style={planStyles.progressTrack}>
                   <View
                     style={[
                       planStyles.progressFill,
                       {
-                        width: `${Math.min(vpsRatio * 100, 100)}%`,
+                        width: `${Math.min(premiumRatio * 100, 100)}%`,
                         backgroundColor: barColor,
                       },
                     ]}
                   />
                 </View>
-              </>
-            )}
-            {planStatus.tier === 'trial' && (
-              <Text style={rowStyles.itemSubtitle} testID="plan-gemini-usage">
-                Import premium aujourd'hui : {planStatus.geminiQuotaRemaining > 0 ? '0/1' : '1/1'}
-              </Text>
+                <View style={planStyles.usageRow}>
+                  <Text style={rowStyles.itemSubtitle} testID="plan-vps-usage">
+                    Premium import utilisé {premiumUsed}/{geminiPerWeek}
+                  </Text>
+                  <Text style={rowStyles.itemSubtitle}>Réinitialisation : lundi</Text>
+                </View>
+              </View>
             )}
             {planStatus.tier === 'premium' && (
               <>
-                <View style={planStyles.premiumActiveRow}>
-                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                  <Text
-                    style={[rowStyles.itemSubtitle, { color: colors.success }]}
-                    testID="plan-premium-active"
-                  >
-                    Premium actif
-                  </Text>
-                </View>
-                {userPlan?.premiumActivatedDate && (
-                  <Text style={rowStyles.itemSubtitle}>
-                    Active le {new Date(userPlan.premiumActivatedDate).toLocaleDateString('fr-FR')}
-                  </Text>
-                )}
-                {userPlan?.promoCode && (
-                  <Text style={rowStyles.itemSubtitle}>Code : {userPlan.promoCode}</Text>
+                {/* Store subscription: show status-specific info */}
+                {planStatus.storeSubscription ? (
+                  <>
+                    {planStatus.storeSubscription.subscriptionStatus === 'active' && (
+                      <View style={planStyles.premiumActiveRow}>
+                        <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                        <Text
+                          style={[rowStyles.itemSubtitle, { color: colors.success }]}
+                          testID="plan-premium-active"
+                        >
+                          Premium actif
+                        </Text>
+                      </View>
+                    )}
+                    {planStatus.storeSubscription.subscriptionStatus === 'active' &&
+                      planStatus.storeSubscription.expirationDate && (
+                        <Text style={rowStyles.itemSubtitle} testID="plan-renewal-date">
+                          Renouvellement le{' '}
+                          {new Date(planStatus.storeSubscription.expirationDate).toLocaleDateString(
+                            'fr-FR'
+                          )}
+                        </Text>
+                      )}
+                    {planStatus.storeSubscription.subscriptionStatus === 'cancelled' && (
+                      <>
+                        <View style={planStyles.premiumActiveRow}>
+                          <Ionicons name="time-outline" size={16} color={colors.warning} />
+                          <Text
+                            style={[rowStyles.itemSubtitle, { color: colors.warning }]}
+                            testID="plan-premium-cancelled"
+                          >
+                            Premium
+                          </Text>
+                        </View>
+                        {planStatus.storeSubscription.expirationDate && (
+                          <Text style={rowStyles.itemSubtitle} testID="plan-expiry-date">
+                            Expire le{' '}
+                            {new Date(
+                              planStatus.storeSubscription.expirationDate
+                            ).toLocaleDateString('fr-FR')}
+                          </Text>
+                        )}
+                        <Pressable
+                          style={planStyles.upgradeButton}
+                          onPress={() => router.push('/upgrade')}
+                          testID="plan-resubscribe-button"
+                        >
+                          <Text style={planStyles.upgradeButtonText}>Se réabonner</Text>
+                        </Pressable>
+                      </>
+                    )}
+                    {planStatus.storeSubscription.subscriptionStatus === 'grace_period' && (
+                      <>
+                        <View style={planStyles.premiumActiveRow}>
+                          <Ionicons name="warning-outline" size={16} color={colors.warning} />
+                          <Text
+                            style={[rowStyles.itemSubtitle, { color: colors.warning }]}
+                            testID="plan-premium-grace"
+                          >
+                            Problème de paiement
+                          </Text>
+                        </View>
+                        <Text style={rowStyles.itemSubtitle}>Vérifiez vos moyens de paiement</Text>
+                      </>
+                    )}
+                    <Pressable
+                      style={planStyles.manageButton}
+                      onPress={handleManageSubscription}
+                      testID="plan-manage-subscription"
+                    >
+                      <Ionicons name="settings-outline" size={14} color={colors.info} />
+                      <Text style={planStyles.manageButtonText}>Gérer mon abonnement</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <>
+                    {/* Promo premium: unchanged from Story 5.6 */}
+                    <View style={planStyles.premiumActiveRow}>
+                      <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                      <Text
+                        style={[rowStyles.itemSubtitle, { color: colors.success }]}
+                        testID="plan-premium-active"
+                      >
+                        Premium actif
+                      </Text>
+                    </View>
+                    {userPlan?.premiumActivatedDate && (
+                      <Text style={rowStyles.itemSubtitle}>
+                        Activé le{' '}
+                        {new Date(userPlan.premiumActivatedDate).toLocaleDateString('fr-FR')}
+                      </Text>
+                    )}
+                    {userPlan?.promoCode && (
+                      <Text style={rowStyles.itemSubtitle} testID="plan-promo-code">
+                        Code : {userPlan.promoCode}
+                      </Text>
+                    )}
+                  </>
                 )}
               </>
             )}
-            {planStatus.tier !== 'premium' && (
-              <Text style={[rowStyles.itemSubtitle, { marginTop: 2 }]}>
-                Réinitialisation : lundi
-              </Text>
-            )}
-
-            {/* Trial expired message */}
-            {isTrialExpired && (
-              <Text
-                style={[rowStyles.itemSubtitle, { color: colors.warning }]}
-                testID="plan-trial-expired"
-              >
-                Votre essai est termine. Passez a Premium
-              </Text>
-            )}
-
             {/* Upgrade button */}
             {planStatus.tier !== 'premium' && (
               <Pressable
@@ -156,7 +237,11 @@ function PlanUsageSection() {
                 onPress={() => router.push('/upgrade')}
                 testID="plan-upgrade-button"
               >
-                <Text style={planStyles.upgradeButtonText}>Passer a Premium</Text>
+                <View style={planStyles.upgradeButtonInner}>
+                  <PremiumIcon width={14} color="#FFFFFF" />
+                  <Text style={planStyles.upgradeButtonText}>Passer Premium</Text>
+                  <PremiumIcon width={14} color="#FFFFFF" />
+                </View>
               </Pressable>
             )}
           </View>
@@ -167,21 +252,13 @@ function PlanUsageSection() {
 }
 
 function ThemeSelector() {
-  const theme = useSettingsStore((s) => s.theme);
-  const setTheme = useSettingsStore((s) => s.setTheme);
-
-  const handleCycleTheme = () => {
-    const currentIndex = THEME_OPTIONS.indexOf(theme);
-    const nextIndex = (currentIndex + 1) % THEME_OPTIONS.length;
-    setTheme(THEME_OPTIONS[nextIndex]);
-  };
-
   return (
     <SettingsRow
       icon="color-palette-outline"
       title="Apparence"
-      value={THEME_LABELS[theme]}
-      onPress={handleCycleTheme}
+      value="Clair"
+      disabled
+      subtitle="Dark mode bientôt disponible"
       testID="theme-toggle"
     />
   );
@@ -203,24 +280,14 @@ export default function MenuScreen() {
     analytics.track(EVENTS.HELP_RESOURCE_ACCESSED, { resource });
   };
 
-  const handleViewTutorial = async () => {
+  const handleViewTutorial = () => {
     trackHelpResource('tutorial');
-    await AsyncStorage.setItem('MMMH_SHOW_ONBOARDING', 'true');
-    Toast.show({
-      type: 'info',
-      text1: 'Tutoriel',
-      text2: "Le tutoriel s'affichera au prochain démarrage",
-    });
+    router.push({ pathname: '/onboarding', params: { from: 'settings' } });
   };
 
   const handleSendFeedback = () => {
     trackHelpResource('feedback');
     router.push('/feedback');
-  };
-
-  const handleFAQ = () => {
-    trackHelpResource('faq');
-    openUrl(URLS.faq);
   };
 
   const handleContactSupport = () => {
@@ -266,9 +333,6 @@ export default function MenuScreen() {
                       db.runSync('DELETE FROM shopping_list_items');
                       db.runSync('DELETE FROM shopping_list_recipes');
                       db.runSync('DELETE FROM shopping_lists');
-                      db.runSync('DELETE FROM recipe_tags');
-                      db.runSync('DELETE FROM ingredients');
-                      db.runSync('DELETE FROM instructions');
                       db.runSync('DELETE FROM recipes');
                       db.runSync('DELETE FROM import_usage');
                       db.runSync(
@@ -336,6 +400,48 @@ export default function MenuScreen() {
                 type: 'success',
                 text1: 'Recettes supprimées',
                 text2: 'Toutes les recettes ont été effacées',
+              });
+            } catch (error) {
+              Toast.show({
+                type: 'error',
+                text1: 'Erreur',
+                text2: error instanceof Error ? error.message : 'Unknown error',
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleLoadDemoRecipes = async () => {
+    Alert.alert(
+      'Charger les recettes démo',
+      'Ceci va ajouter 31 recettes avec photos pour les screenshots. Continuer ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Charger',
+          onPress: async () => {
+            try {
+              const { demoRecipes } = await import('../../src/data/demoRecipes');
+              let count = 0;
+              for (const demo of demoRecipes) {
+                const asset = Asset.fromModule(demo.photoAsset);
+                await asset.downloadAsync();
+                const localUri = asset.localUri;
+                let photoUri: string | null = null;
+                if (localUri) {
+                  photoUri = await persistImage(localUri);
+                }
+                await createRecipe({ ...demo.recipe, photoUri });
+                count++;
+              }
+              queryClient.invalidateQueries();
+              Toast.show({
+                type: 'success',
+                text1: 'Recettes démo chargées',
+                text2: `${count} recettes ajoutées avec succès`,
               });
             } catch (error) {
               Toast.show({
@@ -427,7 +533,6 @@ export default function MenuScreen() {
           onPress={handleSendFeedback}
           testID="help-feedback"
         />
-        <SettingsRow icon="help-circle-outline" title="FAQ" onPress={handleFAQ} testID="help-faq" />
         <SettingsRow
           icon="mail-outline"
           title="Contacter le support"
@@ -457,12 +562,6 @@ export default function MenuScreen() {
           title="Conditions d'utilisation"
           onPress={() => openUrl(URLS.terms)}
           testID="about-terms"
-        />
-        <SettingsRow
-          icon="code-slash-outline"
-          title="Licences open source"
-          onPress={() => router.push('/licenses')}
-          testID="about-licenses"
         />
         <SettingsRow
           icon="share-social-outline"
@@ -507,6 +606,12 @@ export default function MenuScreen() {
             title="Supprimer toutes les recettes"
             subtitle="Efface les recettes, ingrédients et photos"
             onPress={handleDeleteAllRecipes}
+          />
+          <SettingsRow
+            icon="images-outline"
+            title="Charger recettes démo"
+            subtitle="Ajoute 31 recettes avec photos pour screenshots"
+            onPress={handleLoadDemoRecipes}
             isLast
           />
         </SettingsSection>
@@ -565,7 +670,7 @@ const rowStyles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
@@ -605,6 +710,14 @@ const planStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  progressGroup: {
+    gap: spacing.xs,
+  },
+  usageRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   progressTrack: {
     height: 6,
     borderRadius: 3,
@@ -620,12 +733,26 @@ const planStyles = StyleSheet.create({
     borderRadius: borderRadius.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    alignSelf: 'flex-start',
-    marginTop: spacing.xs,
+    alignItems: 'center',
+  },
+  upgradeButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   upgradeButtonText: {
     ...typography.caption,
     fontWeight: '600',
-    color: colors.surfaceAlt,
+    color: '#FFFFFF',
+  },
+  manageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing.xs,
+  },
+  manageButtonText: {
+    ...typography.caption,
+    color: colors.info,
   },
 });

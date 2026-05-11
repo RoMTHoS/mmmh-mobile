@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, Alert, Pressable } from 'react-native';
+import { StyleSheet, Alert, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Toast from 'react-native-toast-message';
+import { useToastStore } from '../../../src/stores/toastStore';
 
 import { useRecipe, useUpdateRecipe, useDeleteRecipe } from '../../../src/hooks';
 import { LoadingScreen, Text } from '../../../src/components/ui';
 import { RecipeForm } from '../../../src/components/recipes';
+import type { ParsedIngredient } from '../../../src/components/recipes/IngredientEditor';
 import { createRecipeSchema, type CreateRecipeFormData } from '../../../src/schemas/recipe.schema';
 import type { Ingredient, Step } from '../../../src/types';
 import { colors, spacing, fonts } from '../../../src/theme';
@@ -17,10 +18,12 @@ export default function EditRecipeScreen() {
   const { data: recipe, isLoading } = useRecipe(id);
   const updateRecipe = useUpdateRecipe();
   const deleteRecipe = useDeleteRecipe();
+  const showToast = useToastStore((s) => s.showToast);
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoRemoved, setPhotoRemoved] = useState(false);
   const [originalPhotoUri, setOriginalPhotoUri] = useState<string | null>(null);
+  const [structuredIngredients, setStructuredIngredients] = useState<ParsedIngredient[]>([]);
 
   const {
     control,
@@ -36,6 +39,15 @@ export default function EditRecipeScreen() {
       cookingTime: null,
       servings: null,
       notes: '',
+      author: null,
+      priceMin: null,
+      priceMax: null,
+      kcal: null,
+      catalogue: null,
+      regime: null,
+      nutritionProteins: null,
+      nutritionCarbs: null,
+      nutritionFats: null,
     },
   });
 
@@ -49,6 +61,15 @@ export default function EditRecipeScreen() {
         cookingTime: recipe.cookingTime,
         servings: recipe.servings,
         notes: recipe.notes || '',
+        author: recipe.author,
+        priceMin: recipe.priceMin,
+        priceMax: recipe.priceMax,
+        kcal: recipe.kcal,
+        catalogue: recipe.catalogue,
+        regime: recipe.regime,
+        nutritionProteins: recipe.nutritionProteins,
+        nutritionCarbs: recipe.nutritionCarbs,
+        nutritionFats: recipe.nutritionFats,
       });
       setPhotoUri(recipe.photoUri);
       setOriginalPhotoUri(recipe.photoUri);
@@ -67,14 +88,13 @@ export default function EditRecipeScreen() {
     }
   };
 
-  const parseIngredients = (text: string): Ingredient[] => {
-    return text
-      .split('\n')
-      .filter((line) => line.trim())
-      .map((line) => ({
-        name: line.trim(),
-        quantity: null,
-        unit: null,
+  const ingredientsFromStructured = (): Ingredient[] => {
+    return structuredIngredients
+      .filter((i) => i.name.trim())
+      .map((i) => ({
+        name: i.name.trim(),
+        quantity: i.quantity.trim() || null,
+        unit: i.unit.trim() || null,
       }));
   };
 
@@ -94,29 +114,28 @@ export default function EditRecipeScreen() {
         id,
         input: {
           title: data.title,
-          ingredients: parseIngredients(data.ingredientsText || ''),
+          ingredients: ingredientsFromStructured(),
           steps: parseSteps(data.stepsText || ''),
           cookingTime: data.cookingTime ?? null,
           servings: data.servings ?? null,
           notes: data.notes || null,
           photoUri: photoRemoved ? null : photoUri,
+          author: data.author ?? null,
+          priceMin: data.priceMin ?? null,
+          priceMax: data.priceMax ?? null,
+          kcal: data.kcal ?? null,
+          catalogue: data.catalogue ?? null,
+          regime: data.regime ?? null,
+          nutritionProteins: data.nutritionProteins ?? null,
+          nutritionCarbs: data.nutritionCarbs ?? null,
+          nutritionFats: data.nutritionFats ?? null,
         },
       });
 
-      Toast.show({
-        type: 'success',
-        text1: 'Recette mise à jour',
-        text2: 'Vos modifications ont été enregistrées',
-        visibilityTime: 2000,
-      });
-
+      showToast('Recette mise à jour', 'success');
       router.back();
     } catch {
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur de sauvegarde',
-        text2: 'Veuillez réessayer',
-      });
+      showToast('Erreur de sauvegarde, veuillez réessayer', 'error');
     }
   };
 
@@ -147,18 +166,10 @@ export default function EditRecipeScreen() {
           onPress: async () => {
             try {
               await deleteRecipe.mutateAsync(id);
-              Toast.show({
-                type: 'success',
-                text1: 'Recette supprimée',
-                visibilityTime: 2000,
-              });
+              showToast('Recette supprimée', 'success');
               router.replace('/(tabs)');
             } catch {
-              Toast.show({
-                type: 'error',
-                text1: 'Erreur de suppression',
-                text2: 'Veuillez réessayer',
-              });
+              showToast('Erreur de suppression, veuillez réessayer', 'error');
             }
           },
         },
@@ -198,11 +209,11 @@ export default function EditRecipeScreen() {
               hitSlop={8}
               style={styles.headerButtonContainer}
             >
-              <Text
-                style={[styles.headerButton, updateRecipe.isPending && styles.headerButtonDisabled]}
-              >
-                Valider
-              </Text>
+              {updateRecipe.isPending ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <Text style={styles.headerButton}>Valider</Text>
+              )}
             </Pressable>
           ),
         }}
@@ -213,6 +224,7 @@ export default function EditRecipeScreen() {
         photoUri={photoUri}
         onPhotoChange={handlePhotoChange}
         onDelete={handleDelete}
+        onIngredientsChange={setStructuredIngredients}
       />
     </>
   );

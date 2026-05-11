@@ -1,79 +1,85 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography, spacing, radius } from '../../theme';
+import { colors, spacing, radius, fonts } from '../../theme';
 import { usePlanStatus } from '../../hooks';
 import { QUOTA } from '../../utils/planConstants';
+import { PipelineBadge } from './PipelineBadge';
 
 export function QuotaDisplay() {
   const planStatus = usePlanStatus();
 
   if (!planStatus || planStatus.tier === 'premium') return null;
 
-  const vpsLimit = planStatus.tier === 'trial' ? QUOTA.TRIAL_VPS_PER_WEEK : QUOTA.FREE_VPS_PER_WEEK;
-  const vpsUsed = vpsLimit - planStatus.vpsQuotaRemaining;
-  const vpsRatio = vpsUsed / vpsLimit;
+  const geminiPerWeek =
+    planStatus.tier === 'trial' ? QUOTA.TRIAL_GEMINI_PER_WEEK : QUOTA.FREE_GEMINI_PER_WEEK;
+  const geminiRemaining = planStatus.geminiQuotaRemaining ?? 0;
+  const premiumUsed = geminiPerWeek - geminiRemaining;
+  const premiumRatio = premiumUsed / geminiPerWeek;
 
-  const barColor = vpsRatio >= 1 ? colors.error : vpsRatio >= 0.7 ? colors.warning : colors.success;
+  const getBarColor = () => {
+    if (premiumRatio >= 1) return colors.error;
+    if (premiumRatio >= 0.5) return colors.warning;
+    return colors.success;
+  };
 
   return (
     <View style={styles.container} testID="quota-display">
-      <View style={styles.row}>
+      <View style={styles.header}>
         <Text style={styles.label} testID="quota-vps-text">
-          Imports standard : {vpsUsed}/{vpsLimit} cette semaine
+          Import premium
         </Text>
+        <PipelineBadge pipeline="gemini" size="md" />
       </View>
+      <Text style={styles.percentage}>
+        {premiumUsed}/{geminiPerWeek} utilises
+      </Text>
       <View style={styles.progressTrack} testID="quota-progress-bar">
         <View
           style={[
             styles.progressFill,
-            { width: `${Math.min(vpsRatio * 100, 100)}%`, backgroundColor: barColor },
+            { width: `${Math.min(premiumRatio * 100, 100)}%`, backgroundColor: getBarColor() },
           ]}
         />
       </View>
-      {planStatus.tier === 'trial' && (
-        <Text
-          style={[
-            styles.geminiText,
-            { color: planStatus.geminiQuotaRemaining > 0 ? colors.success : colors.warning },
-          ]}
-          testID="quota-gemini-text"
-        >
-          Import premium :{' '}
-          {planStatus.geminiQuotaRemaining > 0 ? "disponible aujourd'hui" : "utilise aujourd'hui"}
-        </Text>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.sm,
+    borderRadius: radius.lg,
+    padding: spacing.md,
     gap: spacing.xs,
     width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  row: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: spacing.xs,
   },
   label: {
-    ...typography.caption,
+    fontFamily: fonts.script,
+    fontSize: 16,
     color: colors.text,
   },
+  percentage: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
   progressTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.surface,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.surfaceAlt,
     overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    marginTop: spacing.xs,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
-  },
-  geminiText: {
-    ...typography.caption,
+    borderRadius: 4,
   },
 });

@@ -56,12 +56,9 @@ jest.mock('expo-image-picker', () => ({
 }));
 
 const mockToastShow = jest.fn();
-jest.mock('react-native-toast-message', () => {
-  const Toast = () => null;
-  Toast.show = (...args: unknown[]) => mockToastShow(...args);
-  Toast.hide = jest.fn();
-  return { __esModule: true, default: Toast };
-});
+jest.mock('../../../src/utils/toast', () => ({
+  Toast: { show: (...args: unknown[]) => mockToastShow(...args), hide: jest.fn() },
+}));
 
 describe('FeedbackForm', () => {
   beforeEach(() => {

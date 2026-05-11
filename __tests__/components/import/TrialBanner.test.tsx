@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import Toast from 'react-native-toast-message';
 import type { UserPlan, PlanStatus } from '../../../src/types';
 
 // --- Mocks ---
@@ -12,6 +11,9 @@ const mockPlan: UserPlan = {
   trialEndsDate: null,
   premiumActivatedDate: null,
   promoCode: null,
+  premiumSource: null,
+  subscriptionStatus: null,
+  expiresAt: null,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
 };
@@ -23,6 +25,7 @@ const freePlanStatus: PlanStatus = {
   canUsePremium: false,
   vpsQuotaRemaining: 10,
   geminiQuotaRemaining: 0,
+  storeSubscription: null,
 };
 
 const mockUseUserPlan = jest.fn();
@@ -46,8 +49,9 @@ jest.mock('../../../src/utils/analytics', () => ({
   trackEvent: jest.fn(),
 }));
 
-jest.mock('react-native-toast-message', () => ({
-  show: jest.fn(),
+const mockToastShow = jest.fn();
+jest.mock('../../../src/utils/toast', () => ({
+  Toast: { show: (...args: unknown[]) => mockToastShow(...args) },
 }));
 
 // Import after mocks
@@ -121,7 +125,7 @@ describe('TrialBanner', () => {
     const { getByTestId } = render(<TrialBanner />);
     fireEvent.press(getByTestId('trial-activate-button'));
 
-    expect(Toast.show).toHaveBeenCalledWith(
+    expect(mockToastShow).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'success',
         text1: 'Essai Premium active !',
@@ -137,7 +141,7 @@ describe('TrialBanner', () => {
     const { getByTestId } = render(<TrialBanner />);
     fireEvent.press(getByTestId('trial-activate-button'));
 
-    expect(Toast.show).toHaveBeenCalledWith(
+    expect(mockToastShow).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'error',
         text1: 'Essai indisponible',
@@ -153,7 +157,7 @@ describe('TrialBanner', () => {
     const { getByTestId } = render(<TrialBanner />);
     fireEvent.press(getByTestId('trial-activate-button'));
 
-    expect(Toast.show).toHaveBeenCalledWith(
+    expect(mockToastShow).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'error',
         text1: 'Erreur',

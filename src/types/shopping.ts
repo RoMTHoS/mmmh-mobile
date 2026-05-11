@@ -40,6 +40,7 @@ export interface ShoppingListRecipe {
   // Joined fields (from recipes table)
   recipeTitle?: string;
   recipePhotoUri?: string | null;
+  recipeBaseServings: number;
 }
 
 export interface ShoppingListItem {

@@ -13,6 +13,7 @@ export const iconNames = [
   'calories',
   'camera',
   'cart',
+  'cart-add',
   'cart-outline',
   'check',
   'close',
@@ -20,6 +21,7 @@ export const iconNames = [
   'cost',
   'crop',
   'error',
+  'facebook',
   'globe',
   'home',
   'image',
@@ -113,6 +115,32 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
           </G>
         );
 
+      case 'cart-add':
+        return (
+          <Svg width={sizeValue} height={sizeValue} viewBox="0 0 81 81" accessibilityRole="image">
+            <Path
+              d="M51.36 31.2c.613 0 1.08.187 1.4.56.32.373.48.827.48 1.36 0 .667-.227 1.28-.68 1.84-.427.533-1.013.8-1.76.8H44.24l-.88 7.32c-.107.693-.413 1.227-.92 1.6-.48.373-1.04.56-1.68.56-.613 0-1.12-.187-1.52-.56-.373-.373-.52-.907-.44-1.6l.88-7.32H33.2c-.613 0-1.08-.187-1.4-.56-.32-.4-.48-.867-.48-1.4 0-.667.213-1.267.64-1.8.453-.533 1.053-.8 1.8-.8h6.52l.88-7.32c.08-.667.36-1.187.84-1.56.48-.373 1.027-.56 1.64-.56.613 0 1.133.187 1.56.56.427.373.6.893.52 1.56l-.88 7.32h6.52z"
+              fill={iconColor}
+            />
+            <Path
+              d="M3 3h8.333l2.084 12.5m0 0L19.667 53H65.5L78 15.5H13.417z"
+              stroke={iconColor}
+              strokeWidth={6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+            <Path
+              d="M23.833 78a4.167 4.167 0 1 0 0-8.333 4.167 4.167 0 0 0 0 8.333zM61.333 78a4.167 4.167 0 1 0 0-8.333 4.167 4.167 0 0 0 0 8.333z"
+              stroke={iconColor}
+              strokeWidth={6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </Svg>
+        );
+
       case 'cart-outline':
         return (
           <G {...commonStrokeProps}>
@@ -156,6 +184,13 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
           <G {...commonStrokeProps}>
             <Circle cx={12} cy={12} r={9} />
             <Path d="M12 8v4m0 4h.01" />
+          </G>
+        );
+
+      case 'facebook':
+        return (
+          <G fill={iconColor}>
+            <Path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697c1.312 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.93-1.956 1.886v2.264h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073" />
           </G>
         );
 
@@ -313,6 +348,10 @@ export function Icon({ name, size = 'md', color = colors.text, strokeWidth = 2 }
         return null;
     }
   };
+
+  if (name === 'cart-add') {
+    return renderIcon();
+  }
 
   return (
     <Svg width={sizeValue} height={sizeValue} viewBox="0 0 24 24" accessibilityRole="image">

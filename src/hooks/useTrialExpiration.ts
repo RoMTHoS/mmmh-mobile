@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../utils/toast';
 import { useUserPlan } from './usePlan';
 import { trackEvent } from '../utils/analytics';
 import type { PlanTier } from '../types';

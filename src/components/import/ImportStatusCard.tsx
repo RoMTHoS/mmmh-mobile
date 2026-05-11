@@ -1,56 +1,205 @@
-import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, PanResponder, Dimensions } from 'react-native';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { Icon, Button } from '../ui';
+import { Button } from '../ui';
 import { PlatformBadge } from './PlatformBadge';
 import { PipelineBadge } from './PipelineBadge';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
 import { extractHostname } from '../../utils/validation';
 import type { ImportJob } from '../../stores/importStore';
+import { useUIStore } from '../../stores/uiStore';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+
+function BouncingDots({ color }: { color: string }) {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const bounceDot = (dot: Animated.Value) =>
+      Animated.sequence([
+        Animated.timing(dot, { toValue: -4, duration: 300, useNativeDriver: true }),
+        Animated.timing(dot, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]);
+
+    const loop = Animated.loop(
+      Animated.stagger(200, [
+        bounceDot(dot1),
+        bounceDot(dot2),
+        bounceDot(dot3),
+        Animated.delay(500),
+      ])
+    );
+    loop.start();
+
+    return () => loop.stop();
+  }, []);
+
+  const dotStyle = {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: color,
+    marginHorizontal: 1.5,
+  };
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 2, marginTop: 6 }}>
+      <Animated.View style={[dotStyle, { transform: [{ translateY: dot1 }] }]} />
+      <Animated.View style={[dotStyle, { transform: [{ translateY: dot2 }] }]} />
+      <Animated.View style={[dotStyle, { transform: [{ translateY: dot3 }] }]} />
+    </View>
+  );
+}
 
 interface ImportStatusCardProps {
   job: ImportJob;
-  onDismiss: () => void;
   onRetry: () => void;
+  onDismiss: () => void;
 }
 
-const STEP_LABELS: Record<string, string> = {
-  queued: 'En attente...',
-  downloading: 'Telechargement...',
-  extracting_audio: 'Extraction audio...',
-  transcribing: 'Transcription...',
-  structuring: 'Structuration...',
-  validating: 'Validation...',
-  scraping: 'Lecture de la page...',
-  parsing: 'Extraction des donnees...',
-  analyzing_with_gemini: 'Analyse Gemini...',
-  uploading_media: 'Envoi du media...',
-  processing_image: "Traitement de l'image...",
-  extracting_text: 'Extraction du texte...',
-  detecting_speech: 'Detection de la parole...',
-  complete: 'Termine!',
-};
+// Visual steps shown to the user with their progress thresholds
+const VISUAL_STEPS = [
+  { key: 'downloading', label: 'Téléchargement', targetProgress: 25 },
+  { key: 'transcription', label: 'Transcription', targetProgress: 50 },
+  { key: 'structuring', label: 'Structuration', targetProgress: 99 },
+  { key: 'done', label: 'Prêt !', targetProgress: 100 },
+];
 
-export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardProps) {
+// How long (ms) to spend on each simulated step
+const STEP_DURATIONS = [8000, 12000, 80000, 2000];
+
+export function ImportStatusCard({ job, onRetry, onDismiss }: ImportStatusCardProps) {
+  const openImportModal = useUIStore((s) => s.openImportModal);
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const simulationRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stepRef = useRef(0);
+  const stepStartTimeRef = useRef<number>(0);
+  const maxProgressRef = useRef(0);
+  const [displayStep, setDisplayStep] = useState(0);
+  const [displayProgress, setDisplayProgress] = useState(0);
 
+  const isDismissable = job.status === 'failed' || job.status === 'completed';
+
+  // Simulated progress: smoothly advance through visual steps
+  // Only runs when status is 'processing', pauses on 'pending'
   useEffect(() => {
-    Animated.timing(progressAnim, {
-      toValue: job.progress / 100,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [job.progress, progressAnim]);
+    if (job.status === 'completed') {
+      if (simulationRef.current) {
+        clearInterval(simulationRef.current);
+        simulationRef.current = null;
+      }
+      maxProgressRef.current = 100;
+      stepRef.current = VISUAL_STEPS.length - 1;
+      setDisplayStep(VISUAL_STEPS.length - 1);
+      setDisplayProgress(100);
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: false,
+      }).start();
+      return;
+    }
+
+    // Only simulate progress during 'processing', not 'pending'
+    if (job.status !== 'processing') {
+      if (simulationRef.current) {
+        clearInterval(simulationRef.current);
+        simulationRef.current = null;
+      }
+      return;
+    }
+
+    // Start simulation timer if not already running
+    if (simulationRef.current) return;
+
+    if (stepStartTimeRef.current === 0) {
+      stepStartTimeRef.current = Date.now();
+    }
+
+    simulationRef.current = setInterval(() => {
+      const currentStepIdx = stepRef.current;
+
+      // At last step (done), wait for backend completion
+      if (currentStepIdx >= VISUAL_STEPS.length - 1) return;
+
+      const stepElapsed = Date.now() - stepStartTimeRef.current;
+      const stepDuration = STEP_DURATIONS[currentStepIdx];
+      const stepFraction = Math.min(stepElapsed / stepDuration, 1);
+
+      const prevTarget = currentStepIdx === 0 ? 0 : VISUAL_STEPS[currentStepIdx - 1].targetProgress;
+      const currentTarget = VISUAL_STEPS[currentStepIdx].targetProgress;
+      // Ease out: slow down as approaching step boundary
+      const eased = 1 - Math.pow(1 - stepFraction, 2);
+      const progress = Math.round(prevTarget + (currentTarget - prevTarget) * eased);
+
+      // Never go backward
+      if (progress < maxProgressRef.current) return;
+      maxProgressRef.current = progress;
+
+      setDisplayProgress(progress);
+      Animated.timing(progressAnim, {
+        toValue: progress / 100,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+
+      // Move to next step when duration elapsed (but not past structuring)
+      if (stepFraction >= 1 && currentStepIdx < VISUAL_STEPS.length - 2) {
+        stepRef.current = currentStepIdx + 1;
+        stepStartTimeRef.current = Date.now();
+        setDisplayStep(currentStepIdx + 1);
+      }
+    }, 200);
+
+    return () => {
+      if (simulationRef.current) {
+        clearInterval(simulationRef.current);
+        simulationRef.current = null;
+      }
+    };
+  }, [job.status]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, g) =>
+          isDismissable && Math.abs(g.dx) > 5 && Math.abs(g.dx) > Math.abs(g.dy * 1.5),
+        onMoveShouldSetPanResponderCapture: (_, g) =>
+          isDismissable && Math.abs(g.dx) > 15 && Math.abs(g.dx) > Math.abs(g.dy * 2),
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderMove: Animated.event([null, { dx: translateX }], { useNativeDriver: false }),
+        onPanResponderRelease: (_, g) => {
+          if (Math.abs(g.dx) > SWIPE_THRESHOLD || Math.abs(g.vx) > 0.5) {
+            const direction = g.dx > 0 ? SCREEN_WIDTH : -SCREEN_WIDTH;
+            Animated.timing(translateX, {
+              toValue: direction,
+              duration: 200,
+              useNativeDriver: true,
+            }).start(() => onDismiss());
+          } else {
+            Animated.spring(translateX, { toValue: 0, friction: 8, useNativeDriver: true }).start();
+          }
+        },
+      }),
+    [isDismissable, translateX, onDismiss]
+  );
 
   const getStatusText = () => {
-    if (job.status === 'pending') return 'En attente...';
+    if (job.status === 'pending') return 'En attente';
     if (job.status === 'processing') {
-      return STEP_LABELS[job.currentStep || ''] || job.currentStep || 'Traitement...';
+      return VISUAL_STEPS[displayStep]?.label || 'Traitement';
     }
-    if (job.status === 'completed') return 'Pret a consulter!';
-    if (job.status === 'failed') return job.error?.message || 'Echec de import';
+    if (job.status === 'completed') return 'Prêt à consulter !';
+    if (job.status === 'failed') return job.error?.message || "Échec de l'import";
     return 'Statut inconnu';
   };
+
+  const showDots = job.status === 'processing' || job.status === 'pending';
 
   const formatTimeRemaining = (ms?: number) => {
     if (!ms) return '';
@@ -83,26 +232,34 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
     outputRange: ['0%', '100%'],
   });
 
+  const cardOpacity = translateX.interpolate({
+    inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+    outputRange: [0, 1, 0],
+  });
+
   return (
-    <View style={styles.card}>
+    <Animated.View
+      style={[styles.card, { transform: [{ translateX }], opacity: cardOpacity }]}
+      {...panResponder.panHandlers}
+    >
       <View style={styles.header}>
-        <PlatformBadge platform={job.platform} size="md" />
-        <Text style={styles.url} numberOfLines={1}>
-          {extractHostname(job.sourceUrl)}
-        </Text>
-        {job.pipeline && <PipelineBadge pipeline={job.pipeline} />}
-        <Pressable
-          onPress={onDismiss}
-          style={({ pressed }) => [styles.dismissButton, pressed && styles.dismissButtonPressed]}
-          hitSlop={8}
-        >
-          <Icon name="close" size="sm" color={colors.textMuted} />
-        </Pressable>
+        <View style={styles.headerLeft}>
+          <PlatformBadge platform={job.platform} size="sm" />
+          <Text style={styles.url} numberOfLines={1}>
+            {extractHostname(job.sourceUrl)}
+          </Text>
+        </View>
+        <View style={styles.badgeWrapper}>
+          <PipelineBadge pipeline={job.pipeline ?? 'vps'} />
+        </View>
       </View>
 
       <View style={styles.content}>
         <View style={styles.statusRow}>
-          <Text style={[styles.statusText, { color: getStatusColor() }]}>{getStatusText()}</Text>
+          <View style={styles.statusLabel}>
+            <Text style={[styles.statusText, { color: getStatusColor() }]}>{getStatusText()}</Text>
+            {showDots && <BouncingDots color={getStatusColor()} />}
+          </View>
           {!!job.estimatedTimeRemaining && job.status === 'processing' && (
             <Text style={styles.timeRemaining}>
               {formatTimeRemaining(job.estimatedTimeRemaining)}
@@ -110,22 +267,32 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
           )}
         </View>
 
-        {(job.status === 'pending' || job.status === 'processing') && (
+        {job.status === 'processing' && (
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack}>
               <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
             </View>
-            <Text style={styles.progressText}>{Math.round(job.progress)}%</Text>
+            <Text style={styles.progressText}>{displayProgress}%</Text>
           </View>
         )}
 
-        {job.status === 'failed' && job.error?.retryable && (
+        {job.status === 'failed' && job.error?.code === 'INSTAGRAM_POST_INVALID' && (
           <Button
-            title="Reessayer"
-            onPress={onRetry}
-            variant="secondary"
+            title="Importer différemment"
+            onPress={openImportModal}
+            variant="primary"
             size="sm"
-            style={styles.actionButton}
+            style={styles.retryButton}
+          />
+        )}
+
+        {job.status === 'failed' && job.error?.code !== 'INSTAGRAM_POST_INVALID' && (
+          <Button
+            title="Réessayer"
+            onPress={onRetry}
+            variant="primary"
+            size="sm"
+            style={styles.retryButton}
           />
         )}
 
@@ -161,7 +328,7 @@ export function ImportStatusCard({ job, onDismiss, onRetry }: ImportStatusCardPr
           />
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -176,21 +343,23 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     marginBottom: spacing.sm,
+  },
+  headerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: -spacing.xs,
+  },
+  badgeWrapper: {
+    alignSelf: 'center',
   },
   url: {
     flex: 1,
-    marginLeft: spacing.sm,
+    marginLeft: spacing.xs,
     color: colors.textMuted,
     fontSize: 14,
-  },
-  dismissButton: {
-    padding: spacing.xs,
-    borderRadius: radius.sm,
-  },
-  dismissButtonPressed: {
-    backgroundColor: colors.surface,
   },
   content: {},
   statusRow: {
@@ -198,6 +367,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
+  },
+  statusLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   statusText: {
     fontFamily: fonts.script,
@@ -232,6 +405,10 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginTop: spacing.sm,
+  },
+  retryButton: {
+    marginTop: spacing.sm,
+    backgroundColor: '#000000',
   },
   fallbackNotice: {
     ...typography.caption,

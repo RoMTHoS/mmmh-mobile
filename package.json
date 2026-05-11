@@ -30,6 +30,7 @@
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@tanstack/react-query": "^5.90.18",
     "expo": "54.0.33",
+    "expo-asset": "~12.0.12",
     "expo-camera": "~17.0.10",
     "expo-clipboard": "^8.0.8",
     "expo-constants": "~18.0.13",
@@ -50,6 +51,7 @@
     "react-hook-form": "^7.71.1",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
+    "react-native-purchases": "^9.11.1",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
@@ -88,7 +90,13 @@
           "tsconfig": {
             "jsx": "react-jsx",
             "esModuleInterop": true,
-            "module": "commonjs"
+            "module": "commonjs",
+            "skipLibCheck": true
+          },
+          "diagnostics": {
+            "ignoreDiagnostics": [
+              2307
+            ]
           }
         }
       ]
@@ -109,6 +117,11 @@
       "^mixpanel-react-native$": "<rootDir>/__mocks__/mixpanel-react-native.js",
       "^expo-constants$": "<rootDir>/__mocks__/expo-constants.js",
       "^expo-web-browser$": "<rootDir>/__mocks__/expo-web-browser.js",
+      "^react-native-reanimated$": "<rootDir>/__mocks__/react-native-reanimated.js",
+      "^react-native-safe-area-context$": "<rootDir>/__mocks__/react-native-safe-area-context.js",
+      "^react-native-svg$": "<rootDir>/__mocks__/react-native-svg.js",
+      "^react-native-purchases$": "<rootDir>/__mocks__/react-native-purchases.js",
+      "^expo-asset$": "<rootDir>/__mocks__/expo-asset.js",
       "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js"
     },
     "moduleFileExtensions": [

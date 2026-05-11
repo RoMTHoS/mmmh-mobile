@@ -38,4 +38,7 @@ module.exports = {
   copyAsync: jest.fn(() => Promise.resolve()),
   moveAsync: jest.fn(() => Promise.resolve()),
   makeDirectoryAsync: jest.fn(() => Promise.resolve()),
+  downloadAsync: jest.fn((uri, destination) =>
+    Promise.resolve({ uri: destination, status: 200 })
+  ),
 };

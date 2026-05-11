@@ -10,7 +10,6 @@ export default function ModalLayout() {
         contentStyle: { backgroundColor: 'transparent' },
       }}
     >
-      <Stack.Screen name="import" />
       <Stack.Screen name="quick-preview" />
     </Stack>
   );

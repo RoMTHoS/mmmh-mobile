@@ -10,12 +10,13 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../utils/toast';
 import { Icon } from '../ui';
 import {
   useAddRecipeToList,
   useRemoveRecipeFromList,
   useShoppingLists,
+  useShoppingListRecipes,
   useCreateShoppingList,
 } from '../../hooks/useShoppingList';
 import { colors, typography, spacing, radius } from '../../theme';
@@ -74,8 +75,15 @@ export function ServingsSelector({
   const listsQuery = useShoppingLists(true);
   const lists = listsQuery.data ?? [];
 
-  const isInList = existingEntry !== null;
   const selectedList = lists.find((l) => l.id === selectedListId);
+
+  // Check if recipe exists in the currently selected list
+  const selectedListRecipesQuery = useShoppingListRecipes(selectedListId);
+  const existingInSelectedList = useMemo(
+    () => selectedListRecipesQuery.data?.find((r) => r.recipeId === recipe.id) ?? null,
+    [selectedListRecipesQuery.data, recipe.id]
+  );
+  const isInSelectedList = existingInSelectedList !== null;
 
   // Reset servings when modal opens
   useEffect(() => {
@@ -169,7 +177,9 @@ export function ServingsSelector({
         onSuccess: () => {
           Toast.show({
             type: 'success',
-            text1: isInList ? 'Portions mises à jour' : 'Recette ajoutée à la liste de courses',
+            text1: isInSelectedList
+              ? 'Portions mises à jour'
+              : 'Recette ajoutée à la liste de courses',
           });
           onClose();
         },
@@ -178,9 +188,9 @@ export function ServingsSelector({
   };
 
   const handleRemove = () => {
-    if (!listId) return;
+    if (!selectedListId) return;
     removeMutation.mutate(
-      { listId, recipeId: recipe.id },
+      { listId: selectedListId, recipeId: recipe.id },
       {
         onSuccess: () => {
           Toast.show({ type: 'success', text1: 'Recette retirée de la liste' });
@@ -383,7 +393,7 @@ export function ServingsSelector({
             )}
 
             {/* Action Buttons */}
-            {isInList ? (
+            {isInSelectedList ? (
               <View style={styles.actions}>
                 <Pressable
                   style={[styles.primaryButton]}
@@ -404,13 +414,14 @@ export function ServingsSelector({
               </View>
             ) : (
               <Pressable
-                style={styles.primaryButton}
+                style={styles.addButton}
                 onPress={handleAdd}
                 disabled={addMutation.isPending}
                 testID="add-to-list-button"
               >
-                <Icon name="cart" size="md" color="#FFFFFF" />
+                <Icon name="cart-add" size="md" color="#FFFFFF" />
                 <Text style={styles.primaryButtonText}>Ajouter</Text>
+                <Icon name="cart-add" size="md" color="#FFFFFF" />
               </Pressable>
             )}
           </Pressable>
@@ -522,6 +533,15 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     backgroundColor: colors.accent,
     paddingVertical: spacing.md,
+    borderRadius: radius.md,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.accent,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
   },
   primaryButtonText: {

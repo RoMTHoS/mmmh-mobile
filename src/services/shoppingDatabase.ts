@@ -1,5 +1,6 @@
 import uuid from 'react-native-uuid';
 import { getDatabase } from './database';
+import { resolveImagePath } from '../utils/imageCompression';
 import type {
   ShoppingList,
   ShoppingListRecipe,
@@ -29,6 +30,7 @@ interface ShoppingListRecipeRow {
   added_at: string;
   recipe_title?: string;
   recipe_photo_uri?: string | null;
+  recipe_servings?: number | null;
 }
 
 interface ShoppingListItemRow {
@@ -72,7 +74,8 @@ function deserializeRecipeEntry(row: ShoppingListRecipeRow): ShoppingListRecipe 
     servingsMultiplier: row.servings_multiplier,
     addedAt: row.added_at,
     recipeTitle: row.recipe_title,
-    recipePhotoUri: row.recipe_photo_uri ?? null,
+    recipePhotoUri: resolveImagePath(row.recipe_photo_uri ?? null),
+    recipeBaseServings: row.recipe_servings ?? 4,
   };
 }
 
@@ -186,12 +189,19 @@ export async function addRecipeToList(
       listId,
     ]);
 
+    // Fetch base servings from recipe
+    const recipeRow = database.getFirstSync<{ servings: number | null }>(
+      'SELECT servings FROM recipes WHERE id = ?',
+      [recipeId]
+    );
+
     return {
       id,
       shoppingListId: listId,
       recipeId,
       servingsMultiplier,
       addedAt: now,
+      recipeBaseServings: recipeRow?.servings ?? 4,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue';
@@ -239,7 +249,7 @@ export async function getShoppingListRecipes(listId: string): Promise<ShoppingLi
 
   try {
     const rows = database.getAllSync<ShoppingListRecipeRow>(
-      `SELECT slr.*, r.title as recipe_title, r.photoUri as recipe_photo_uri
+      `SELECT slr.*, r.title as recipe_title, r.photoUri as recipe_photo_uri, r.servings as recipe_servings
        FROM shopping_list_recipes slr
        LEFT JOIN recipes r ON slr.recipe_id = r.id
        WHERE slr.shopping_list_id = ?
@@ -391,6 +401,18 @@ export async function convertItemToManual(itemId: string): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue';
     throw new Error(`Impossible de convertir l'article. ${message}`);
+  }
+}
+
+export async function clearShoppingList(listId: string): Promise<void> {
+  const database = getDatabase();
+
+  try {
+    database.runSync('DELETE FROM shopping_list_items WHERE shopping_list_id = ?', [listId]);
+    database.runSync('DELETE FROM shopping_list_recipes WHERE shopping_list_id = ?', [listId]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue';
+    throw new Error(`Impossible de vider la liste. ${message}`);
   }
 }
 

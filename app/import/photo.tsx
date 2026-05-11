@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, Alert, ActivityIndicator, Text } from 'react-native';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
-import Toast from 'react-native-toast-message';
+import { Toast } from '../../src/utils/toast';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraCapture } from '../../src/components/import/CameraCapture';
 import { PhotoPreview } from '../../src/components/import/PhotoPreview';
@@ -49,18 +49,31 @@ export default function PhotoImportScreen() {
     setIsLoadingGallery(true);
 
     try {
-      const hasPermission = await requestMediaLibraryPermission();
-      if (!hasPermission) {
+      // Apple 5.1.1(iv): distinguish "denied this session" from "denied in a
+      // prior session". Check the existing permission state first. If the user
+      // already permanently denied in a prior session, show the informational
+      // alert (they are re-attempting the feature). If the permission is still
+      // askable, call request and — on denial — simply go back without any
+      // Settings-worded alert.
+      const existing = await ImagePicker.getMediaLibraryPermissionsAsync();
+
+      if (existing.status === 'granted') {
+        // continue below
+      } else if (!existing.canAskAgain) {
         Alert.alert(
           'Permission requise',
-          'Acces aux photos refuse. Activez-le dans les parametres.',
-          [
-            { text: 'Annuler', onPress: () => router.back() },
-            { text: 'Parametres', onPress: () => router.back() },
-          ]
+          "Pour choisir des photos de recettes, autorisez l'accès à la galerie dans les réglages de votre appareil.",
+          [{ text: 'OK', onPress: () => router.back() }]
         );
         setIsLoadingGallery(false);
         return;
+      } else {
+        const hasPermission = await requestMediaLibraryPermission();
+        if (!hasPermission) {
+          setIsLoadingGallery(false);
+          router.back();
+          return;
+        }
       }
 
       const selectionLimit = addingMore ? batch.remainingSlots : MAX_PHOTOS;
@@ -202,7 +215,7 @@ export default function PhotoImportScreen() {
         text2: 'Suivez la progression sur la page principale',
       });
 
-      router.replace('/(tabs)');
+      router.back();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de l'envoi";
       setUploadError(errorMessage);
@@ -252,7 +265,7 @@ export default function PhotoImportScreen() {
         text2: 'Suivez la progression sur la page principale',
       });
 
-      router.replace('/(tabs)');
+      router.back();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de l'envoi";
       setUploadError(errorMessage);

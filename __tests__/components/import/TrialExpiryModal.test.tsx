@@ -16,6 +16,9 @@ const expiredPlan: UserPlan = {
   trialEndsDate: '2026-01-08T00:00:00.000Z',
   premiumActivatedDate: null,
   promoCode: null,
+  premiumSource: null,
+  subscriptionStatus: null,
+  expiresAt: null,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-08T00:00:00.000Z',
 };

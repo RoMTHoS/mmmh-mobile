@@ -4,6 +4,7 @@ import { getActiveShoppingList } from '../services/shoppingDatabase';
 import { regenerateShoppingListItems } from '../utils/ingredientAggregation';
 import { analytics } from '../services/analytics';
 import { EVENTS } from '../utils/analyticsEvents';
+import { deleteRecipeImage } from '../utils/imageCompression';
 import type { CreateRecipeInput, UpdateRecipeInput } from '../types';
 
 export function useRecipes() {
@@ -62,7 +63,14 @@ export function useDeleteRecipe() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => db.deleteRecipe(id),
+    mutationFn: async (id: string) => {
+      // Fetch photoUri before deleting the DB row
+      const recipe = await db.getRecipeById(id);
+      await db.deleteRecipe(id);
+      if (recipe?.photoUri) {
+        await deleteRecipeImage(recipe.photoUri);
+      }
+    },
     onSuccess: (_, id) => {
       analytics.track(EVENTS.RECIPE_DELETED, { recipe_id: id });
       queryClient.invalidateQueries({ queryKey: ['recipes'] });

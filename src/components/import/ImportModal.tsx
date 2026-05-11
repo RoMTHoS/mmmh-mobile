@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react';
 import { View, Text, Pressable, Modal, StyleSheet, Animated, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
-import { Ionicons } from '@expo/vector-icons';
-import { Icon, IconName } from '../ui';
+import { Icon, IconName, PremiumIcon } from '../ui';
 import { usePlanStatus } from '../../hooks';
 
 interface ImportOptionProps {
@@ -99,8 +98,8 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
   };
 
   const handleTextImport = () => {
-    // TODO: Epic 2 - Navigate to text input
     onClose();
+    router.push('/import/text');
   };
 
   const handleCreateRecipe = () => {
@@ -143,9 +142,9 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
           accessibilityLabel="Obtenir Premium"
         >
           <View style={styles.premiumLinkRow}>
-            <Ionicons name="diamond-outline" size={14} color={colors.accent} />
+            <PremiumIcon width={28} />
             <Text style={styles.premiumLinkText}>Obtenir Premium</Text>
-            <Ionicons name="diamond-outline" size={14} color={colors.accent} />
+            <PremiumIcon width={28} />
           </View>
         </Pressable>
       )}
@@ -182,8 +181,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.overlay,
   },
   sheetContainer: {
-    margin: spacing.md,
+    marginHorizontal: 'auto',
     marginBottom: spacing.lg,
+    width: '100%',
+    maxWidth: 400,
+    paddingHorizontal: spacing.md,
   },
   sheet: {
     backgroundColor: colors.modalBackground,
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.titleScript,
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   options: {
     flexDirection: 'row',
@@ -241,7 +243,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    width: 332,
+    alignSelf: 'stretch',
   },
   createButtonPressed: {
     backgroundColor: colors.surfaceAlt,
@@ -258,12 +260,13 @@ const styles = StyleSheet.create({
   premiumLinkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.md,
   },
   premiumLinkText: {
     fontFamily: fonts.script,
     fontSize: 14,
     color: colors.accent,
     textDecorationLine: 'underline',
+    marginTop: 4,
   },
 });

@@ -8,7 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Dimensions,
 } from 'react-native';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '../../theme';
 import type { IngredientCategoryCode } from '../../types';
@@ -130,6 +133,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.md,
     marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -147,7 +151,8 @@ const styles = StyleSheet.create({
   },
   form: {
     padding: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + SCREEN_HEIGHT,
+    marginBottom: -SCREEN_HEIGHT,
     backgroundColor: colors.modalBackground,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
@@ -156,11 +161,11 @@ const styles = StyleSheet.create({
   input: {
     ...typography.body,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
     color: colors.text,
   },
   row: {

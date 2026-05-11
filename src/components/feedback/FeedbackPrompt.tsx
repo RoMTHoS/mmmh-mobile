@@ -109,7 +109,7 @@ export function FeedbackPrompt() {
           <Text style={styles.title}>Votre avis compte !</Text>
         </View>
         <Text style={styles.message}>
-          Comment trouvez-vous l'app ? Partagez vos retours pour nous aider a l'ameliorer.
+          Comment trouvez-vous l'app ? Partagez vos retours pour nous aider à l'améliorer.
         </Text>
         <View style={styles.actions}>
           <Pressable

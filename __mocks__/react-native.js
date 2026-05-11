@@ -147,6 +147,29 @@ const Animated = {
   sequence: jest.fn((animations) => ({
     start: jest.fn((callback) => callback && callback()),
   })),
+  event: jest.fn(() => jest.fn()),
+};
+
+const PanResponder = {
+  create: jest.fn((config) => ({
+    panHandlers: {},
+    ...config,
+  })),
+};
+
+const Dimensions = {
+  get: jest.fn((dim) => {
+    if (dim === 'window') return { width: 375, height: 812 };
+    if (dim === 'screen') return { width: 375, height: 812 };
+    return { width: 0, height: 0 };
+  }),
+  addEventListener: jest.fn(() => ({ remove: jest.fn() })),
+};
+
+const useWindowDimensions = jest.fn(() => ({ width: 375, height: 812, scale: 2, fontScale: 1 }));
+
+const Share = {
+  share: jest.fn(() => Promise.resolve({ action: 'sharedAction' })),
 };
 
 const Share = {
@@ -169,6 +192,9 @@ module.exports = {
   Platform,
   Linking,
   Share,
+  Dimensions,
+  useWindowDimensions,
+  PanResponder,
   KeyboardAvoidingView,
   Animated,
 };

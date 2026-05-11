@@ -1,5 +1,5 @@
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
-import { colors, typography, spacing, radius } from '../../theme';
+import { colors, fonts, spacing, radius } from '../../theme';
 import { Icon } from '../ui';
 
 interface CollectionCardProps {
@@ -7,18 +7,27 @@ interface CollectionCardProps {
   name: string;
   images: string[];
   onPress: (id: string) => void;
+  onLongPress?: (id: string) => void;
+  cardHeight?: number;
 }
 
-export function CollectionCard({ id, name, images, onPress }: CollectionCardProps) {
-  const displayImages = images.slice(0, 4);
+export function CollectionCard({
+  id,
+  name,
+  images,
+  onPress,
+  onLongPress,
+  cardHeight,
+}: CollectionCardProps) {
+  const displayImages = images.slice(0, 3);
 
-  const renderSlot = (index: number) => {
+  const renderSlot = (index: number, style: object) => {
     const uri = displayImages[index];
     if (uri) {
-      return <Image key={index} source={{ uri }} style={styles.image} resizeMode="cover" />;
+      return <Image key={index} source={{ uri }} style={style} resizeMode="cover" />;
     }
     return (
-      <View key={index} style={[styles.image, styles.emptySlot]}>
+      <View key={index} style={[style, styles.emptySlot]}>
         <Icon name="camera" size="sm" color={colors.textLight} />
       </View>
     );
@@ -26,72 +35,93 @@ export function CollectionCard({ id, name, images, onPress }: CollectionCardProp
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.container,
+        cardHeight ? { height: cardHeight, aspectRatio: 1 } : {},
+        pressed && styles.pressed,
+      ]}
       onPress={() => onPress(id)}
+      onLongPress={onLongPress ? () => onLongPress(id) : undefined}
       accessibilityRole="button"
       accessibilityLabel={`Collection ${name}`}
     >
       <View style={styles.imageGrid}>
         <View style={styles.imageRow}>
-          {renderSlot(0)}
+          {renderSlot(0, styles.imageLeft)}
           <View style={styles.verticalSeparator} />
-          {renderSlot(1)}
+          <View style={styles.rightColumn}>
+            {renderSlot(1, styles.imageRight)}
+            <View style={styles.horizontalSeparator} />
+            {renderSlot(2, styles.imageRight)}
+          </View>
         </View>
-        <View style={styles.horizontalSeparator} />
-        <View style={styles.imageRow}>
-          {renderSlot(2)}
-          <View style={styles.verticalSeparator} />
-          {renderSlot(3)}
+        <View style={styles.nameOverlay}>
+          <Text style={styles.name} numberOfLines={1}>
+            {name}
+          </Text>
         </View>
       </View>
-      <Text style={styles.name} numberOfLines={1}>
-        {name}
-      </Text>
     </Pressable>
   );
 }
 
 interface NewCollectionCardProps {
   onPress: () => void;
+  cardHeight?: number;
 }
 
-export function NewCollectionCard({ onPress }: NewCollectionCardProps) {
+export function NewCollectionCard({ onPress, cardHeight }: NewCollectionCardProps) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.container,
+        cardHeight ? { height: cardHeight, aspectRatio: 1 } : {},
+        pressed && styles.pressed,
+      ]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="Créer une nouvelle collection"
     >
       <View style={[styles.imageGrid, styles.newCard]}>
         <Icon name="plus" size={48} color={colors.text} />
+        <View style={styles.newCardNameOverlay}>
+          <Text style={styles.name}>Nouveau</Text>
+        </View>
       </View>
-      <Text style={styles.name}>Nouveau</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: '48%',
-    marginBottom: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   pressed: {
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
   imageGrid: {
-    aspectRatio: 1,
+    flex: 1,
     borderRadius: radius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#000',
   },
   imageRow: {
     flexDirection: 'row',
     flex: 1,
   },
-  image: {
+  imageLeft: {
+    flex: 1,
+  },
+  rightColumn: {
+    flex: 1,
+  },
+  imageRight: {
     flex: 1,
   },
   verticalSeparator: {
@@ -116,9 +146,30 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderStyle: 'dashed',
   },
+  nameOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.sm,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: '#000',
+  },
+  newCardNameOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.sm,
+    borderTopWidth: 2,
+    borderTopColor: colors.border,
+    borderStyle: 'dashed',
+  },
   name: {
-    ...typography.sectionTitle,
+    fontFamily: fonts.script,
+    fontSize: 16,
     color: colors.text,
-    marginTop: spacing.sm,
+    textAlign: 'center',
   },
 });

@@ -8,8 +8,8 @@ jest.mock('react', () => {
     useMemo: (fn: () => unknown) => fn(),
   };
 });
-jest.mock('react-native-toast-message', () => ({
-  show: jest.fn(),
+jest.mock('../../../src/utils/toast', () => ({
+  Toast: { show: jest.fn() },
 }));
 jest.mock('expo-sqlite');
 jest.mock('react-native-uuid');
@@ -19,6 +19,7 @@ jest.mock('../../../src/hooks/useShoppingList', () => ({
   useAddRecipeToList: () => ({ mutate: jest.fn(), isPending: false }),
   useRemoveRecipeFromList: () => ({ mutate: jest.fn(), isPending: false }),
   useShoppingLists: () => ({ data: [], isLoading: false }),
+  useShoppingListRecipes: () => ({ data: [], isLoading: false }),
   useCreateShoppingList: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 
@@ -39,6 +40,17 @@ const mockRecipe = (overrides?: Partial<Recipe>): Recipe => ({
   servings: 4,
   photoUri: null,
   notes: null,
+  author: null,
+  priceMin: null,
+  priceMax: null,
+  kcal: null,
+  catalogue: null,
+  regime: null,
+  nutritionProteins: null,
+  nutritionCarbs: null,
+  nutritionFats: null,
+  sourceUrl: null,
+  sourceCreator: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
   ...overrides,
@@ -52,6 +64,7 @@ const mockExistingEntry = (overrides?: Partial<ShoppingListRecipe>): ShoppingLis
   addedAt: '2024-01-01T00:00:00.000Z',
   recipeTitle: 'Crêpes bretonnes',
   recipePhotoUri: null,
+  recipeBaseServings: 4,
   ...overrides,
 });
 

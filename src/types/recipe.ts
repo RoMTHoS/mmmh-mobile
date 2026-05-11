@@ -20,10 +20,49 @@ export interface Recipe {
   servings: number | null;
   photoUri: string | null;
   notes: string | null;
+  author: string | null;
+  sourceUrl: string | null;
+  sourceCreator: string | null;
+  priceMin: number | null;
+  priceMax: number | null;
+  kcal: number | null;
+  catalogue: string | null;
+  regime: string | null;
+  nutritionProteins: number | null;
+  nutritionCarbs: number | null;
+  nutritionFats: number | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export type CreateRecipeInput = Omit<Recipe, 'id' | 'createdAt' | 'updatedAt'>;
+export type CreateRecipeInput = Omit<
+  Recipe,
+  | 'id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'author'
+  | 'sourceUrl'
+  | 'sourceCreator'
+  | 'priceMin'
+  | 'priceMax'
+  | 'kcal'
+  | 'catalogue'
+  | 'regime'
+  | 'nutritionProteins'
+  | 'nutritionCarbs'
+  | 'nutritionFats'
+> & {
+  author?: string | null;
+  sourceUrl?: string | null;
+  sourceCreator?: string | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
+  kcal?: number | null;
+  catalogue?: string | null;
+  regime?: string | null;
+  nutritionProteins?: number | null;
+  nutritionCarbs?: number | null;
+  nutritionFats?: number | null;
+};
 
 export type UpdateRecipeInput = Partial<CreateRecipeInput>;
