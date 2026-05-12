@@ -2,7 +2,7 @@ export default {
   expo: {
     name: 'MMMH',
     slug: 'mmmh',
-    version: '1.0.0',
+    version: '1.0.1',
     orientation: 'portrait',
     icon: './assets/branding/icon-ios.png',
     userInterfaceStyle: 'light',
