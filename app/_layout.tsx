@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, usePathname } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -184,7 +185,7 @@ function RootLayoutNav() {
   }
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
       <NavigationStatePersistence />
       <TrialExpirationWatcher />
       <AnalyticsSyncWatcher />
@@ -225,7 +226,7 @@ function RootLayoutNav() {
         <Stack.Screen name="upgrade" options={{ title: '', headerBackTitle: ' ' }} />
         <Stack.Screen name="+not-found" options={{ title: '' }} />
       </Stack>
-    </>
+    </SafeAreaView>
   );
 }
 

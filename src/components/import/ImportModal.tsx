@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { View, Text, Pressable, Modal, StyleSheet, Animated, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, typography, spacing, radius, fonts } from '../../theme';
 import { Icon, IconName, PremiumIcon } from '../ui';
@@ -31,6 +32,7 @@ interface ImportModalProps {
 }
 
 export function ImportModal({ visible, onClose }: ImportModalProps) {
+  const insets = useSafeAreaInsets();
   const planStatus = usePlanStatus();
   const slideAnim = useRef(new Animated.Value(300)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
@@ -159,7 +161,10 @@ export function ImportModal({ visible, onClose }: ImportModalProps) {
         {/* Pressable area to close modal */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <Animated.View
-          style={[styles.sheetContainer, { transform: [{ translateY: slideAnim }] }]}
+          style={[
+            styles.sheetContainer,
+            { marginBottom: spacing.lg + insets.bottom, transform: [{ translateY: slideAnim }] },
+          ]}
           pointerEvents="box-none"
         >
           <Pressable style={styles.sheet} onPress={() => {}} /* Capture touches on sheet */>
@@ -182,7 +187,6 @@ const styles = StyleSheet.create({
   },
   sheetContainer: {
     marginHorizontal: 'auto',
-    marginBottom: spacing.lg,
     width: '100%',
     maxWidth: 400,
     paddingHorizontal: spacing.md,
@@ -208,6 +212,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   optionButton: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.md,
@@ -215,7 +220,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    width: 100,
     height: 90,
     gap: spacing.sm,
   },

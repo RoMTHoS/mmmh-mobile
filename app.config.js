@@ -8,11 +8,6 @@ export default {
     userInterfaceStyle: 'light',
     newArchEnabled: true,
     scheme: 'mmmh',
-    splash: {
-      image: './assets/branding/splash.png',
-      resizeMode: 'cover',
-      backgroundColor: '#fff8e7',
-    },
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.mmmh.mobile',
@@ -38,7 +33,19 @@ export default {
       favicon: './assets/favicon.png',
       bundler: 'metro',
     },
-    plugins: ['expo-router', 'expo-font'],
+    plugins: [
+      'expo-router',
+      'expo-font',
+      [
+        'expo-splash-screen',
+        {
+          image: './assets/branding/splash-icon.png',
+          imageWidth: 200,
+          resizeMode: 'contain',
+          backgroundColor: '#fff8e7',
+        },
+      ],
+    ],
     extra: {
       eas: {
         projectId: '166a3ea3-7bad-4f4c-a9ab-936954da991c',
