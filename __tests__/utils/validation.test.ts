@@ -66,6 +66,31 @@ describe('validateVideoUrl', () => {
     });
   });
 
+  describe('Facebook URLs', () => {
+    // FB matches as a catch-all (any path under facebook.com / fb.com /
+    // fb.watch, incl. subdomains) so the app sends importType=video and the
+    // backend's yt-dlp facebook extractor handles content-type detection.
+    it.each([
+      'https://www.facebook.com/share/r/18ivG3BELM/',
+      'https://www.facebook.com/share/v/abcdef/',
+      'https://www.facebook.com/share/p/xyz123/',
+      'https://www.facebook.com/reel/1234567890',
+      'https://facebook.com/reels/9876543210',
+      'https://www.facebook.com/user.name/videos/1234567890',
+      'https://www.facebook.com/watch/?v=1234567890',
+      'https://www.facebook.com/watch?v=123',
+      'https://m.facebook.com/share/r/abc/',
+      'https://web.facebook.com/reel/123',
+      'https://mbasic.facebook.com/share/r/abc/',
+      'https://fb.watch/abc123',
+      'https://fb.com/share/r/abc/',
+    ])('recognizes Facebook URL: %s', (url) => {
+      const result = validateVideoUrl(url);
+      expect(result.isValid).toBe(true);
+      expect(result.platform).toBe('facebook');
+    });
+  });
+
   describe('Invalid URLs', () => {
     it('rejects empty URL', () => {
       const result = validateVideoUrl('');
